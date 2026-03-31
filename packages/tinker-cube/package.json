@@ -1,0 +1,23 @@
+{
+  "name": "tinker-cube",
+  "version": "0.1.0",
+  "description": "3D cube demo game",
+  "files": ["dist/", "icon.png"],
+  "tinker": {
+    "name": "Cube",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "locales": {
+      "zh-CN": { "name": "方块" }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  },
+  "devDependencies": {
+    "three": "^0.172.0",
+    "@types/three": "^0.172.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "tinker-games",
+  "version": "0.1.0",
+  "description": "Tinker game plugins",
+  "keywords": [
+    "tinker"
+  ],
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "license": "MIT",
+  "author": "surunzi",
+  "type": "commonjs",
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "prettier": "^3.8.1",
+    "vite": "^5.4.19"
+  }
+}
