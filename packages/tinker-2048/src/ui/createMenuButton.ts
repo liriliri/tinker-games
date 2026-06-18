@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { COLORS } from '../game/constants'
+import { s } from '../scale'
 
 const ICON_NORMAL = COLORS.text
 const ICON_HOVER = '#5a524c'
@@ -10,26 +11,34 @@ export function createMenuButton(
   x: number,
   y: number,
   size = 40,
+  parent?: Phaser.GameObjects.Container,
 ) {
+  const scaledSize = s(size)
   const icon = scene.add.graphics()
 
   const drawIcon = (color: string) => {
     icon.clear()
     icon.fillStyle(color, 1)
-    const lineW = size * 0.55
-    const lineH = 3
+    const lineW = scaledSize * 0.55
+    const lineH = s(3)
     const startX = -lineW / 2
-    const gap = 7
+    const gap = s(7)
     for (let i = -1; i <= 1; i++) {
-      icon.fillRoundedRect(startX, i * gap - lineH / 2, lineW, lineH, 1.5)
+      icon.fillRoundedRect(startX, i * gap - lineH / 2, lineW, lineH, s(1.5))
     }
   }
 
   drawIcon(ICON_NORMAL)
 
-  const container = scene.add.container(x, y, [icon])
+  const container = scene.add.container(s(x), s(y), [icon])
+  parent?.add(container)
   container.setInteractive({
-    hitArea: new Phaser.Geom.Rectangle(-size / 2, -size / 2, size, size),
+    hitArea: new Phaser.Geom.Rectangle(
+      -scaledSize / 2,
+      -scaledSize / 2,
+      scaledSize,
+      scaledSize,
+    ),
     hitAreaCallback: Phaser.Geom.Rectangle.Contains,
     useHandCursor: true,
   })

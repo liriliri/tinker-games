@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
 import { COLORS } from '../game/constants'
-import { getFontFamily } from '../i18n'
+import { s } from '../scale'
+import { fillSmoothRoundedRect } from './drawRoundedRect'
+import { sharpTextStyle } from './sharpText'
 
 function drawButtonBg(
   bg: Phaser.GameObjects.Graphics,
@@ -9,8 +11,7 @@ function drawButtonBg(
   color: number,
 ) {
   bg.clear()
-  bg.fillStyle(color, 1)
-  bg.fillRoundedRect(-width / 2, -height / 2, width, height, 3)
+  fillSmoothRoundedRect(bg, -width / 2, -height / 2, width, height, s(3), color)
 }
 
 export function createButton(
@@ -20,24 +21,32 @@ export function createButton(
   y: number,
   minWidth: number,
   height: number,
-  fontSize = '16px',
+  fontSize = 16,
+  parent?: Phaser.GameObjects.Container,
 ) {
   const text = scene.add
-    .text(0, 0, label, {
-      fontFamily: getFontFamily(),
-      fontSize,
-      color: COLORS.buttonText,
-      fontStyle: 'bold',
-    })
+    .text(
+      0,
+      0,
+      label,
+      sharpTextStyle(fontSize, { color: COLORS.buttonText, fontStyle: 'bold' }),
+    )
     .setOrigin(0.5)
 
-  const width = Math.max(minWidth, text.width + 40)
+  const width = Math.max(s(minWidth), text.width + s(40))
+  const scaledHeight = s(height)
   const bg = scene.add.graphics()
-  drawButtonBg(bg, width, height, COLORS.button)
+  drawButtonBg(bg, width, scaledHeight, COLORS.button)
 
-  const container = scene.add.container(x, y, [bg, text])
+  const container = scene.add.container(s(x), s(y), [bg, text])
+  parent?.add(container)
   container.setInteractive({
-    hitArea: new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
+    hitArea: new Phaser.Geom.Rectangle(
+      -width / 2,
+      -scaledHeight / 2,
+      width,
+      scaledHeight,
+    ),
     hitAreaCallback: Phaser.Geom.Rectangle.Contains,
     useHandCursor: true,
   })
@@ -57,28 +66,28 @@ export function createButton(
 
   container.on('pointerover', () => {
     hovered = true
-    drawButtonBg(bg, width, height, COLORS.buttonHover)
+    drawButtonBg(bg, width, scaledHeight, COLORS.buttonHover)
     tweenScale(1.04)
   })
 
   container.on('pointerout', () => {
     hovered = false
-    drawButtonBg(bg, width, height, COLORS.button)
+    drawButtonBg(bg, width, scaledHeight, COLORS.button)
     tweenScale(1)
   })
 
   container.on('pointerdown', () => {
-    drawButtonBg(bg, width, height, COLORS.buttonActive)
+    drawButtonBg(bg, width, scaledHeight, COLORS.buttonActive)
     scene.tweens.killTweensOf(container)
     container.setScale(0.96)
   })
 
   container.on('pointerup', () => {
     if (hovered) {
-      drawButtonBg(bg, width, height, COLORS.buttonHover)
+      drawButtonBg(bg, width, scaledHeight, COLORS.buttonHover)
       tweenScale(1.04)
     } else {
-      drawButtonBg(bg, width, height, COLORS.button)
+      drawButtonBg(bg, width, scaledHeight, COLORS.button)
       tweenScale(1)
     }
   })

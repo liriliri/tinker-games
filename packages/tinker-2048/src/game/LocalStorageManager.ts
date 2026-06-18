@@ -1,4 +1,5 @@
 import type { SerializedGrid } from './Grid'
+import { SessionManager } from './SessionManager'
 
 export interface SerializedGameState {
   grid: SerializedGrid
@@ -6,6 +7,7 @@ export interface SerializedGameState {
   over: boolean
   won: boolean
   keepPlaying: boolean
+  gameGeneration?: number
 }
 
 const fakeStorage: Storage = {
@@ -77,5 +79,15 @@ export class LocalStorageManager {
 
   hasSavedGame(): boolean {
     return this.getGameState() !== null
+  }
+
+  hasResumableGame(): boolean {
+    const state = this.getGameState()
+    if (!state) return false
+
+    const session = new SessionManager()
+    if (!session.isInSession()) return true
+
+    return (state.gameGeneration ?? 0) === session.getGameGeneration()
   }
 }

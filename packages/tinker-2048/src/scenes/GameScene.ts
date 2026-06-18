@@ -5,8 +5,6 @@ import {
   GRID_SIZE,
   SUPER_TILE_STYLE,
   TILE_BORDER_RADIUS,
-  TILE_DISPLAY_SIZE,
-  TILE_SIZE,
   TILE_STYLES,
   TRANSITION_SPEED,
   GAME_CONTAINER_BORDER_RADIUS,
@@ -21,11 +19,18 @@ import {
 import type { Grid } from '../game/Grid'
 import { InputManager } from '../game/InputManager'
 import { LocalStorageManager } from '../game/LocalStorageManager'
+import { SessionManager } from '../game/SessionManager'
 import type { Position, Tile } from '../game/Tile'
-import { getFontFamily, t } from '../i18n'
+import { t } from '../i18n'
 import { FIELD_WIDTH } from '../layout'
+import { applyResponsiveScale, s } from '../scale'
 import { createButton } from '../ui/createButton'
 import { createMenuButton } from '../ui/createMenuButton'
+import {
+  fillSmoothRoundedRect,
+  strokeSmoothRoundedRect,
+} from '../ui/drawRoundedRect'
+import { addSharpText, sharpTextStyle } from '../ui/sharpText'
 
 export interface GameSceneData {
   fresh?: boolean
@@ -34,6 +39,7 @@ export interface GameSceneData {
 export class GameScene extends Phaser.Scene implements Actuator {
   private inputManager = new InputManager()
   private storageManager = new LocalStorageManager()
+  private sessionManager = new SessionManager()
   private freshStart = false
   private tileLayer!: Phaser.GameObjects.Container
   private scoreText!: Phaser.GameObjects.Text
@@ -45,6 +51,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private retryBtn!: Phaser.GameObjects.Container
   private displayedScore = 0
   private gameBounds!: Phaser.Geom.Rectangle
+  private tileDisplaySize = 0
+  private tileSize = 0
 
   constructor() {
     super('Game')
@@ -52,12 +60,18 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
   init(data: GameSceneData = {}) {
     this.freshStart = data.fresh === true
+    this.sessionManager.markInSession()
+    if (this.freshStart) {
+      this.storageManager.clearGameState()
+      this.sessionManager.bumpGameGeneration()
+    }
   }
 
   create() {
-    if (this.freshStart) {
-      this.storageManager.clearGameState()
-    }
+    applyResponsiveScale(this.game)
+
+    this.tileDisplaySize = this.computeTileDisplaySize()
+    this.tileSize = this.computeTileSize()
 
     this.drawHeader()
     this.drawGameBoard()
@@ -67,13 +81,18 @@ export class GameScene extends Phaser.Scene implements Actuator {
     this.tileLayer.setDepth(10)
 
     this.gameBounds = new Phaser.Geom.Rectangle(
-      GRID_SPACING,
-      GAME_CONTAINER_Y,
-      FIELD_WIDTH,
-      FIELD_WIDTH,
+      s(GRID_SPACING),
+      s(GAME_CONTAINER_Y),
+      s(FIELD_WIDTH),
+      s(FIELD_WIDTH),
     )
 
-    new GameManager(this.inputManager, this.storageManager, this)
+    new GameManager(
+      this.inputManager,
+      this.storageManager,
+      this.sessionManager,
+      this,
+    )
 
     this.inputManager.bindKeyboard(this)
     this.inputManager.bindSwipe(this, this.gameBounds)
@@ -99,17 +118,27 @@ export class GameScene extends Phaser.Scene implements Actuator {
     this.hideMessage()
   }
 
+  private computeTileSize() {
+    const spacing = s(GRID_SPACING)
+    const field = s(FIELD_WIDTH)
+    return Math.floor((field - spacing * (GRID_SIZE + 1)) / GRID_SIZE)
+  }
+
+  private computeTileDisplaySize() {
+    return this.computeTileSize()
+  }
+
   private clearTiles() {
     this.tileLayer.removeAll(true)
   }
 
   private tilePosition(position: Position) {
     return {
-      x: GRID_SPACING + position.x * (TILE_SIZE + GRID_SPACING),
+      x: s(GRID_SPACING) + position.x * (this.tileSize + s(GRID_SPACING)),
       y:
-        GAME_CONTAINER_Y +
-        GRID_SPACING +
-        position.y * (TILE_SIZE + GRID_SPACING),
+        s(GAME_CONTAINER_Y) +
+        s(GRID_SPACING) +
+        position.y * (this.tileSize + s(GRID_SPACING)),
     }
   }
 
@@ -124,37 +153,43 @@ export class GameScene extends Phaser.Scene implements Actuator {
     y: number,
   ): Phaser.GameObjects.Container {
     const style = this.getTileStyle(value)
-    const half = TILE_DISPLAY_SIZE / 2
+    const half = this.tileDisplaySize / 2
     const container = this.add.container(x + half, y + half)
 
     const bg = this.add.graphics()
-    bg.fillStyle(style.bg, 1)
-    bg.fillRoundedRect(
+    fillSmoothRoundedRect(
+      bg,
       -half,
       -half,
-      TILE_DISPLAY_SIZE,
-      TILE_DISPLAY_SIZE,
-      TILE_BORDER_RADIUS,
+      this.tileDisplaySize,
+      this.tileDisplaySize,
+      s(TILE_BORDER_RADIUS),
+      style.bg,
     )
 
     if (style.glow) {
-      bg.lineStyle(1, 0xffffff, style.glow / 3)
-      bg.strokeRoundedRect(
+      strokeSmoothRoundedRect(
+        bg,
         -half,
         -half,
-        TILE_DISPLAY_SIZE,
-        TILE_DISPLAY_SIZE,
-        TILE_BORDER_RADIUS,
+        this.tileDisplaySize,
+        this.tileDisplaySize,
+        s(TILE_BORDER_RADIUS),
+        0xffffff,
+        style.glow / 3,
       )
     }
 
     const text = this.add
-      .text(0, 0, String(value), {
-        fontFamily: getFontFamily(),
-        fontSize: `${style.fontSize}px`,
-        color: style.text,
-        fontStyle: 'bold',
-      })
+      .text(
+        0,
+        0,
+        String(value),
+        sharpTextStyle(style.fontSize, {
+          color: style.text,
+          fontStyle: 'bold',
+        }),
+      )
       .setOrigin(0.5)
 
     container.add([bg, text])
@@ -164,7 +199,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private addTile(tile: Tile) {
     const position = tile.previousPosition ?? { x: tile.x, y: tile.y }
     const { x, y } = this.tilePosition(position)
-    const half = TILE_DISPLAY_SIZE / 2
+    const half = this.tileDisplaySize / 2
 
     if (tile.mergedFrom) {
       tile.mergedFrom.forEach((merged) => this.addTile(merged))
@@ -240,30 +275,30 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   private createScoreBox(label: string, centerX: number, centerY: number) {
-    const width = 75
-    const height = 55
-    const container = this.add.container(centerX, centerY)
+    const width = s(75)
+    const height = s(55)
+    const container = this.add.container(s(centerX), s(centerY))
 
     const bg = this.add.graphics()
-    bg.fillStyle(COLORS.gameContainer, 1)
-    bg.fillRoundedRect(-width / 2, -height / 2, width, height, 3)
+    fillSmoothRoundedRect(
+      bg,
+      -width / 2,
+      -height / 2,
+      width,
+      height,
+      s(3),
+      COLORS.gameContainer,
+    )
 
-    const labelText = this.add
-      .text(0, -12, label, {
-        fontFamily: getFontFamily(),
-        fontSize: '13px',
-        color: COLORS.scoreLabel,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
+    const labelText = addSharpText(this, 0, s(-12), label, 13, {
+      color: COLORS.scoreLabel,
+      fontStyle: 'bold',
+    }).setOrigin(0.5)
 
-    const valueText = this.add
-      .text(0, 10, '0', {
-        fontFamily: getFontFamily(),
-        fontSize: '25px',
-        color: '#ffffff',
-        fontStyle: 'bold',
-      })
+    const valueText = addSharpText(this, 0, s(10), '0', 25, {
+      color: '#ffffff',
+      fontStyle: 'bold',
+    })
       .setOrigin(0.5)
       .setName('value')
 
@@ -273,45 +308,43 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
   private drawGameBoard() {
     const gfx = this.add.graphics()
-    gfx.fillStyle(COLORS.gameContainer, 1)
-    gfx.fillRoundedRect(
+    fillSmoothRoundedRect(
+      gfx,
       0,
-      GAME_CONTAINER_Y,
-      FIELD_WIDTH,
-      FIELD_WIDTH,
-      GAME_CONTAINER_BORDER_RADIUS,
+      s(GAME_CONTAINER_Y),
+      s(FIELD_WIDTH),
+      s(FIELD_WIDTH),
+      s(GAME_CONTAINER_BORDER_RADIUS),
+      COLORS.gameContainer,
     )
 
     for (let x = 0; x < GRID_SIZE; x++) {
       for (let y = 0; y < GRID_SIZE; y++) {
         const pos = this.tilePosition({ x, y })
-        gfx.fillStyle(COLORS.cell, 1)
-        gfx.fillRoundedRect(
+        fillSmoothRoundedRect(
+          gfx,
           pos.x,
           pos.y,
-          TILE_DISPLAY_SIZE,
-          TILE_DISPLAY_SIZE,
-          TILE_BORDER_RADIUS,
+          this.tileDisplaySize,
+          this.tileDisplaySize,
+          s(TILE_BORDER_RADIUS),
+          COLORS.cell,
         )
       }
     }
   }
 
   private createMessageOverlay() {
-    this.messageContainer = this.add.container(0, GAME_CONTAINER_Y)
+    this.messageContainer = this.add.container(0, s(GAME_CONTAINER_Y))
     this.messageContainer.setVisible(false)
 
     const overlay = this.add.graphics()
     overlay.setName('overlay')
 
-    this.messageText = this.add
-      .text(FIELD_WIDTH / 2, 222, '', {
-        fontFamily: getFontFamily(),
-        fontSize: '60px',
-        color: COLORS.text,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
+    this.messageText = addSharpText(this, s(FIELD_WIDTH / 2), s(222), '', 60, {
+      color: COLORS.text,
+      fontStyle: 'bold',
+    }).setOrigin(0.5)
 
     this.keepPlayingBtn = createButton(
       this,
@@ -351,16 +384,16 @@ export class GameScene extends Phaser.Scene implements Actuator {
     ) as Phaser.GameObjects.Graphics
     overlay.clear()
     overlay.fillStyle(won ? COLORS.winOverlay : COLORS.gameOverOverlay, 0.5)
-    overlay.fillRect(0, 0, FIELD_WIDTH, FIELD_WIDTH)
+    overlay.fillRect(0, 0, s(FIELD_WIDTH), s(FIELD_WIDTH))
 
     this.messageText.setText(won ? t('youWin') : t('gameOver'))
     this.messageText.setColor(won ? COLORS.brightText : COLORS.text)
     this.keepPlayingBtn.setVisible(won)
 
     if (won) {
-      this.retryBtn.setPosition(FIELD_WIDTH / 2 + 70, 340)
+      this.retryBtn.setPosition(s(FIELD_WIDTH / 2 + 70), s(340))
     } else {
-      this.retryBtn.setPosition(FIELD_WIDTH / 2, 340)
+      this.retryBtn.setPosition(s(FIELD_WIDTH / 2), s(340))
     }
 
     this.messageContainer.setVisible(true)
@@ -384,19 +417,23 @@ export class GameScene extends Phaser.Scene implements Actuator {
     this.scoreText.setText(String(score))
 
     if (difference > 0) {
-      const addition = this.add
-        .text(this.scoreBox.x + 20, this.scoreBox.y + 10, `+${difference}`, {
-          fontFamily: getFontFamily(),
-          fontSize: '25px',
+      const addition = addSharpText(
+        this,
+        this.scoreBox.x + s(20),
+        this.scoreBox.y + s(10),
+        `+${difference}`,
+        25,
+        {
           color: 'rgba(119, 110, 101, 0.9)',
           fontStyle: 'bold',
-        })
+        },
+      )
         .setOrigin(0.5)
         .setDepth(200)
 
       this.tweens.add({
         targets: addition,
-        y: addition.y - 75,
+        y: addition.y - s(75),
         alpha: 0,
         duration: 600,
         ease: 'Cubic.easeIn',

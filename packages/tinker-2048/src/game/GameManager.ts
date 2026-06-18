@@ -1,6 +1,7 @@
 import { Grid } from './Grid'
 import { LocalStorageManager } from './LocalStorageManager'
 import { InputManager } from './InputManager'
+import { SessionManager } from './SessionManager'
 import { Tile, type Position } from './Tile'
 import { GRID_SIZE } from './constants'
 
@@ -30,6 +31,7 @@ export class GameManager {
   constructor(
     private inputManager: InputManager,
     private storageManager: LocalStorageManager,
+    private sessionManager: SessionManager,
     private actuator: Actuator,
   ) {
     this.inputManager.on('move', (direction) => this.move(direction))
@@ -116,6 +118,7 @@ export class GameManager {
       over: this.over,
       won: this.won,
       keepPlaying: this.keepPlaying,
+      gameGeneration: this.sessionManager.getGameGeneration(),
     }
   }
 
