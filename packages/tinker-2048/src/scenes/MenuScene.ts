@@ -1,0 +1,94 @@
+import Phaser from 'phaser'
+import { COLORS } from '../game/constants'
+import { LocalStorageManager } from '../game/LocalStorageManager'
+import { FIELD_WIDTH, GAME_HEIGHT } from '../layout'
+import { GAME_CONTAINER_MARGIN_BOTTOM } from '../game/constants'
+import { getFontFamily, t } from '../i18n'
+import { createButton } from '../ui/createButton'
+
+const MENU_BUTTON_WIDTH = 200
+const MENU_BUTTON_HEIGHT = 48
+const MENU_BUTTON_GAP = 16
+
+export class MenuScene extends Phaser.Scene {
+  private storageManager = new LocalStorageManager()
+
+  constructor() {
+    super('Menu')
+  }
+
+  create() {
+    const titleY = 160
+    const subtitleY = 230
+
+    this.add
+      .text(FIELD_WIDTH / 2, titleY, '2048', {
+        fontFamily: getFontFamily(),
+        fontSize: '80px',
+        color: COLORS.text,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+
+    const prefix = this.add.text(0, subtitleY, t('introPrefix'), {
+      fontFamily: getFontFamily(),
+      fontSize: '18px',
+      color: COLORS.text,
+    })
+    const bold = this.add.text(0, subtitleY, t('introBold'), {
+      fontFamily: getFontFamily(),
+      fontSize: '18px',
+      color: COLORS.text,
+      fontStyle: 'bold',
+    })
+    prefix.setX(FIELD_WIDTH / 2 - (prefix.width + bold.width) / 2)
+    bold.setX(prefix.x + prefix.width)
+
+    const items: { label: string; action: () => void }[] = []
+
+    if (this.storageManager.hasSavedGame()) {
+      items.push({
+        label: t('continue'),
+        action: () => this.scene.start('Game', { fresh: false }),
+      })
+    }
+
+    items.push(
+      {
+        label: t('newGame'),
+        action: () => this.scene.start('Game', { fresh: true }),
+      },
+      { label: t('exit'), action: () => this.exit() },
+    )
+
+    const totalHeight =
+      items.length * MENU_BUTTON_HEIGHT + (items.length - 1) * MENU_BUTTON_GAP
+    let y = subtitleY + 70
+    const remaining = GAME_HEIGHT - y - GAME_CONTAINER_MARGIN_BOTTOM
+    if (totalHeight < remaining) {
+      y += (remaining - totalHeight) / 2
+    }
+
+    for (const item of items) {
+      const btn = createButton(
+        this,
+        item.label,
+        FIELD_WIDTH / 2,
+        y + MENU_BUTTON_HEIGHT / 2,
+        MENU_BUTTON_WIDTH,
+        MENU_BUTTON_HEIGHT,
+        '18px',
+      )
+      btn.on('pointerup', item.action)
+      y += MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP
+    }
+  }
+
+  private exit() {
+    if (window.history.length > 1) {
+      window.history.back()
+      return
+    }
+    window.close()
+  }
+}

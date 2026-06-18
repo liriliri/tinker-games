@@ -1,425 +1,411 @@
 import Phaser from 'phaser'
+import {
+  COLORS,
+  GRID_SPACING,
+  GRID_SIZE,
+  SUPER_TILE_STYLE,
+  TILE_BORDER_RADIUS,
+  TILE_DISPLAY_SIZE,
+  TILE_SIZE,
+  TILE_STYLES,
+  TRANSITION_SPEED,
+  GAME_CONTAINER_BORDER_RADIUS,
+  type TileStyle,
+} from '../game/constants'
+import { GAME_CONTAINER_Y } from '../layout'
+import {
+  GameManager,
+  type Actuator,
+  type GameMetadata,
+} from '../game/GameManager'
+import type { Grid } from '../game/Grid'
+import { InputManager } from '../game/InputManager'
+import { LocalStorageManager } from '../game/LocalStorageManager'
+import type { Position, Tile } from '../game/Tile'
+import { getFontFamily, t } from '../i18n'
+import { FIELD_WIDTH } from '../layout'
+import { createButton } from '../ui/createButton'
+import { createMenuButton } from '../ui/createMenuButton'
 
-const GRID_SIZE = 4
-const CELL_SIZE = 106
-const CELL_GAP = 12
-const GRID_PADDING = 14
-const GRID_OFFSET_Y = 120
-const ROUND_RADIUS = 6
-
-const TILE_COLORS: Record<number, { bg: number; text: string; fontSize: number }> = {
-  2:    { bg: 0xeee4da, text: '#776e65', fontSize: 55 },
-  4:    { bg: 0xede0c8, text: '#776e65', fontSize: 55 },
-  8:    { bg: 0xf2b179, text: '#f9f6f2', fontSize: 55 },
-  16:   { bg: 0xf59563, text: '#f9f6f2', fontSize: 55 },
-  32:   { bg: 0xf67c5f, text: '#f9f6f2', fontSize: 55 },
-  64:   { bg: 0xf65e3b, text: '#f9f6f2', fontSize: 55 },
-  128:  { bg: 0xedcf72, text: '#f9f6f2', fontSize: 45 },
-  256:  { bg: 0xedcc61, text: '#f9f6f2', fontSize: 45 },
-  512:  { bg: 0xedc850, text: '#f9f6f2', fontSize: 45 },
-  1024: { bg: 0xedc53f, text: '#f9f6f2', fontSize: 35 },
-  2048: { bg: 0xedc22e, text: '#f9f6f2', fontSize: 35 },
+export interface GameSceneData {
+  fresh?: boolean
 }
 
-const DEFAULT_TILE = { bg: 0x3c3a32, text: '#f9f6f2', fontSize: 30 }
-
-type Direction = 'left' | 'right' | 'up' | 'down'
-
-interface TileData {
-  value: number
-  row: number
-  col: number
-  container?: Phaser.GameObjects.Container
-}
-
-export class GameScene extends Phaser.Scene {
-  private grid: (TileData | null)[][] = []
-  private score = 0
-  private bestScore = 0
+export class GameScene extends Phaser.Scene implements Actuator {
+  private inputManager = new InputManager()
+  private storageManager = new LocalStorageManager()
+  private freshStart = false
+  private tileLayer!: Phaser.GameObjects.Container
   private scoreText!: Phaser.GameObjects.Text
   private bestScoreText!: Phaser.GameObjects.Text
-  private isMoving = false
-  private gridOriginX = 0
-  private gridOriginY = 0
+  private scoreBox!: Phaser.GameObjects.Container
+  private messageContainer!: Phaser.GameObjects.Container
+  private messageText!: Phaser.GameObjects.Text
+  private keepPlayingBtn!: Phaser.GameObjects.Container
+  private retryBtn!: Phaser.GameObjects.Container
+  private displayedScore = 0
+  private gameBounds!: Phaser.Geom.Rectangle
 
   constructor() {
     super('Game')
   }
 
-  create() {
-    const saved = localStorage.getItem('2048-best')
-    if (saved) this.bestScore = parseInt(saved, 10)
+  init(data: GameSceneData = {}) {
+    this.freshStart = data.fresh === true
+  }
 
-    this.gridOriginX = (500 - (CELL_SIZE * GRID_SIZE + CELL_GAP * (GRID_SIZE + 1))) / 2 + GRID_PADDING
-    this.gridOriginY = GRID_OFFSET_Y + GRID_PADDING
+  create() {
+    if (this.freshStart) {
+      this.storageManager.clearGameState()
+    }
 
     this.drawHeader()
-    this.drawGridBackground()
-    this.initGrid()
-    this.addRandomTile()
-    this.addRandomTile()
-    this.renderAllTiles()
-    this.setupInput()
-  }
+    this.drawGameBoard()
+    this.createMessageOverlay()
 
-  private drawHeader() {
-    this.add.text(20, 15, '2048', {
-      fontSize: '60px',
-      color: '#776e65',
-      fontStyle: 'bold',
-    })
+    this.tileLayer = this.add.container(0, 0)
+    this.tileLayer.setDepth(10)
 
-    const scoreBox = this.add.rectangle(310, 30, 80, 50, 0xbbada0, 1).setOrigin(0.5)
-    this.roundRect(scoreBox)
-    this.add.text(310, 18, 'SCORE', {
-      fontSize: '11px', color: '#eee4da', fontStyle: 'bold',
-    }).setOrigin(0.5)
-    this.scoreText = this.add.text(310, 40, '0', {
-      fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5)
-
-    const bestBox = this.add.rectangle(410, 30, 80, 50, 0xbbada0, 1).setOrigin(0.5)
-    this.roundRect(bestBox)
-    this.add.text(410, 18, 'BEST', {
-      fontSize: '11px', color: '#eee4da', fontStyle: 'bold',
-    }).setOrigin(0.5)
-    this.bestScoreText = this.add.text(410, 40, String(this.bestScore), {
-      fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5)
-
-    const newGameBtn = this.add.rectangle(380, 85, 120, 35, 0x8f7a66, 1).setOrigin(0.5).setInteractive()
-    this.roundRect(newGameBtn)
-    this.add.text(380, 85, 'New Game', {
-      fontSize: '16px', color: '#f9f6f2', fontStyle: 'bold',
-    }).setOrigin(0.5)
-    newGameBtn.on('pointerup', () => this.restartGame())
-  }
-
-  private roundRect(_rect: Phaser.GameObjects.Rectangle) {
-    // Phaser rectangles don't natively support rounded corners,
-    // visual approximation is fine for this game
-  }
-
-  private drawGridBackground() {
-    const totalSize = CELL_SIZE * GRID_SIZE + CELL_GAP * (GRID_SIZE + 1)
-    const gfx = this.add.graphics()
-    gfx.fillStyle(0xbbada0, 1)
-    gfx.fillRoundedRect(
-      this.gridOriginX - GRID_PADDING,
-      this.gridOriginY - GRID_PADDING,
-      totalSize + GRID_PADDING * 2 - CELL_GAP * 2 + CELL_GAP,
-      totalSize + GRID_PADDING * 2 - CELL_GAP * 2 + CELL_GAP,
-      ROUND_RADIUS,
+    this.gameBounds = new Phaser.Geom.Rectangle(
+      GRID_SPACING,
+      GAME_CONTAINER_Y,
+      FIELD_WIDTH,
+      FIELD_WIDTH,
     )
 
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        const { x, y } = this.cellPosition(r, c)
-        gfx.fillStyle(0xcdc1b4, 1)
-        gfx.fillRoundedRect(x, y, CELL_SIZE, CELL_SIZE, ROUND_RADIUS)
+    new GameManager(this.inputManager, this.storageManager, this)
+
+    this.inputManager.bindKeyboard(this)
+    this.inputManager.bindSwipe(this, this.gameBounds)
+  }
+
+  actuate(grid: Grid, metadata: GameMetadata) {
+    this.clearTiles()
+    grid.eachCell((_x, _y, tile) => {
+      if (tile) this.addTile(tile)
+    })
+    this.updateScore(metadata.score)
+    this.updateBestScore(metadata.bestScore)
+    if (metadata.terminated) {
+      if (metadata.over) {
+        this.showMessage(false)
+      } else if (metadata.won) {
+        this.showMessage(true)
       }
     }
   }
 
-  private cellPosition(row: number, col: number) {
+  continueGame() {
+    this.hideMessage()
+  }
+
+  private clearTiles() {
+    this.tileLayer.removeAll(true)
+  }
+
+  private tilePosition(position: Position) {
     return {
-      x: this.gridOriginX + col * (CELL_SIZE + CELL_GAP),
-      y: this.gridOriginY + row * (CELL_SIZE + CELL_GAP),
+      x: GRID_SPACING + position.x * (TILE_SIZE + GRID_SPACING),
+      y:
+        GAME_CONTAINER_Y +
+        GRID_SPACING +
+        position.y * (TILE_SIZE + GRID_SPACING),
     }
   }
 
-  private initGrid() {
-    this.grid = []
-    for (let r = 0; r < GRID_SIZE; r++) {
-      this.grid[r] = []
-      for (let c = 0; c < GRID_SIZE; c++) {
-        this.grid[r][c] = null
-      }
-    }
+  private getTileStyle(value: number): TileStyle {
+    if (value > 2048) return SUPER_TILE_STYLE
+    return TILE_STYLES[value] ?? SUPER_TILE_STYLE
   }
 
-  private addRandomTile(): TileData | null {
-    const empty: { r: number; c: number }[] = []
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        if (!this.grid[r][c]) empty.push({ r, c })
-      }
+  private createTileVisual(
+    value: number,
+    x: number,
+    y: number,
+  ): Phaser.GameObjects.Container {
+    const style = this.getTileStyle(value)
+    const half = TILE_DISPLAY_SIZE / 2
+    const container = this.add.container(x + half, y + half)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(style.bg, 1)
+    bg.fillRoundedRect(
+      -half,
+      -half,
+      TILE_DISPLAY_SIZE,
+      TILE_DISPLAY_SIZE,
+      TILE_BORDER_RADIUS,
+    )
+
+    if (style.glow) {
+      bg.lineStyle(1, 0xffffff, style.glow / 3)
+      bg.strokeRoundedRect(
+        -half,
+        -half,
+        TILE_DISPLAY_SIZE,
+        TILE_DISPLAY_SIZE,
+        TILE_BORDER_RADIUS,
+      )
     }
-    if (empty.length === 0) return null
 
-    const { r, c } = empty[Math.floor(Math.random() * empty.length)]
-    const value = Math.random() < 0.9 ? 2 : 4
-    const tile: TileData = { value, row: r, col: c }
-    this.grid[r][c] = tile
-    return tile
-  }
+    const text = this.add
+      .text(0, 0, String(value), {
+        fontFamily: getFontFamily(),
+        fontSize: `${style.fontSize}px`,
+        color: style.text,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
 
-  private createTileContainer(tile: TileData): Phaser.GameObjects.Container {
-    const { x, y } = this.cellPosition(tile.row, tile.col)
-    const style = TILE_COLORS[tile.value] || DEFAULT_TILE
-
-    const gfx = this.add.graphics()
-    gfx.fillStyle(style.bg, 1)
-    gfx.fillRoundedRect(0, 0, CELL_SIZE, CELL_SIZE, ROUND_RADIUS)
-
-    const text = this.add.text(CELL_SIZE / 2, CELL_SIZE / 2, String(tile.value), {
-      fontSize: `${style.fontSize}px`,
-      color: style.text,
-      fontStyle: 'bold',
-    }).setOrigin(0.5)
-
-    const container = this.add.container(x, y, [gfx, text])
-    tile.container = container
+    container.add([bg, text])
     return container
   }
 
-  private renderAllTiles() {
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        const tile = this.grid[r][c]
-        if (tile) {
-          this.createTileContainer(tile)
-          // Pop-in animation
-          tile.container!.setScale(0)
+  private addTile(tile: Tile) {
+    const position = tile.previousPosition ?? { x: tile.x, y: tile.y }
+    const { x, y } = this.tilePosition(position)
+    const half = TILE_DISPLAY_SIZE / 2
+
+    if (tile.mergedFrom) {
+      tile.mergedFrom.forEach((merged) => this.addTile(merged))
+
+      const container = this.createTileVisual(tile.value, x, y)
+      this.tileLayer.add(container)
+      container.setScale(0)
+      this.tweens.add({
+        targets: container,
+        scaleX: 1.2,
+        scaleY: 1.2,
+        duration: 100,
+        delay: TRANSITION_SPEED,
+        ease: 'Cubic.easeOut',
+        onComplete: () => {
           this.tweens.add({
-            targets: tile.container,
+            targets: container,
             scaleX: 1,
             scaleY: 1,
-            duration: 150,
-            ease: 'Back.easeOut',
+            duration: 100,
+            ease: 'Cubic.easeIn',
           })
-        }
-      }
-    }
-  }
-
-  private setupInput() {
-    if (!this.input.keyboard) return
-    this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
-      if (this.isMoving) return
-      switch (event.key) {
-        case 'ArrowLeft':  this.move('left'); break
-        case 'ArrowRight': this.move('right'); break
-        case 'ArrowUp':    this.move('up'); break
-        case 'ArrowDown':  this.move('down'); break
-      }
-    })
-
-    // Swipe support
-    let startX = 0
-    let startY = 0
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      startX = pointer.x
-      startY = pointer.y
-    })
-    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      if (this.isMoving) return
-      const dx = pointer.x - startX
-      const dy = pointer.y - startY
-      const absDx = Math.abs(dx)
-      const absDy = Math.abs(dy)
-      if (Math.max(absDx, absDy) < 30) return
-      if (absDx > absDy) {
-        this.move(dx > 0 ? 'right' : 'left')
-      } else {
-        this.move(dy > 0 ? 'down' : 'up')
-      }
-    })
-  }
-
-  private move(direction: Direction) {
-    this.isMoving = true
-    let moved = false
-    const mergedPositions = new Set<string>()
-    const tweens: Promise<void>[] = []
-
-    const traversal = this.buildTraversal(direction)
-
-    for (const { r, c } of traversal) {
-      const tile = this.grid[r][c]
-      if (!tile) continue
-
-      const { row: newRow, col: newCol, merged } = this.findFarthest(tile, direction, mergedPositions)
-
-      if (newRow === r && newCol === c) continue
-      moved = true
-
-      // Remove from old position
-      this.grid[r][c] = null
-
-      if (merged) {
-        // Merge
-        const target = this.grid[newRow][newCol]!
-        const newValue = tile.value * 2
-        this.score += newValue
-
-        const { x, y } = this.cellPosition(newRow, newCol)
-        tweens.push(new Promise<void>((resolve) => {
-          this.tweens.add({
-            targets: tile.container,
-            x, y,
-            duration: 120,
-            ease: 'Cubic.easeInOut',
-            onComplete: () => {
-              tile.container?.destroy()
-              target.container?.destroy()
-
-              target.value = newValue
-              this.createTileContainer(target)
-              // Merge pop
-              this.tweens.add({
-                targets: target.container,
-                scaleX: 1.15,
-                scaleY: 1.15,
-                duration: 80,
-                yoyo: true,
-                ease: 'Cubic.easeOut',
-                onComplete: () => resolve(),
-              })
-            },
-          })
-        }))
-        mergedPositions.add(`${newRow},${newCol}`)
-      } else {
-        // Move
-        this.grid[newRow][newCol] = tile
-        tile.row = newRow
-        tile.col = newCol
-
-        const { x, y } = this.cellPosition(newRow, newCol)
-        tweens.push(new Promise<void>((resolve) => {
-          this.tweens.add({
-            targets: tile.container,
-            x, y,
-            duration: 120,
-            ease: 'Cubic.easeInOut',
-            onComplete: () => resolve(),
-          })
-        }))
-      }
-    }
-
-    if (!moved) {
-      this.isMoving = false
+        },
+      })
       return
     }
 
-    Promise.all(tweens).then(() => {
-      const newTile = this.addRandomTile()
-      if (newTile) {
-        this.createTileContainer(newTile)
-        newTile.container!.setScale(0)
-        this.tweens.add({
-          targets: newTile.container,
-          scaleX: 1,
-          scaleY: 1,
-          duration: 150,
-          ease: 'Back.easeOut',
-        })
-      }
+    const container = this.createTileVisual(tile.value, x, y)
+    this.tileLayer.add(container)
 
-      this.updateScore()
-      this.isMoving = false
+    if (tile.previousPosition) {
+      const target = this.tilePosition({ x: tile.x, y: tile.y })
+      this.tweens.add({
+        targets: container,
+        x: target.x + half,
+        y: target.y + half,
+        duration: TRANSITION_SPEED,
+        ease: 'Cubic.easeInOut',
+      })
+    } else {
+      container.setScale(0)
+      this.tweens.add({
+        targets: container,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 200,
+        delay: TRANSITION_SPEED,
+        ease: 'Back.easeOut',
+      })
+    }
+  }
 
-      if (this.isGameOver()) {
-        this.showGameOver()
+  private drawHeader() {
+    const scoreBoxHeight = 55
+    const headerCenterY = 8 + scoreBoxHeight / 2
+
+    const menuBtn = createMenuButton(this, 24, headerCenterY)
+    menuBtn.on('pointerup', () => this.scene.start('Menu'))
+
+    const scoreBoxWidth = 75
+    const scoreBoxGap = 15
+    const centerX = FIELD_WIDTH / 2
+    const scoreX = centerX - (scoreBoxWidth + scoreBoxGap) / 2
+    const bestX = centerX + (scoreBoxWidth + scoreBoxGap) / 2
+
+    const scoreBox = this.createScoreBox(t('score'), scoreX, headerCenterY)
+    this.scoreText = scoreBox.getByName('value') as Phaser.GameObjects.Text
+    this.scoreBox = scoreBox
+
+    const bestBox = this.createScoreBox(t('best'), bestX, headerCenterY)
+    this.bestScoreText = bestBox.getByName('value') as Phaser.GameObjects.Text
+    this.bestScoreText.setText(String(this.storageManager.getBestScore()))
+  }
+
+  private createScoreBox(label: string, centerX: number, centerY: number) {
+    const width = 75
+    const height = 55
+    const container = this.add.container(centerX, centerY)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(COLORS.gameContainer, 1)
+    bg.fillRoundedRect(-width / 2, -height / 2, width, height, 3)
+
+    const labelText = this.add
+      .text(0, -12, label, {
+        fontFamily: getFontFamily(),
+        fontSize: '13px',
+        color: COLORS.scoreLabel,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+
+    const valueText = this.add
+      .text(0, 10, '0', {
+        fontFamily: getFontFamily(),
+        fontSize: '25px',
+        color: '#ffffff',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setName('value')
+
+    container.add([bg, labelText, valueText])
+    return container
+  }
+
+  private drawGameBoard() {
+    const gfx = this.add.graphics()
+    gfx.fillStyle(COLORS.gameContainer, 1)
+    gfx.fillRoundedRect(
+      0,
+      GAME_CONTAINER_Y,
+      FIELD_WIDTH,
+      FIELD_WIDTH,
+      GAME_CONTAINER_BORDER_RADIUS,
+    )
+
+    for (let x = 0; x < GRID_SIZE; x++) {
+      for (let y = 0; y < GRID_SIZE; y++) {
+        const pos = this.tilePosition({ x, y })
+        gfx.fillStyle(COLORS.cell, 1)
+        gfx.fillRoundedRect(
+          pos.x,
+          pos.y,
+          TILE_DISPLAY_SIZE,
+          TILE_DISPLAY_SIZE,
+          TILE_BORDER_RADIUS,
+        )
       }
+    }
+  }
+
+  private createMessageOverlay() {
+    this.messageContainer = this.add.container(0, GAME_CONTAINER_Y)
+    this.messageContainer.setVisible(false)
+
+    const overlay = this.add.graphics()
+    overlay.setName('overlay')
+
+    this.messageText = this.add
+      .text(FIELD_WIDTH / 2, 222, '', {
+        fontFamily: getFontFamily(),
+        fontSize: '60px',
+        color: COLORS.text,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+
+    this.keepPlayingBtn = createButton(
+      this,
+      t('keepGoing'),
+      FIELD_WIDTH / 2 - 70,
+      340,
+      130,
+      40,
+    )
+    this.keepPlayingBtn.setVisible(false)
+    this.keepPlayingBtn.on('pointerup', () =>
+      this.inputManager.emitKeepPlaying(),
+    )
+
+    this.retryBtn = createButton(
+      this,
+      t('tryAgain'),
+      FIELD_WIDTH / 2 + 70,
+      340,
+      110,
+      40,
+    )
+    this.retryBtn.on('pointerup', () => this.inputManager.emitRestart())
+
+    this.messageContainer.add([
+      overlay,
+      this.messageText,
+      this.keepPlayingBtn,
+      this.retryBtn,
+    ])
+    this.messageContainer.setDepth(100)
+  }
+
+  private showMessage(won: boolean) {
+    const overlay = this.messageContainer.getByName(
+      'overlay',
+    ) as Phaser.GameObjects.Graphics
+    overlay.clear()
+    overlay.fillStyle(won ? COLORS.winOverlay : COLORS.gameOverOverlay, 0.5)
+    overlay.fillRect(0, 0, FIELD_WIDTH, FIELD_WIDTH)
+
+    this.messageText.setText(won ? t('youWin') : t('gameOver'))
+    this.messageText.setColor(won ? COLORS.brightText : COLORS.text)
+    this.keepPlayingBtn.setVisible(won)
+
+    if (won) {
+      this.retryBtn.setPosition(FIELD_WIDTH / 2 + 70, 340)
+    } else {
+      this.retryBtn.setPosition(FIELD_WIDTH / 2, 340)
+    }
+
+    this.messageContainer.setVisible(true)
+    this.messageContainer.setAlpha(0)
+    this.tweens.add({
+      targets: this.messageContainer,
+      alpha: 1,
+      duration: 800,
+      delay: TRANSITION_SPEED * 12,
     })
   }
 
-  private buildTraversal(direction: Direction): { r: number; c: number }[] {
-    const cells: { r: number; c: number }[] = []
-    const rows = Array.from({ length: GRID_SIZE }, (_, i) => i)
-    const cols = Array.from({ length: GRID_SIZE }, (_, i) => i)
-
-    if (direction === 'right') cols.reverse()
-    if (direction === 'down') rows.reverse()
-
-    for (const r of rows) {
-      for (const c of cols) {
-        cells.push({ r, c })
-      }
-    }
-    return cells
+  private hideMessage() {
+    this.messageContainer.setVisible(false)
+    this.messageContainer.setAlpha(1)
   }
 
-  private findFarthest(
-    tile: TileData, direction: Direction, merged: Set<string>,
-  ): { row: number; col: number; merged: boolean } {
-    const delta = { left: [0, -1], right: [0, 1], up: [-1, 0], down: [1, 0] }[direction]
-    let r = tile.row
-    let c = tile.col
+  private updateScore(score: number) {
+    const difference = score - this.displayedScore
+    this.displayedScore = score
+    this.scoreText.setText(String(score))
 
-    while (true) {
-      const nr = r + delta[0]
-      const nc = c + delta[1]
-      if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) break
+    if (difference > 0) {
+      const addition = this.add
+        .text(this.scoreBox.x + 20, this.scoreBox.y + 10, `+${difference}`, {
+          fontFamily: getFontFamily(),
+          fontSize: '25px',
+          color: 'rgba(119, 110, 101, 0.9)',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5)
+        .setDepth(200)
 
-      const next = this.grid[nr][nc]
-      if (!next) {
-        r = nr
-        c = nc
-      } else if (next.value === tile.value && !merged.has(`${nr},${nc}`)) {
-        return { row: nr, col: nc, merged: true }
-      } else {
-        break
-      }
-    }
-
-    return { row: r, col: c, merged: false }
-  }
-
-  private updateScore() {
-    this.scoreText.setText(String(this.score))
-    if (this.score > this.bestScore) {
-      this.bestScore = this.score
-      this.bestScoreText.setText(String(this.bestScore))
-      localStorage.setItem('2048-best', String(this.bestScore))
+      this.tweens.add({
+        targets: addition,
+        y: addition.y - 75,
+        alpha: 0,
+        duration: 600,
+        ease: 'Cubic.easeIn',
+        onComplete: () => addition.destroy(),
+      })
     }
   }
 
-  private isGameOver(): boolean {
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        if (!this.grid[r][c]) return false
-        const val = this.grid[r][c]!.value
-        // Check right neighbor
-        if (c < GRID_SIZE - 1 && this.grid[r][c + 1]?.value === val) return false
-        // Check bottom neighbor
-        if (r < GRID_SIZE - 1 && this.grid[r + 1]?.[c]?.value === val) return false
-      }
-    }
-    return true
-  }
-
-  private showGameOver() {
-    const overlay = this.add.rectangle(250, 300, 500, 600, 0xfaf8ef, 0.6)
-    const text = this.add.text(250, 280, 'Game Over!', {
-      fontSize: '50px', color: '#776e65', fontStyle: 'bold',
-    }).setOrigin(0.5)
-
-    const btn = this.add.rectangle(250, 350, 160, 45, 0x8f7a66, 1).setOrigin(0.5).setInteractive()
-    const btnText = this.add.text(250, 350, 'Try Again', {
-      fontSize: '20px', color: '#f9f6f2', fontStyle: 'bold',
-    }).setOrigin(0.5)
-
-    // Fade in
-    for (const obj of [overlay, text, btn, btnText]) {
-      obj.setAlpha(0)
-      this.tweens.add({ targets: obj, alpha: 1, duration: 400 })
-    }
-
-    btn.on('pointerup', () => this.restartGame())
-  }
-
-  private restartGame() {
-    // Destroy all tile containers
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        this.grid[r][c]?.container?.destroy()
-      }
-    }
-    this.score = 0
-    this.scene.restart()
+  private updateBestScore(bestScore: number) {
+    this.bestScoreText.setText(String(bestScore))
   }
 }
