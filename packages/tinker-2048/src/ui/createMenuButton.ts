@@ -11,7 +11,6 @@ export function createMenuButton(
   x: number,
   y: number,
   size = 40,
-  parent?: Phaser.GameObjects.Container,
 ) {
   const scaledSize = s(size)
   const icon = scene.add.graphics()
@@ -31,7 +30,6 @@ export function createMenuButton(
   drawIcon(ICON_NORMAL)
 
   const container = scene.add.container(s(x), s(y), [icon])
-  parent?.add(container)
   container.setInteractive({
     hitArea: new Phaser.Geom.Rectangle(
       -scaledSize / 2,

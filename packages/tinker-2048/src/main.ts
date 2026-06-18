@@ -12,7 +12,7 @@ let resizeTimer: ReturnType<typeof setTimeout> | null = null
 function restartActiveScene(game: Phaser.Game) {
   const activeScenes = game.scene.getScenes(true)
   const active = activeScenes[activeScenes.length - 1]
-  if (!active?.scene.isActive()) return
+  if (!active) return
   active.scene.restart(active.scene.sys.settings.data)
 }
 

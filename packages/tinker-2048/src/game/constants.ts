@@ -3,7 +3,6 @@ export const GRID_SPACING = 15
 export const GRID_SIZE = 4
 export const TILE_SIZE =
   (FIELD_WIDTH - GRID_SPACING * (GRID_SIZE + 1)) / GRID_SIZE
-export const TILE_DISPLAY_SIZE = Math.ceil(TILE_SIZE)
 export const TILE_BORDER_RADIUS = 6
 export const GAME_CONTAINER_BORDER_RADIUS = 12
 export const GAME_CONTAINER_MARGIN_TOP = 20
@@ -49,4 +48,8 @@ export const SUPER_TILE_STYLE: TileStyle = {
   bg: 0x3c3a32,
   text: '#f9f6f2',
   fontSize: 30,
+}
+
+export function getTileStyle(value: number): TileStyle {
+  return TILE_STYLES[value] ?? SUPER_TILE_STYLE
 }

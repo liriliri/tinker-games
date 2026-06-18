@@ -3,14 +3,13 @@ import {
   COLORS,
   GRID_SPACING,
   GRID_SIZE,
-  SUPER_TILE_STYLE,
   TILE_BORDER_RADIUS,
-  TILE_STYLES,
   TRANSITION_SPEED,
   GAME_CONTAINER_BORDER_RADIUS,
+  getTileStyle,
   type TileStyle,
 } from '../game/constants'
-import { GAME_CONTAINER_Y } from '../layout'
+import { GAME_CONTAINER_Y, FIELD_WIDTH } from '../layout'
 import {
   GameManager,
   type Actuator,
@@ -22,7 +21,6 @@ import { LocalStorageManager } from '../game/LocalStorageManager'
 import { SessionManager } from '../game/SessionManager'
 import type { Position, Tile } from '../game/Tile'
 import { t } from '../i18n'
-import { FIELD_WIDTH } from '../layout'
 import { applyResponsiveScale, s } from '../scale'
 import { createButton } from '../ui/createButton'
 import { createMenuButton } from '../ui/createMenuButton'
@@ -51,7 +49,6 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private retryBtn!: Phaser.GameObjects.Container
   private displayedScore = 0
   private gameBounds!: Phaser.Geom.Rectangle
-  private tileDisplaySize = 0
   private tileSize = 0
 
   constructor() {
@@ -70,7 +67,6 @@ export class GameScene extends Phaser.Scene implements Actuator {
   create() {
     applyResponsiveScale(this.game)
 
-    this.tileDisplaySize = this.computeTileDisplaySize()
     this.tileSize = this.computeTileSize()
 
     this.drawHeader()
@@ -124,10 +120,6 @@ export class GameScene extends Phaser.Scene implements Actuator {
     return Math.floor((field - spacing * (GRID_SIZE + 1)) / GRID_SIZE)
   }
 
-  private computeTileDisplaySize() {
-    return this.computeTileSize()
-  }
-
   private clearTiles() {
     this.tileLayer.removeAll(true)
   }
@@ -142,18 +134,13 @@ export class GameScene extends Phaser.Scene implements Actuator {
     }
   }
 
-  private getTileStyle(value: number): TileStyle {
-    if (value > 2048) return SUPER_TILE_STYLE
-    return TILE_STYLES[value] ?? SUPER_TILE_STYLE
-  }
-
   private createTileVisual(
     value: number,
     x: number,
     y: number,
   ): Phaser.GameObjects.Container {
-    const style = this.getTileStyle(value)
-    const half = this.tileDisplaySize / 2
+    const style = getTileStyle(value)
+    const half = this.tileSize / 2
     const container = this.add.container(x + half, y + half)
 
     const bg = this.add.graphics()
@@ -161,8 +148,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
       bg,
       -half,
       -half,
-      this.tileDisplaySize,
-      this.tileDisplaySize,
+      this.tileSize,
+      this.tileSize,
       s(TILE_BORDER_RADIUS),
       style.bg,
     )
@@ -172,8 +159,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
         bg,
         -half,
         -half,
-        this.tileDisplaySize,
-        this.tileDisplaySize,
+        this.tileSize,
+        this.tileSize,
         s(TILE_BORDER_RADIUS),
         0xffffff,
         style.glow / 3,
@@ -199,7 +186,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private addTile(tile: Tile) {
     const position = tile.previousPosition ?? { x: tile.x, y: tile.y }
     const { x, y } = this.tilePosition(position)
-    const half = this.tileDisplaySize / 2
+    const half = this.tileSize / 2
 
     if (tile.mergedFrom) {
       tile.mergedFrom.forEach((merged) => this.addTile(merged))
@@ -325,8 +312,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
           gfx,
           pos.x,
           pos.y,
-          this.tileDisplaySize,
-          this.tileDisplaySize,
+          this.tileSize,
+          this.tileSize,
           s(TILE_BORDER_RADIUS),
           COLORS.cell,
         )

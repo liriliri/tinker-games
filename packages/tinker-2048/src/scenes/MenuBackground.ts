@@ -1,9 +1,7 @@
 import Phaser from 'phaser'
 import {
   TILE_BORDER_RADIUS,
-  TILE_STYLES,
-  SUPER_TILE_STYLE,
-  type TileStyle,
+  getTileStyle,
 } from '../game/constants'
 import { FIELD_WIDTH, GAME_HEIGHT } from '../layout'
 import { s, sf } from '../scale'
@@ -83,10 +81,6 @@ export class MenuBackground {
     return direction
   }
 
-  private getStyle(value: number): TileStyle {
-    return TILE_STYLES[value] ?? SUPER_TILE_STYLE
-  }
-
   private createTileVisual(
     value: number,
     x: number,
@@ -94,7 +88,7 @@ export class MenuBackground {
     size: number,
     alpha: number,
   ) {
-    const style = this.getStyle(value)
+    const style = getTileStyle(value)
     const half = size / 2
     const container = this.scene.add.container(x, y)
     container.setDepth(-10)
@@ -115,9 +109,13 @@ export class MenuBackground {
     const text = this.scene.add
       .text(
         0,
-        0,
+        -1,
         String(value),
-        sharpTextStyle(fontDesign, { color: style.text, fontStyle: 'bold' }),
+        sharpTextStyle(fontDesign, {
+          color: style.text,
+          fontStyle: 'bold',
+          padding: { top: 0, bottom: 0, left: 0, right: 0 },
+        }),
       )
       .setOrigin(0.5)
 

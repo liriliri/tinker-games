@@ -211,7 +211,7 @@ export class GameManager {
 
     while (
       this.grid.withinBounds(current) &&
-      this.grid.cellAvailable(current)
+      !this.grid.cellContent(current)
     ) {
       previous = current
       current = { x: previous.x + vector.x, y: previous.y + vector.y }

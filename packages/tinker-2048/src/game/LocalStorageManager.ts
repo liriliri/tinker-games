@@ -12,9 +12,7 @@ export interface SerializedGameState {
 
 const fakeStorage: Storage = {
   _data: {} as Record<string, string>,
-  get length() {
-    return Object.keys(this._data).length
-  },
+  length: 0,
   key() {
     return null
   },
@@ -75,10 +73,6 @@ export class LocalStorageManager {
 
   clearGameState() {
     this.storage.removeItem(this.gameStateKey)
-  }
-
-  hasSavedGame(): boolean {
-    return this.getGameState() !== null
   }
 
   hasResumableGame(): boolean {

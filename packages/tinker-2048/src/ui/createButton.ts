@@ -22,7 +22,6 @@ export function createButton(
   minWidth: number,
   height: number,
   fontSize = 16,
-  parent?: Phaser.GameObjects.Container,
 ) {
   const text = scene.add
     .text(
@@ -39,7 +38,6 @@ export function createButton(
   drawButtonBg(bg, width, scaledHeight, COLORS.button)
 
   const container = scene.add.container(s(x), s(y), [bg, text])
-  parent?.add(container)
   container.setInteractive({
     hitArea: new Phaser.Geom.Rectangle(
       -width / 2,

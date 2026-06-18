@@ -66,14 +66,6 @@ export class Grid {
     return this.availableCells().length > 0
   }
 
-  cellAvailable(cell: Position): boolean {
-    return !this.cellOccupied(cell)
-  }
-
-  cellOccupied(cell: Position): boolean {
-    return !!this.cellContent(cell)
-  }
-
   cellContent(cell: Position): Tile | null {
     if (this.withinBounds(cell)) {
       return this.cells[cell.x][cell.y]

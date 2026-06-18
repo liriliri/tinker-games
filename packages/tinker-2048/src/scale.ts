@@ -7,7 +7,7 @@ const MAX_SCALE = 3
 let layoutScale = 1
 let gameRef: Phaser.Game | null = null
 
-export function bindGame(game: Phaser.Game) {
+function bindGame(game: Phaser.Game) {
   gameRef = game
 }
 
@@ -15,10 +15,6 @@ export function setLayoutScale(scale: number) {
   if (Number.isFinite(scale) && scale > 0) {
     layoutScale = scale
   }
-}
-
-export function getLayoutScale() {
-  return layoutScale
 }
 
 export function s(value: number) {
