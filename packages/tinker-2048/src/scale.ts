@@ -1,48 +1,18 @@
 import Phaser from 'phaser'
 import { FIELD_WIDTH, GAME_HEIGHT } from './layout'
 
-const MIN_SCALE = 0.5
-const MAX_SCALE = 3
+const MIN_FIT_SCALE = 0.5
+const MAX_FIT_SCALE = 3
+const MAX_RENDER_SCALE = 4
+const RESIZE_DEBOUNCE_MS = 150
+
+export const RELAYOUT_EVENT = 'relayout'
 
 let layoutScale = 1
-let gameRef: Phaser.Game | null = null
+let resizeTimer: ReturnType<typeof setTimeout> | null = null
 
-function bindGame(game: Phaser.Game) {
-  gameRef = game
-}
-
-export function setLayoutScale(scale: number) {
-  if (Number.isFinite(scale) && scale > 0) {
-    layoutScale = scale
-  }
-}
-
-export function s(value: number) {
-  return Math.round(value * layoutScale)
-}
-
-export function sf(value: number) {
-  return value * layoutScale
-}
-
-export function scaledFont(designPx: number) {
-  return `${s(designPx)}px`
-}
-
-export function getTextResolution() {
-  const dpr = window.devicePixelRatio || 1
-  let cssScale = 1
-
-  if (gameRef) {
-    const gameWidth = gameRef.scale.gameSize.width
-    const displayWidth = gameRef.scale.canvasBounds.width
-    if (gameWidth > 0 && displayWidth > 0) {
-      cssScale = displayWidth / gameWidth
-    }
-  }
-
-  const resolution = layoutScale * dpr * cssScale
-  return Math.min(Math.max(resolution, 1), 4)
+export function getLayoutScale() {
+  return layoutScale
 }
 
 export function getFitScale(scale: Phaser.Scale.ScaleManager): number {
@@ -58,27 +28,55 @@ export function getFitScale(scale: Phaser.Scale.ScaleManager): number {
     parentHeight / GAME_HEIGHT,
   )
 
-  return Phaser.Math.Clamp(fitScale, MIN_SCALE, MAX_SCALE)
+  return Phaser.Math.Clamp(fitScale, MIN_FIT_SCALE, MAX_FIT_SCALE)
 }
 
-export function applyResponsiveScale(game: Phaser.Game): number {
-  bindGame(game)
+function computeLayoutScale(fitScale: number) {
+  const dpr = window.devicePixelRatio || 1
+  return Math.min(Math.max(fitScale * dpr, dpr), MAX_RENDER_SCALE)
+}
 
+export function applyRenderScale(game: Phaser.Game): boolean {
   const fitScale = getFitScale(game.scale)
-  if (!Number.isFinite(fitScale) || fitScale <= 0) {
-    return layoutScale
+  const nextScale = computeLayoutScale(fitScale)
+  if (Math.abs(nextScale - layoutScale) <= 0.01) {
+    return false
   }
 
-  layoutScale = fitScale
+  layoutScale = nextScale
   const width = s(FIELD_WIDTH)
   const height = s(GAME_HEIGHT)
   if (width <= 0 || height <= 0) {
-    return layoutScale
+    return false
   }
 
   if (game.scale.width !== width || game.scale.height !== height) {
     game.scale.setGameSize(width, height)
   }
 
-  return fitScale
+  return true
+}
+
+export function bindRenderScale(game: Phaser.Game) {
+  applyRenderScale(game)
+
+  game.scale.on(Phaser.Scale.Events.RESIZE, () => {
+    if (resizeTimer) clearTimeout(resizeTimer)
+    resizeTimer = setTimeout(() => {
+      resizeTimer = null
+      if (!applyRenderScale(game)) return
+
+      for (const scene of game.scene.getScenes(true)) {
+        scene.events.emit(RELAYOUT_EVENT)
+      }
+    }, RESIZE_DEBOUNCE_MS)
+  })
+}
+
+export function s(value: number) {
+  return Math.round(value * layoutScale)
+}
+
+export function sf(value: number) {
+  return value * layoutScale
 }

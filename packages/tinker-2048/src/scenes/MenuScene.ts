@@ -1,28 +1,38 @@
 import Phaser from 'phaser'
-import { COLORS } from '../game/constants'
-import { LocalStorageManager } from '../game/LocalStorageManager'
+import { COLORS, GAME_CONTAINER_MARGIN_BOTTOM } from '../game/constants'
 import { FIELD_WIDTH, GAME_HEIGHT } from '../layout'
-import { GAME_CONTAINER_MARGIN_BOTTOM } from '../game/constants'
 import { t } from '../i18n'
-import { applyResponsiveScale, s } from '../scale'
+import { getSession, getStorage } from '../registry'
+import { applyRenderScale, RELAYOUT_EVENT, s } from '../scale'
 import { createButton } from '../ui/createButton'
 import { addSharpText } from '../ui/sharpText'
 import { MenuBackground } from './MenuBackground'
+import { SCENE_GAME, SCENE_MENU } from './keys'
 
 const MENU_BUTTON_WIDTH = 200
 const MENU_BUTTON_HEIGHT = 48
 const MENU_BUTTON_GAP = 16
 
 export class MenuScene extends Phaser.Scene {
-  private storageManager = new LocalStorageManager()
+  private background?: MenuBackground
 
   constructor() {
-    super('Menu')
+    super(SCENE_MENU)
   }
 
   create() {
-    applyResponsiveScale(this.game)
-    new MenuBackground(this)
+    applyRenderScale(this.game)
+    this.buildView()
+
+    this.events.on(RELAYOUT_EVENT, this.relayout, this)
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown, this)
+  }
+
+  private buildView() {
+    this.background?.destroy()
+    this.children.removeAll(true)
+
+    this.background = new MenuBackground(this)
 
     const titleY = 160
     const subtitleY = 230
@@ -42,19 +52,25 @@ export class MenuScene extends Phaser.Scene {
     prefix.setX(s(FIELD_WIDTH / 2) - (prefix.width + bold.width) / 2)
     bold.setX(prefix.x + prefix.width)
 
+    const storage = getStorage(this)
+    const session = getSession(this)
     const items: { label: string; action: () => void }[] = []
 
-    if (this.storageManager.hasResumableGame()) {
+    if (storage.hasResumableGame(session)) {
       items.push({
         label: t('continue'),
-        action: () => this.scene.start('Game', { fresh: false }),
+        action: () => this.scene.start(SCENE_GAME),
       })
     }
 
     items.push(
       {
         label: t('newGame'),
-        action: () => this.scene.start('Game', { fresh: true }),
+        action: () => {
+          storage.clearGameState()
+          session.bumpGameGeneration()
+          this.scene.start(SCENE_GAME)
+        },
       },
       { label: t('exit'), action: () => this.exit() },
     )
@@ -82,11 +98,17 @@ export class MenuScene extends Phaser.Scene {
     }
   }
 
+  private relayout() {
+    this.buildView()
+  }
+
+  private onShutdown() {
+    this.events.off(RELAYOUT_EVENT, this.relayout, this)
+    this.background?.destroy()
+    this.background = undefined
+  }
+
   private exit() {
-    if (window.history.length > 1) {
-      window.history.back()
-      return
-    }
     window.close()
   }
 }

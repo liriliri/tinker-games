@@ -1,5 +1,5 @@
 import type { SerializedGrid } from './Grid'
-import { SessionManager } from './SessionManager'
+import type { SessionManager } from './SessionManager'
 
 export interface SerializedGameState {
   grid: SerializedGrid
@@ -75,11 +75,10 @@ export class LocalStorageManager {
     this.storage.removeItem(this.gameStateKey)
   }
 
-  hasResumableGame(): boolean {
+  hasResumableGame(session: SessionManager): boolean {
     const state = this.getGameState()
     if (!state) return false
 
-    const session = new SessionManager()
     if (!session.isInSession()) return true
 
     return (state.gameGeneration ?? 0) === session.getGameGeneration()

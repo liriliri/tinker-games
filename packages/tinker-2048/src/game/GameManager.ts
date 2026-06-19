@@ -1,6 +1,5 @@
 import { Grid } from './Grid'
 import { LocalStorageManager } from './LocalStorageManager'
-import { InputManager } from './InputManager'
 import { SessionManager } from './SessionManager'
 import { Tile, type Position } from './Tile'
 import { GRID_SIZE } from './constants'
@@ -29,15 +28,59 @@ export class GameManager {
   private startTiles = 2
 
   constructor(
-    private inputManager: InputManager,
     private storageManager: LocalStorageManager,
     private sessionManager: SessionManager,
     private actuator: Actuator,
   ) {
-    this.inputManager.on('move', (direction) => this.move(direction))
-    this.inputManager.on('restart', () => this.restart())
-    this.inputManager.on('keepPlaying', () => this.keepPlayingHandler())
     this.setup()
+  }
+
+  move(direction: Direction) {
+    if (this.isGameTerminated()) return
+
+    const vector = this.getVector(direction)
+    const traversals = this.buildTraversals(vector)
+    let moved = false
+
+    this.prepareTiles()
+
+    for (const x of traversals.x) {
+      for (const y of traversals.y) {
+        const cell: Position = { x, y }
+        const tile = this.grid.cellContent(cell)
+
+        if (tile) {
+          const positions = this.findFarthestPosition(cell, vector)
+          const next = this.grid.cellContent(positions.next)
+
+          if (next && next.value === tile.value && !next.mergedFrom) {
+            const merged = new Tile(positions.next, tile.value * 2)
+            merged.mergedFrom = [tile, next]
+
+            this.grid.insertTile(merged)
+            this.grid.removeTile(tile)
+            tile.updatePosition(positions.next)
+
+            this.score += merged.value
+            if (merged.value === 2048) this.won = true
+          } else {
+            this.moveTile(tile, positions.farthest)
+          }
+
+          if (!this.positionsEqual(cell, tile)) {
+            moved = true
+          }
+        }
+      }
+    }
+
+    if (moved) {
+      this.addRandomTile()
+      if (!this.movesAvailable()) {
+        this.over = true
+      }
+      this.sync()
+    }
   }
 
   restart() {
@@ -46,9 +89,13 @@ export class GameManager {
     this.setup()
   }
 
-  private keepPlayingHandler() {
+  continuePlaying() {
     this.keepPlaying = true
     this.actuator.continueGame()
+  }
+
+  refresh() {
+    this.sync()
   }
 
   isGameTerminated(): boolean {
@@ -73,7 +120,7 @@ export class GameManager {
       this.addStartTiles()
     }
 
-    this.actuate()
+    this.sync()
   }
 
   private addStartTiles() {
@@ -91,7 +138,7 @@ export class GameManager {
     }
   }
 
-  private actuate() {
+  private sync() {
     if (this.storageManager.getBestScore() < this.score) {
       this.storageManager.setBestScore(this.score)
     }
@@ -137,54 +184,6 @@ export class GameManager {
     tile.updatePosition(cell)
   }
 
-  private move(direction: Direction) {
-    if (this.isGameTerminated()) return
-
-    const vector = this.getVector(direction)
-    const traversals = this.buildTraversals(vector)
-    let moved = false
-
-    this.prepareTiles()
-
-    for (const x of traversals.x) {
-      for (const y of traversals.y) {
-        const cell: Position = { x, y }
-        const tile = this.grid.cellContent(cell)
-
-        if (tile) {
-          const positions = this.findFarthestPosition(cell, vector)
-          const next = this.grid.cellContent(positions.next)
-
-          if (next && next.value === tile.value && !next.mergedFrom) {
-            const merged = new Tile(positions.next, tile.value * 2)
-            merged.mergedFrom = [tile, next]
-
-            this.grid.insertTile(merged)
-            this.grid.removeTile(tile)
-            tile.updatePosition(positions.next)
-
-            this.score += merged.value
-            if (merged.value === 2048) this.won = true
-          } else {
-            this.moveTile(tile, positions.farthest)
-          }
-
-          if (!this.positionsEqual(cell, tile)) {
-            moved = true
-          }
-        }
-      }
-    }
-
-    if (moved) {
-      this.addRandomTile()
-      if (!this.movesAvailable()) {
-        this.over = true
-      }
-      this.actuate()
-    }
-  }
-
   private getVector(direction: Direction): Position {
     const map: Record<Direction, Position> = {
       0: { x: 0, y: -1 },
@@ -209,10 +208,7 @@ export class GameManager {
     let previous = cell
     let current = { x: previous.x + vector.x, y: previous.y + vector.y }
 
-    while (
-      this.grid.withinBounds(current) &&
-      !this.grid.cellContent(current)
-    ) {
+    while (this.grid.withinBounds(current) && !this.grid.cellContent(current)) {
       previous = current
       current = { x: previous.x + vector.x, y: previous.y + vector.y }
     }

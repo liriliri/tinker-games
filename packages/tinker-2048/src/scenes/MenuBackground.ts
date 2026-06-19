@@ -1,8 +1,5 @@
 import Phaser from 'phaser'
-import {
-  TILE_BORDER_RADIUS,
-  getTileStyle,
-} from '../game/constants'
+import { TILE_BORDER_RADIUS, getTileStyle } from '../game/constants'
 import { FIELD_WIDTH, GAME_HEIGHT } from '../layout'
 import { s, sf } from '../scale'
 import { fillSmoothRoundedRect } from '../ui/drawRoundedRect'
@@ -40,7 +37,6 @@ export class MenuBackground {
     }
 
     scene.events.on(Phaser.Scenes.Events.UPDATE, this.update, this)
-    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this)
   }
 
   private randomValue() {
@@ -105,7 +101,10 @@ export class MenuBackground {
       style.bg,
     )
 
-    const fontDesign = Math.max(11, Math.round((style.fontSize * size) / 110))
+    const fontDesign = Math.max(
+      11,
+      Math.round((style.fontSize * TILE_DESIGN_SIZE) / 110),
+    )
     const text = this.scene.add
       .text(
         0,
@@ -355,7 +354,7 @@ export class MenuBackground {
     }
   }
 
-  private destroy() {
+  destroy() {
     this.scene.events.off(Phaser.Scenes.Events.UPDATE, this.update, this)
     for (const tile of this.tiles) {
       tile.container.destroy()

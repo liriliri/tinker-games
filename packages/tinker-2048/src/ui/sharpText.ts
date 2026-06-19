@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import { getFontFamily } from '../i18n'
-import { getTextResolution, scaledFont } from '../scale'
+import { s } from '../scale'
 
 export function sharpTextStyle(
   designPx: number,
@@ -8,8 +8,7 @@ export function sharpTextStyle(
 ): Phaser.Types.GameObjects.Text.TextStyle {
   return {
     fontFamily: getFontFamily(),
-    fontSize: scaledFont(designPx),
-    resolution: getTextResolution(),
+    fontSize: `${s(designPx)}px`,
     ...style,
   }
 }
