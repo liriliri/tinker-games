@@ -13,8 +13,19 @@ const MENU_BUTTON_WIDTH = 200
 const MENU_BUTTON_HEIGHT = 48
 const MENU_BUTTON_GAP = 16
 
+const MENU_TITLE_WIDTH = 300
+const MENU_TITLE_HEIGHT = 76
+
 export class MenuScene extends Phaser.Scene {
   private background?: MenuBackground
+  private buttonItems: {
+    container: Phaser.GameObjects.Container
+    action: () => void
+  }[] = []
+  private selectedIndex = 0
+  private prevUp = false
+  private prevDown = false
+  private prevA = false
 
   constructor() {
     super(SCENE_MENU)
@@ -26,21 +37,23 @@ export class MenuScene extends Phaser.Scene {
 
     this.events.on(RELAYOUT_EVENT, this.relayout, this)
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown, this)
+    this.events.on(Phaser.Scenes.Events.UPDATE, this.pollGamepad, this)
   }
 
   private buildView() {
     this.background?.destroy()
     this.children.removeAll(true)
+    this.buttonItems = []
 
     this.background = new MenuBackground(this)
 
     const titleY = 160
     const subtitleY = 230
 
-    addSharpText(this, s(FIELD_WIDTH / 2), s(titleY), '2048', 80, {
-      color: COLORS.text,
-      fontStyle: 'bold',
-    }).setOrigin(0.5)
+    const title = this.add
+      .image(s(FIELD_WIDTH / 2), s(titleY), 'title')
+      .setOrigin(0.5)
+    title.setDisplaySize(s(MENU_TITLE_WIDTH), s(MENU_TITLE_HEIGHT))
 
     const prefix = addSharpText(this, 0, s(subtitleY), t('introPrefix'), 18, {
       color: COLORS.text,
@@ -94,7 +107,56 @@ export class MenuScene extends Phaser.Scene {
         18,
       )
       btn.on('pointerup', item.action)
+      this.buttonItems.push({ container: btn, action: item.action })
       y += MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP
+    }
+
+    this.selectedIndex = 0
+    this.updateHighlight()
+  }
+
+  private pollGamepad() {
+    const pad = this.input.gamepad?.pad1
+    if (!pad) return
+
+    if (pad.up && !this.prevUp) {
+      this.navigateUp()
+    } else if (pad.down && !this.prevDown) {
+      this.navigateDown()
+    }
+    this.prevUp = pad.up
+    this.prevDown = pad.down
+
+    if (pad.A && !this.prevA) {
+      this.confirmSelected()
+    }
+    this.prevA = pad.A
+  }
+
+  private navigateUp() {
+    this.selectedIndex =
+      (this.selectedIndex - 1 + this.buttonItems.length) %
+      this.buttonItems.length
+    this.updateHighlight()
+  }
+
+  private navigateDown() {
+    this.selectedIndex = (this.selectedIndex + 1) % this.buttonItems.length
+    this.updateHighlight()
+  }
+
+  private confirmSelected() {
+    if (this.buttonItems.length === 0) return
+    this.buttonItems[this.selectedIndex].action()
+  }
+
+  private updateHighlight() {
+    for (let i = 0; i < this.buttonItems.length; i++) {
+      if (i === this.selectedIndex) {
+        this.buttonItems[i].container.emit('pointerover')
+      } else {
+        this.buttonItems[i].container.emit('pointerout')
+      }
     }
   }
 
@@ -104,6 +166,7 @@ export class MenuScene extends Phaser.Scene {
 
   private onShutdown() {
     this.events.off(RELAYOUT_EVENT, this.relayout, this)
+    this.events.off(Phaser.Scenes.Events.UPDATE, this.pollGamepad, this)
     this.background?.destroy()
     this.background = undefined
   }

@@ -1,8 +1,6 @@
 export const FIELD_WIDTH = 500
 export const GRID_SPACING = 15
 export const GRID_SIZE = 4
-export const TILE_SIZE =
-  (FIELD_WIDTH - GRID_SPACING * (GRID_SIZE + 1)) / GRID_SIZE
 export const TILE_BORDER_RADIUS = 6
 export const GAME_CONTAINER_BORDER_RADIUS = 12
 export const GAME_CONTAINER_MARGIN_TOP = 20

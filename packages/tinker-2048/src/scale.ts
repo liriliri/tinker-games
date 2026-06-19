@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import clamp from 'licia/clamp'
 import { FIELD_WIDTH, GAME_HEIGHT } from './layout'
 
 const MIN_FIT_SCALE = 0.5
@@ -11,11 +12,11 @@ export const RELAYOUT_EVENT = 'relayout'
 let layoutScale = 1
 let resizeTimer: ReturnType<typeof setTimeout> | null = null
 
-export function getLayoutScale() {
+function getLayoutScale() {
   return layoutScale
 }
 
-export function getFitScale(scale: Phaser.Scale.ScaleManager): number {
+function getFitScale(scale: Phaser.Scale.ScaleManager): number {
   let parentWidth = scale.parentSize.width
   let parentHeight = scale.parentSize.height
   if (parentWidth === 0 || parentHeight === 0) {
@@ -33,7 +34,7 @@ export function getFitScale(scale: Phaser.Scale.ScaleManager): number {
 
 function computeLayoutScale(fitScale: number) {
   const dpr = window.devicePixelRatio || 1
-  return Math.min(Math.max(fitScale * dpr, dpr), MAX_RENDER_SCALE)
+  return clamp(fitScale * dpr, dpr, MAX_RENDER_SCALE)
 }
 
 export function applyRenderScale(game: Phaser.Game): boolean {

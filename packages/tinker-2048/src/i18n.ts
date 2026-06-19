@@ -43,12 +43,16 @@ const messages: Record<Locale, Messages> = {
   },
 }
 
-function detectLocale(): Locale {
+function detectLocaleFallback(): Locale {
   const lang = navigator.language.toLowerCase()
   return lang === 'zh-cn' || lang.startsWith('zh') ? 'zh-CN' : 'en'
 }
 
-const locale = detectLocale()
+let locale: Locale = detectLocaleFallback()
+
+export function setLocale(loc: string) {
+  locale = loc === 'zh-CN' ? 'zh-CN' : 'en'
+}
 
 export function t(key: keyof Messages): string {
   return messages[locale][key]

@@ -1,3 +1,4 @@
+import range from 'licia/range'
 import { Grid } from './Grid'
 import { LocalStorageManager } from './LocalStorageManager'
 import { SessionManager } from './SessionManager'
@@ -12,6 +13,8 @@ export interface GameMetadata {
   won: boolean
   bestScore: number
   terminated: boolean
+  moved: boolean
+  merged: boolean
 }
 
 export interface Actuator {
@@ -41,6 +44,7 @@ export class GameManager {
     const vector = this.getVector(direction)
     const traversals = this.buildTraversals(vector)
     let moved = false
+    let merged = false
 
     this.prepareTiles()
 
@@ -54,15 +58,16 @@ export class GameManager {
           const next = this.grid.cellContent(positions.next)
 
           if (next && next.value === tile.value && !next.mergedFrom) {
-            const merged = new Tile(positions.next, tile.value * 2)
-            merged.mergedFrom = [tile, next]
+            merged = true
+            const mergedTile = new Tile(positions.next, tile.value * 2)
+            mergedTile.mergedFrom = [tile, next]
 
-            this.grid.insertTile(merged)
+            this.grid.insertTile(mergedTile)
             this.grid.removeTile(tile)
             tile.updatePosition(positions.next)
 
-            this.score += merged.value
-            if (merged.value === 2048) this.won = true
+            this.score += mergedTile.value
+            if (mergedTile.value === 2048) this.won = true
           } else {
             this.moveTile(tile, positions.farthest)
           }
@@ -79,7 +84,7 @@ export class GameManager {
       if (!this.movesAvailable()) {
         this.over = true
       }
-      this.sync()
+      this.sync({ moved: true, merged })
     }
   }
 
@@ -138,7 +143,7 @@ export class GameManager {
     }
   }
 
-  private sync() {
+  private sync(action?: { moved: boolean; merged: boolean }) {
     if (this.storageManager.getBestScore() < this.score) {
       this.storageManager.setBestScore(this.score)
     }
@@ -155,6 +160,8 @@ export class GameManager {
       won: this.won,
       bestScore: this.storageManager.getBestScore(),
       terminated: this.isGameTerminated(),
+      moved: action?.moved ?? false,
+      merged: action?.merged ?? false,
     })
   }
 
@@ -196,8 +203,8 @@ export class GameManager {
 
   private buildTraversals(vector: Position) {
     const traversals = {
-      x: Array.from({ length: GRID_SIZE }, (_, i) => i),
-      y: Array.from({ length: GRID_SIZE }, (_, i) => i),
+      x: range(GRID_SIZE),
+      y: range(GRID_SIZE),
     }
     if (vector.x === 1) traversals.x.reverse()
     if (vector.y === 1) traversals.y.reverse()

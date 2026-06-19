@@ -2,8 +2,10 @@ import Phaser from 'phaser'
 import { COLORS } from '../game/constants'
 import { FIELD_WIDTH } from '../layout'
 import { t } from '../i18n'
+import { getStorage } from '../registry'
 import { s } from '../scale'
 import { createMenuButton } from '../ui/createMenuButton'
+import { createSoundButton } from '../ui/createSoundButton'
 import { addSharpText } from '../ui/sharpText'
 import { fillSmoothRoundedRect } from '../ui/drawRoundedRect'
 import { SCENE_MENU } from '../scenes/keys'
@@ -29,7 +31,7 @@ export class ScorePanel {
     this.root.destroy(true)
   }
 
-  getScoreBoxPosition() {
+  private getScoreBoxPosition() {
     return { x: this.scoreBox.x, y: this.scoreBox.y }
   }
 
@@ -76,6 +78,21 @@ export class ScorePanel {
     const menuBtn = createMenuButton(this.scene, 24, headerCenterY)
     menuBtn.on('pointerup', () => this.scene.scene.start(SCENE_MENU))
     this.root.add(menuBtn)
+
+    const storage = getStorage(this.scene)
+    const soundEnabled = storage.getSoundEnabled()
+    this.scene.sound.mute = !soundEnabled
+    const soundBtn = createSoundButton(
+      this.scene,
+      FIELD_WIDTH - 24,
+      headerCenterY,
+      soundEnabled,
+      (enabled) => {
+        storage.setSoundEnabled(enabled)
+        this.scene.sound.mute = !enabled
+      },
+    )
+    this.root.add(soundBtn)
 
     const scoreBoxWidth = 75
     const scoreBoxGap = 15

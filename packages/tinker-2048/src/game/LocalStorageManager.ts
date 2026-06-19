@@ -35,6 +35,7 @@ const fakeStorage: Storage = {
 export class LocalStorageManager {
   private bestScoreKey = 'bestScore'
   private gameStateKey = 'gameState'
+  private soundEnabledKey = 'soundEnabled'
   private storage: Storage
 
   constructor() {
@@ -73,6 +74,15 @@ export class LocalStorageManager {
 
   clearGameState() {
     this.storage.removeItem(this.gameStateKey)
+  }
+
+  getSoundEnabled(): boolean {
+    const stored = this.storage.getItem(this.soundEnabledKey)
+    return stored === null ? true : stored === 'true'
+  }
+
+  setSoundEnabled(enabled: boolean) {
+    this.storage.setItem(this.soundEnabledKey, String(enabled))
   }
 
   hasResumableGame(session: SessionManager): boolean {

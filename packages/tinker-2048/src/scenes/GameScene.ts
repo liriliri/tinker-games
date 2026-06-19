@@ -5,14 +5,20 @@ import {
   type GameMetadata,
 } from '../game/GameManager'
 import type { Grid } from '../game/Grid'
-import { bindKeyboard, bindSwipe } from '../game/input'
+import {
+  bindGamepad,
+  bindKeyboard,
+  bindSwipe,
+  type GamepadBinding,
+  type SwipeBinding,
+} from '../game/input'
 import { getSession, getStorage } from '../registry'
 import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
 import { Board } from '../gameObjects/Board'
 import { GameOverlay } from '../gameObjects/GameOverlay'
 import { ScorePanel } from '../gameObjects/ScorePanel'
 import { TileLayer } from '../gameObjects/TileLayer'
-import { SCENE_GAME } from './keys'
+import { SCENE_GAME, SCENE_MENU } from './keys'
 
 export class GameScene extends Phaser.Scene implements Actuator {
   private gameManager!: GameManager
@@ -21,7 +27,10 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private scorePanel!: ScorePanel
   private overlay!: GameOverlay
   private swipeBounds = new Phaser.Geom.Rectangle()
+  private swipeBinding?: SwipeBinding
+  private gamepadBinding?: GamepadBinding
   private inputBound = false
+  private gameOverSoundPlayed = false
 
   constructor() {
     super(SCENE_GAME)
@@ -45,9 +54,16 @@ export class GameScene extends Phaser.Scene implements Actuator {
     this.tileLayer.render(grid)
     this.scorePanel.updateScore(metadata.score)
     this.scorePanel.updateBestScore(metadata.bestScore)
+    if (metadata.moved) {
+      this.sound.play(metadata.merged ? 'merge' : 'move')
+    }
     if (metadata.terminated) {
       if (metadata.over) {
         this.overlay.show(false)
+        if (!this.gameOverSoundPlayed) {
+          this.gameOverSoundPlayed = true
+          this.sound.play('gameover')
+        }
       } else if (metadata.won) {
         this.overlay.show(true)
       }
@@ -56,6 +72,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
   continueGame() {
     this.overlay.hide()
+    this.gameOverSoundPlayed = false
   }
 
   private startGame() {
@@ -93,8 +110,16 @@ export class GameScene extends Phaser.Scene implements Actuator {
       (direction) => this.gameManager.move(direction),
       () => this.gameManager.restart(),
     )
-    bindSwipe(this, this.swipeBounds, (direction) =>
+    this.swipeBinding = bindSwipe(this, this.swipeBounds, (direction) =>
       this.gameManager.move(direction),
+    )
+    this.gamepadBinding = bindGamepad(
+      this,
+      (direction) => this.gameManager.move(direction),
+      () => {
+        this.gameManager.refresh()
+        this.scene.start(SCENE_MENU)
+      },
     )
     this.inputBound = true
   }
@@ -106,6 +131,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
       this.board.bounds.width,
       this.board.bounds.height,
     )
+    this.swipeBinding?.updateBounds(this.swipeBounds)
   }
 
   private relayout() {
@@ -116,6 +142,10 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private onShutdown() {
     this.events.off(RELAYOUT_EVENT, this.relayout, this)
     this.gameManager?.refresh()
+    this.swipeBinding?.destroy()
+    this.swipeBinding = undefined
+    this.gamepadBinding?.destroy()
+    this.gamepadBinding = undefined
     this.inputBound = false
     this.destroyView()
     this.tweens.killAll()

@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import randomItem from 'licia/randomItem'
 import { TILE_BORDER_RADIUS, getTileStyle } from '../game/constants'
 import { FIELD_WIDTH, GAME_HEIGHT } from '../layout'
 import { s, sf } from '../scale'
@@ -136,7 +137,7 @@ export class MenuBackground {
     const spawnX = x ?? Phaser.Math.Between(margin, this.width - margin)
     const spawnY = y ?? Phaser.Math.Between(margin, this.height - margin)
     const direction = this.randomDirection()
-    const speed = sf(Phaser.Math.RND.pick(SPEEDS))
+    const speed = sf(randomItem(SPEEDS))
 
     const container = this.createTileVisual(
       value,
@@ -259,7 +260,7 @@ export class MenuBackground {
     const half = size / 2
     const container = this.createTileVisual(mergedValue, x, y, size, alpha)
     const direction = this.randomDirection()
-    const speed = sf(Phaser.Math.RND.pick(SPEEDS))
+    const speed = sf(randomItem(SPEEDS))
 
     container.setScale(0.5)
     this.scene.tweens.add({
@@ -348,7 +349,7 @@ export class MenuBackground {
     if (Math.random() < 0.0008 * delta) {
       const alive = this.aliveTiles()
       if (alive.length > 0) {
-        const tile = Phaser.Math.RND.pick(alive)
+        const tile = randomItem(alive)
         tile.direction = this.randomDirection()
       }
     }

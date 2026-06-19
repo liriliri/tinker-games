@@ -2,8 +2,8 @@ import Phaser from 'phaser'
 import { LocalStorageManager } from './game/LocalStorageManager'
 import { SessionManager } from './game/SessionManager'
 
-export const REGISTRY_STORAGE = 'storage'
-export const REGISTRY_SESSION = 'session'
+const REGISTRY_STORAGE = 'storage'
+const REGISTRY_SESSION = 'session'
 
 export function initRegistry(game: Phaser.Game) {
   if (!game.registry.has(REGISTRY_STORAGE)) {

@@ -1,0 +1,24 @@
+# tinker-2048
+
+Join the numbers and get to the 2048 tile! A minimalist puzzle game for [TINKER](https://github.com/liriliri/tinker).
+
+![Screenshot](https://raw.githubusercontent.com/liriliri/tinker-plugins/master/packages/tinker-2048/screenshot.png)
+
+## Highlights
+
+- **Endlessly replayable** — no two games are the same, every attempt is a fresh challenge
+- **Buttery smooth** — tiles glide and merge with satisfying animations and sound effects
+- **Play your way** — keyboard, touch, or gamepad, whatever feels right
+- **Never lose progress** — the game saves automatically, come back anytime
+- **Bilingual** — fully localized in English and Chinese
+
+## Installation
+
+Download and install TINKER from `https://tinker.liriliri.io/`, then run `npm i -g tinker-2048`.
+
+## How to Play
+
+1. Open the **2048** plugin in TINKER
+2. Slide the tiles in any direction — matching numbers **merge and double**
+3. Aim for the **2048 tile**, then push beyond to beat your high score
+4. Can't move? Game over. Hit **New Game** and try again

@@ -1,10 +1,10 @@
 import Phaser from 'phaser'
-import { COLORS } from '../game/constants'
 import { s } from '../scale'
+import { tweenScale } from './tweenScale'
 
-const ICON_NORMAL = COLORS.text
-const ICON_HOVER = '#5a524c'
-const ICON_ACTIVE = '#9a8a7d'
+const ICON_NORMAL = 0x776e65
+const ICON_HOVER = 0x5a524c
+const ICON_ACTIVE = 0x9a8a7d
 
 export function createMenuButton(
   scene: Phaser.Scene,
@@ -15,7 +15,7 @@ export function createMenuButton(
   const scaledSize = s(size)
   const icon = scene.add.graphics()
 
-  const drawIcon = (color: string) => {
+  const drawIcon = (color: number) => {
     icon.clear()
     icon.fillStyle(color, 1)
     const lineW = scaledSize * 0.55
@@ -43,27 +43,16 @@ export function createMenuButton(
 
   let hovered = false
 
-  const tweenScale = (scale: number) => {
-    scene.tweens.killTweensOf(container)
-    scene.tweens.add({
-      targets: container,
-      scaleX: scale,
-      scaleY: scale,
-      duration: 100,
-      ease: 'Cubic.easeOut',
-    })
-  }
-
   container.on('pointerover', () => {
     hovered = true
     drawIcon(ICON_HOVER)
-    tweenScale(1.1)
+    tweenScale(scene, container, 1.1)
   })
 
   container.on('pointerout', () => {
     hovered = false
     drawIcon(ICON_NORMAL)
-    tweenScale(1)
+    tweenScale(scene, container, 1)
   })
 
   container.on('pointerdown', () => {
@@ -74,7 +63,7 @@ export function createMenuButton(
 
   container.on('pointerup', () => {
     drawIcon(hovered ? ICON_HOVER : ICON_NORMAL)
-    tweenScale(hovered ? 1.1 : 1)
+    tweenScale(scene, container, hovered ? 1.1 : 1)
   })
 
   return container

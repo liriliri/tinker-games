@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "skipLibCheck": true,
     "strict": true,
     "module": "ES2020",
@@ -11,5 +15,12 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "exclude": ["**/references/**", "**/dist/**", "**/node_modules/**"]
+  "include": [
+    "packages/tinker-*/src/**/*.ts",
+    "node_modules/tinker-api-types/tinker.d.ts"
+  ],
+  "exclude": [
+    "**/references/**",
+    "**/dist/**"
+  ]
 }
