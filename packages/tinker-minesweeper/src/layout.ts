@@ -1,0 +1,14 @@
+import {
+  FIELD_WIDTH,
+  GAME_CONTAINER_MARGIN_BOTTOM,
+  GAME_CONTAINER_MARGIN_TOP,
+  STATUS_BAR_HEIGHT,
+  computeGridHeight,
+} from './game/constants'
+
+export const GAME_CONTAINER_Y = STATUS_BAR_HEIGHT + GAME_CONTAINER_MARGIN_TOP
+
+export const GAME_HEIGHT =
+  GAME_CONTAINER_Y + computeGridHeight() + GAME_CONTAINER_MARGIN_BOTTOM
+
+export { FIELD_WIDTH }
