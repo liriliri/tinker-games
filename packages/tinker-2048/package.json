@@ -1,18 +1,20 @@
 {
   "name": "tinker-2048",
   "version": "0.1.0",
-  "description": "2048 puzzle game",
+  "description": "2048 Game Plugin for TINKER",
   "files": [
     "dist/",
     "icon.png"
   ],
   "tinker": {
     "name": "2048",
+    "description": "Join the numbers and get to the 2048 tile!",
     "main": "dist/index.html",
     "icon": "icon.png",
     "locales": {
       "zh-CN": {
-        "name": "2048"
+        "name": "2048",
+        "description": "合并数字，冲向 2048 方块！"
       }
     }
   },
