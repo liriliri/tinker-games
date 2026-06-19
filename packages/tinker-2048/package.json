@@ -6,6 +6,10 @@
     "dist/",
     "icon.png"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
   "tinker": {
     "name": "2048",
     "description": "Join the numbers and get to the 2048 tile!",
