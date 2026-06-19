@@ -5,14 +5,14 @@ import {
   type GameMetadata,
 } from '../game/GameManager'
 import type { MinesweeperBoard } from '../game/MinesweeperBoard'
-import { getStorage } from '../registry'
+import { SCENE_GAME } from '../game/constants'
+import { getStorage, initRegistry } from '../registry'
 import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
 import { BoardFrame } from '../gameObjects/BoardFrame'
 import { CellLayer } from '../gameObjects/CellLayer'
 import { GameOverlay } from '../gameObjects/GameOverlay'
 import { StatusBar } from '../gameObjects/StatusBar'
 import { positionFromPoint } from '../gameObjects/gridLayout'
-import { SCENE_GAME } from './keys'
 
 type PendingAction = 'single' | 'multi' | ''
 
@@ -34,6 +34,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   create() {
+    initRegistry(this.game)
     applyRenderScale(this.game)
     this.gameManager = new GameManager(getStorage(this), this)
     this.buildView()

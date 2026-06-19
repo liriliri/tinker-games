@@ -77,4 +77,3 @@ export function bindRenderScale(game: Phaser.Game) {
 export function s(value: number) {
   return Math.round(value * layoutScale)
 }
-

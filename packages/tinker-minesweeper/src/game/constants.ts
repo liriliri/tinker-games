@@ -2,6 +2,7 @@ export const FIELD_WIDTH = 500
 export const GRID_ROWS = 9
 export const GRID_COLS = 9
 export const MINE_COUNT = 10
+export const SCENE_GAME = 'Game'
 export const GRID_INSET = 4
 export const CELL_COVER_BORDER = 4
 export const CELL_OPEN_BORDER = 2

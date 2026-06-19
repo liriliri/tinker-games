@@ -1,5 +1,4 @@
 import Phaser from 'phaser'
-import { BootScene } from './scenes/BootScene'
 import { GameScene } from './scenes/GameScene'
 import { bindRenderScale } from './scale'
 import { FIELD_WIDTH, GAME_HEIGHT } from './layout'
@@ -39,7 +38,7 @@ async function init() {
         bindRenderScale(game)
       },
     },
-    scene: [BootScene, GameScene],
+    scene: [GameScene],
   })
 }
 
