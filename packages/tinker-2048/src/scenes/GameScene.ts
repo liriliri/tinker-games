@@ -12,7 +12,7 @@ import {
   type GamepadBinding,
   type SwipeBinding,
 } from '../game/input'
-import { getSession, getStorage } from '../registry'
+import { getStore } from '../registry'
 import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
 import { Board } from '../gameObjects/Board'
 import { GameOverlay } from '../gameObjects/GameOverlay'
@@ -37,7 +37,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   init() {
-    getSession(this).markInSession()
+    const store = getStore(this)
+    store.set('inSession', true)
   }
 
   create() {
@@ -80,18 +81,22 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   private startGame() {
-    this.gameManager = new GameManager(getStorage(this), getSession(this), this)
+    this.gameManager = new GameManager(getStore(this), this)
   }
 
   private buildView() {
     this.destroyView()
 
-    const storage = getStorage(this)
+    const store = getStore(this)
     const currentScore = this.gameManager?.score ?? 0
 
     this.board = new Board(this)
     this.tileLayer = new TileLayer(this, this.board.tileSize)
-    this.scorePanel = new ScorePanel(this, storage.getBestScore(), currentScore)
+    this.scorePanel = new ScorePanel(
+      this,
+      store.get('bestScore') ?? 0,
+      currentScore,
+    )
     this.overlay = new GameOverlay(this, {
       onKeepPlaying: () => this.gameManager.continuePlaying(),
       onRestart: () => this.gameManager.restart(),

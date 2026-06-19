@@ -6,7 +6,7 @@ import {
 } from '../game/GameManager'
 import type { MinesweeperBoard } from '../game/MinesweeperBoard'
 import { SCENE_GAME } from '../game/constants'
-import { getStorage, initRegistry } from '../registry'
+import { getStore, initRegistry } from '../registry'
 import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
 import { BoardFrame } from '../gameObjects/BoardFrame'
 import { CellLayer } from '../gameObjects/CellLayer'
@@ -36,7 +36,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   create() {
     initRegistry(this.game)
     applyRenderScale(this.game)
-    this.gameManager = new GameManager(getStorage(this), this)
+    this.gameManager = new GameManager(getStore(this), this)
     this.buildView()
     this.bindInput()
     this.gameManager.bindTimer(this)

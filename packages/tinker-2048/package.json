@@ -1,6 +1,6 @@
 {
   "name": "tinker-2048",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "2048 Game Plugin for TINKER",
   "files": [
     "dist/",

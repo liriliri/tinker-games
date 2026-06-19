@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
+import type LocalStore from 'licia/LocalStore'
 import { GRID_COLS, GRID_ROWS, MINE_COUNT } from './constants'
-import { LocalStorageManager } from './LocalStorageManager'
 import { MinesweeperBoard, type GameResult } from './MinesweeperBoard'
 
 export interface GameMetadata {
@@ -25,7 +25,7 @@ export class GameManager {
   private face: GameMetadata['face'] = 'idle'
 
   constructor(
-    private storage: LocalStorageManager,
+    private store: LocalStore,
     private actuator: Actuator,
   ) {
     this.board = new MinesweeperBoard(GRID_ROWS, GRID_COLS, MINE_COUNT)
@@ -118,6 +118,19 @@ export class GameManager {
     }
   }
 
+  private getBestTime(): number | null {
+    const val = this.store.get('bestTime') as number | null | undefined
+    if (val == null) return null
+    return Number.isFinite(val) ? val : null
+  }
+
+  private setBestTime(seconds: number) {
+    const current = this.getBestTime()
+    if (current === null || seconds < current) {
+      this.store.set('bestTime', seconds)
+    }
+  }
+
   private updateFace(result: GameResult) {
     if (result === 'lose') {
       this.face = 'lose'
@@ -125,7 +138,7 @@ export class GameManager {
     } else if (result === 'win') {
       this.face = 'win'
       this.stopTimer()
-      this.storage.setBestTime(this.elapsedSeconds)
+      this.setBestTime(this.elapsedSeconds)
     } else {
       this.face = 'idle'
     }
@@ -143,7 +156,7 @@ export class GameManager {
     return {
       elapsedSeconds: this.elapsedSeconds,
       minesRemaining: this.board.minesRemaining(),
-      bestTime: this.storage.getBestTime(),
+      bestTime: this.getBestTime(),
       face: this.face,
       terminated: this.board.isTerminated(),
       won: this.board.status === 'won',

@@ -1,23 +1,14 @@
 import Phaser from 'phaser'
-import { LocalStorageManager } from './game/LocalStorageManager'
-import { SessionManager } from './game/SessionManager'
+import LocalStore from 'licia/LocalStore'
 
-const REGISTRY_STORAGE = 'storage'
-const REGISTRY_SESSION = 'session'
+const REGISTRY_STORE = 'store'
 
 export function initRegistry(game: Phaser.Game) {
-  if (!game.registry.has(REGISTRY_STORAGE)) {
-    game.registry.set(REGISTRY_STORAGE, new LocalStorageManager())
-  }
-  if (!game.registry.has(REGISTRY_SESSION)) {
-    game.registry.set(REGISTRY_SESSION, new SessionManager())
+  if (!game.registry.has(REGISTRY_STORE)) {
+    game.registry.set(REGISTRY_STORE, new LocalStore('tinker-2048'))
   }
 }
 
-export function getStorage(scene: Phaser.Scene): LocalStorageManager {
-  return scene.registry.get(REGISTRY_STORAGE)
-}
-
-export function getSession(scene: Phaser.Scene): SessionManager {
-  return scene.registry.get(REGISTRY_SESSION)
+export function getStore(scene: Phaser.Scene): LocalStore {
+  return scene.registry.get(REGISTRY_STORE)
 }

@@ -1,11 +1,19 @@
 import range from 'licia/range'
-import { Grid } from './Grid'
-import { LocalStorageManager } from './LocalStorageManager'
-import { SessionManager } from './SessionManager'
+import type LocalStore from 'licia/LocalStore'
+import { Grid, type SerializedGrid } from './Grid'
 import { Tile, type Position } from './Tile'
 import { GRID_SIZE } from './constants'
 
 export type Direction = 0 | 1 | 2 | 3 // up, right, down, left
+
+export interface SerializedGameState {
+  grid: SerializedGrid
+  score: number
+  over: boolean
+  won: boolean
+  keepPlaying: boolean
+  gameGeneration?: number
+}
 
 export interface GameMetadata {
   score: number
@@ -31,8 +39,7 @@ export class GameManager {
   private startTiles = 2
 
   constructor(
-    private storageManager: LocalStorageManager,
-    private sessionManager: SessionManager,
+    private store: LocalStore,
     private actuator: Actuator,
   ) {
     this.setup()
@@ -89,7 +96,7 @@ export class GameManager {
   }
 
   restart() {
-    this.storageManager.clearGameState()
+    this.store.remove('gameState')
     this.actuator.continueGame()
     this.setup()
   }
@@ -107,8 +114,65 @@ export class GameManager {
     return this.over || (this.won && !this.keepPlaying)
   }
 
+  // Session helpers (persisted in LocalStore)
+
+  markInSession() {
+    this.store.set('inSession', true)
+  }
+
+  isInSession(): boolean {
+    return this.store.get('inSession') === true
+  }
+
+  getGameGeneration(): number {
+    return this.store.get('gameGeneration') ?? 0
+  }
+
+  bumpGameGeneration(): number {
+    const next = this.getGameGeneration() + 1
+    this.store.set('gameGeneration', next)
+    return next
+  }
+
+  hasResumableGame(): boolean {
+    const state = this.getGameState()
+    if (!state) return false
+    if (!this.isInSession()) return true
+    return (state.gameGeneration ?? 0) === this.getGameGeneration()
+  }
+
+  // Storage helpers
+
+  getBestScore(): number {
+    return this.store.get('bestScore') ?? 0
+  }
+
+  setBestScore(score: number) {
+    this.store.set('bestScore', score)
+  }
+
+  getGameState(): SerializedGameState | null {
+    return this.store.get('gameState') ?? null
+  }
+
+  setGameState(state: SerializedGameState) {
+    this.store.set('gameState', state)
+  }
+
+  clearGameState() {
+    this.store.remove('gameState')
+  }
+
+  getSoundEnabled(): boolean {
+    return this.store.get('soundEnabled') ?? true
+  }
+
+  setSoundEnabled(enabled: boolean) {
+    this.store.set('soundEnabled', enabled)
+  }
+
   private setup() {
-    const previousState = this.storageManager.getGameState()
+    const previousState = this.getGameState()
 
     if (previousState) {
       this.grid = new Grid(previousState.grid.size, previousState.grid)
@@ -144,21 +208,21 @@ export class GameManager {
   }
 
   private sync(action?: { moved: boolean; merged: boolean }) {
-    if (this.storageManager.getBestScore() < this.score) {
-      this.storageManager.setBestScore(this.score)
+    if (this.getBestScore() < this.score) {
+      this.setBestScore(this.score)
     }
 
     if (this.over) {
-      this.storageManager.clearGameState()
+      this.clearGameState()
     } else {
-      this.storageManager.setGameState(this.serialize())
+      this.setGameState(this.serialize())
     }
 
     this.actuator.actuate(this.grid, {
       score: this.score,
       over: this.over,
       won: this.won,
-      bestScore: this.storageManager.getBestScore(),
+      bestScore: this.getBestScore(),
       terminated: this.isGameTerminated(),
       moved: action?.moved ?? false,
       merged: action?.merged ?? false,
@@ -172,7 +236,7 @@ export class GameManager {
       over: this.over,
       won: this.won,
       keepPlaying: this.keepPlaying,
-      gameGeneration: this.sessionManager.getGameGeneration(),
+      gameGeneration: this.getGameGeneration(),
     }
   }
 

@@ -2,7 +2,7 @@ import Phaser from 'phaser'
 import { COLORS } from '../game/constants'
 import { FIELD_WIDTH } from '../layout'
 import { t } from '../i18n'
-import { getStorage } from '../registry'
+import { getStore } from '../registry'
 import { s } from '../scale'
 import { createMenuButton } from '../ui/createMenuButton'
 import { createSoundButton } from '../ui/createSoundButton'
@@ -79,8 +79,8 @@ export class ScorePanel {
     menuBtn.on('pointerup', () => this.scene.scene.start(SCENE_MENU))
     this.root.add(menuBtn)
 
-    const storage = getStorage(this.scene)
-    const soundEnabled = storage.getSoundEnabled()
+    const store = getStore(this.scene)
+    const soundEnabled = store.get('soundEnabled') ?? true
     this.scene.sound.mute = !soundEnabled
     const soundBtn = createSoundButton(
       this.scene,
@@ -88,7 +88,7 @@ export class ScorePanel {
       headerCenterY,
       soundEnabled,
       (enabled) => {
-        storage.setSoundEnabled(enabled)
+        store.set('soundEnabled', enabled)
         this.scene.sound.mute = !enabled
       },
     )

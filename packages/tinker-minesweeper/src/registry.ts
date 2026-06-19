@@ -1,14 +1,14 @@
 import Phaser from 'phaser'
-import { LocalStorageManager } from './game/LocalStorageManager'
+import LocalStore from 'licia/LocalStore'
 
-const REGISTRY_STORAGE = 'storage'
+const REGISTRY_STORE = 'store'
 
 export function initRegistry(game: Phaser.Game) {
-  if (!game.registry.has(REGISTRY_STORAGE)) {
-    game.registry.set(REGISTRY_STORAGE, new LocalStorageManager())
+  if (!game.registry.has(REGISTRY_STORE)) {
+    game.registry.set(REGISTRY_STORE, new LocalStore('tinker-minesweeper'))
   }
 }
 
-export function getStorage(scene: Phaser.Scene): LocalStorageManager {
-  return scene.registry.get(REGISTRY_STORAGE)
+export function getStore(scene: Phaser.Scene): LocalStore {
+  return scene.registry.get(REGISTRY_STORE)
 }

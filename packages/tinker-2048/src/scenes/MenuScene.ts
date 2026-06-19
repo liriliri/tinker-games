@@ -1,8 +1,9 @@
 import Phaser from 'phaser'
+import type LocalStore from 'licia/LocalStore'
 import { COLORS, GAME_CONTAINER_MARGIN_BOTTOM } from '../game/constants'
 import { FIELD_WIDTH, GAME_HEIGHT } from '../layout'
 import { t } from '../i18n'
-import { getSession, getStorage } from '../registry'
+import { getStore } from '../registry'
 import { applyRenderScale, RELAYOUT_EVENT, s } from '../scale'
 import { createButton } from '../ui/createButton'
 import { addSharpText } from '../ui/sharpText'
@@ -15,6 +16,17 @@ const MENU_BUTTON_GAP = 16
 
 const MENU_TITLE_WIDTH = 300
 const MENU_TITLE_HEIGHT = 76
+
+function hasResumableGame(store: LocalStore): boolean {
+  const state = store.get('gameState') as
+    | { gameGeneration?: number }
+    | undefined
+  if (!state) return false
+  const inSession = store.get('inSession') === true
+  if (!inSession) return true
+  const gen = store.get('gameGeneration') ?? 0
+  return (state.gameGeneration ?? 0) === gen
+}
 
 export class MenuScene extends Phaser.Scene {
   private background?: MenuBackground
@@ -65,11 +77,10 @@ export class MenuScene extends Phaser.Scene {
     prefix.setX(s(FIELD_WIDTH / 2) - (prefix.width + bold.width) / 2)
     bold.setX(prefix.x + prefix.width)
 
-    const storage = getStorage(this)
-    const session = getSession(this)
+    const store = getStore(this)
     const items: { label: string; action: () => void }[] = []
 
-    if (storage.hasResumableGame(session)) {
+    if (hasResumableGame(store)) {
       items.push({
         label: t('continue'),
         action: () => this.scene.start(SCENE_GAME),
@@ -80,8 +91,8 @@ export class MenuScene extends Phaser.Scene {
       {
         label: t('newGame'),
         action: () => {
-          storage.clearGameState()
-          session.bumpGameGeneration()
+          store.remove('gameState')
+          store.set('gameGeneration', (store.get('gameGeneration') ?? 0) + 1)
           this.scene.start(SCENE_GAME)
         },
       },
