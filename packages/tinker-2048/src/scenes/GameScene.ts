@@ -51,22 +51,26 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   actuate(grid: Grid, metadata: GameMetadata) {
-    this.tileLayer.render(grid)
-    this.scorePanel.updateScore(metadata.score)
-    this.scorePanel.updateBestScore(metadata.bestScore)
-    if (metadata.moved) {
-      this.sound.play(metadata.merged ? 'merge' : 'move')
-    }
-    if (metadata.terminated) {
-      if (metadata.over) {
-        this.overlay.show(false)
-        if (!this.gameOverSoundPlayed) {
-          this.gameOverSoundPlayed = true
-          this.sound.play('gameover')
-        }
-      } else if (metadata.won) {
-        this.overlay.show(true)
+    try {
+      this.tileLayer.render(grid)
+      this.scorePanel.updateScore(metadata.score)
+      this.scorePanel.updateBestScore(metadata.bestScore)
+      if (metadata.moved) {
+        this.sound.play(metadata.merged ? 'merge' : 'move')
       }
+      if (metadata.terminated) {
+        if (metadata.over) {
+          this.overlay.show(false)
+          if (!this.gameOverSoundPlayed) {
+            this.gameOverSoundPlayed = true
+            this.sound.play('gameover')
+          }
+        } else if (metadata.won) {
+          this.overlay.show(true)
+        }
+      }
+    } catch (e) {
+      console.warn('Actuate failed:', e)
     }
   }
 
@@ -141,7 +145,6 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
   private onShutdown() {
     this.events.off(RELAYOUT_EVENT, this.relayout, this)
-    this.gameManager?.refresh()
     this.swipeBinding?.destroy()
     this.swipeBinding = undefined
     this.gamepadBinding?.destroy()
