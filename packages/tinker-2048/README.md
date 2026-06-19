@@ -2,7 +2,7 @@
 
 Join the numbers and get to the 2048 tile! A minimalist puzzle game for [TINKER](https://github.com/liriliri/tinker).
 
-![Screenshot](https://raw.githubusercontent.com/liriliri/tinker-plugins/master/packages/tinker-2048/screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/liriliri/tinker-games/master/packages/tinker-2048/screenshot.png)
 
 ## Highlights
 
