@@ -97,11 +97,6 @@ export class GameManager {
     }
   }
 
-  toggleMarks() {
-    this.board.toggleMarks()
-    this.refresh()
-  }
-
   bindTimer(scene: Phaser.Scene) {
     this.stopTimer()
     this.timerEvent = scene.time.addEvent({

@@ -6,8 +6,7 @@ export const GRID_INSET = 4
 export const CELL_COVER_BORDER = 4
 export const CELL_OPEN_BORDER = 2
 export const FRAME_BEVEL_SIZE = 4
-export const CELL_BORDER_RADIUS = 0
-export const GAME_CONTAINER_BORDER_RADIUS = 8
+
 export const STATUS_BAR_HEIGHT = 48
 export const GAME_CONTAINER_MARGIN_TOP = 8
 export const GAME_CONTAINER_MARGIN_BOTTOM = 24
