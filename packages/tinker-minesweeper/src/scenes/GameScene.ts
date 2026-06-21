@@ -100,9 +100,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
       },
       this.gameManager.getLevelId(),
     )
-    this.overlay = new GameOverlay(this, {
-      onRestart: () => this.gameManager.restart(),
-    })
+    this.overlay = new GameOverlay(this)
 
     this.inputZone = this.add
       .zone(

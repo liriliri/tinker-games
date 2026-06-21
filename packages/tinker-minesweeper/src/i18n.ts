@@ -3,7 +3,6 @@ import startWith from 'licia/startWith'
 export type Locale = 'en' | 'zh-CN'
 
 export interface Messages {
-  tryAgain: string
   youWin: string
   gameOver: string
   selectLevel: string
@@ -14,7 +13,6 @@ export interface Messages {
 
 const messages: Record<Locale, Messages> = {
   en: {
-    tryAgain: 'Try again',
     youWin: 'You win!',
     gameOver: 'Game over!',
     selectLevel: 'Select Level',
@@ -23,7 +21,6 @@ const messages: Record<Locale, Messages> = {
     level_expert: 'Expert',
   },
   'zh-CN': {
-    tryAgain: '再试一次',
     youWin: '你赢了！',
     gameOver: '游戏结束！',
     selectLevel: '选择难度',

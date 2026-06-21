@@ -1,26 +1,16 @@
 import Phaser from 'phaser'
-import { COLORS, TRANSITION_SPEED, computeGridHeight } from '../game/constants'
-import { FIELD_WIDTH, GAME_CONTAINER_Y } from '../layout'
+import { COLORS, TRANSITION_SPEED } from '../game/constants'
 import { t } from '../i18n'
 import { s } from '../scale'
-import { createButton } from '../ui/createButton'
 import { addSharpText } from '../ui/sharpText'
 import { boardBounds, computeCellSize } from './gridLayout'
-
-export interface GameOverlayCallbacks {
-  onRestart: () => void
-}
 
 export class GameOverlay {
   private container: Phaser.GameObjects.Container
   private overlay: Phaser.GameObjects.Graphics
   private messageText: Phaser.GameObjects.Text
-  private retryBtn: Phaser.GameObjects.Container
 
-  constructor(
-    private scene: Phaser.Scene,
-    private callbacks: GameOverlayCallbacks,
-  ) {
+  constructor(private scene: Phaser.Scene) {
     const cellSize = computeCellSize()
     const bounds = boardBounds(cellSize)
 
@@ -42,17 +32,7 @@ export class GameOverlay {
       },
     ).setOrigin(0.5)
 
-    this.retryBtn = createButton(
-      scene,
-      t('tryAgain'),
-      FIELD_WIDTH / 2,
-      GAME_CONTAINER_Y + computeGridHeight() / 2 + 40,
-      120,
-      40,
-    )
-    this.retryBtn.on('pointerup', () => this.callbacks.onRestart())
-
-    this.container.add([this.overlay, this.messageText, this.retryBtn])
+    this.container.add([this.overlay, this.messageText])
   }
 
   destroy() {
