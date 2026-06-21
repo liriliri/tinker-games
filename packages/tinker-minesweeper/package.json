@@ -1,6 +1,6 @@
 {
   "name": "tinker-minesweeper",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Minesweeper Game Plugin for TINKER",
   "files": [
     "dist/",

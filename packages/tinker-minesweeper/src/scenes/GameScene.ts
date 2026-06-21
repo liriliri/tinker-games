@@ -8,7 +8,7 @@ import type { MinesweeperBoard } from '../game/MinesweeperBoard'
 import { SCENE_GAME } from '../game/constants'
 import type { LevelId } from '../game/levels'
 import { getStore, initRegistry } from '../registry'
-import { applyRenderScale, RELAYOUT_EVENT, suppressRelayout } from '../scale'
+import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
 import { BoardFrame } from '../gameObjects/BoardFrame'
 import { CellLayer } from '../gameObjects/CellLayer'
 import { GameOverlay } from '../gameObjects/GameOverlay'
@@ -246,7 +246,6 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
     if (!this.gameManager.setLevel(levelId)) return
 
-    suppressRelayout()
     applyRenderScale(this.game)
     this.relayout()
   }

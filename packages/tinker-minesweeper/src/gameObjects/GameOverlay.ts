@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { COLORS, TRANSITION_SPEED } from '../game/constants'
+import { COLORS, TRANSITION_SPEED, computeGridHeight } from '../game/constants'
 import { FIELD_WIDTH, GAME_CONTAINER_Y } from '../layout'
 import { t } from '../i18n'
 import { s } from '../scale'
@@ -46,7 +46,7 @@ export class GameOverlay {
       scene,
       t('tryAgain'),
       FIELD_WIDTH / 2,
-      GAME_CONTAINER_Y + bounds.height / 2 + s(40),
+      GAME_CONTAINER_Y + computeGridHeight() / 2 + 40,
       120,
       40,
     )
