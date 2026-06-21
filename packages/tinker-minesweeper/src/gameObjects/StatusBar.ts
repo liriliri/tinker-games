@@ -205,7 +205,12 @@ export class StatusBar {
 
   private updateLevelButton(levelId: LevelId) {
     this.levelText.setText(t(`level_${levelId}`))
-    this.drawBevelTextButton(this.levelBg, this.levelRect, false, this.levelText)
+    this.drawBevelTextButton(
+      this.levelBg,
+      this.levelRect,
+      false,
+      this.levelText,
+    )
   }
 
   private updateSoundButton() {

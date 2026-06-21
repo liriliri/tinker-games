@@ -85,9 +85,7 @@ const LIT_SEGMENTS: Record<string, readonly boolean[]> = {
   ...Object.fromEntries(
     Array.from({ length: 10 }, (_, digit) => [
       String(digit),
-      SEGMENT_ORDER.map(
-        (key) => SEGMENT_ON_BY_DIGIT[key][digit] === 1,
-      ),
+      SEGMENT_ORDER.map((key) => SEGMENT_ON_BY_DIGIT[key][digit] === 1),
     ]),
   ),
   '-': [false, true, false, false, false, false, false],

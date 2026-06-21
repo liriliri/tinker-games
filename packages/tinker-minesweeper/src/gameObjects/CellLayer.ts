@@ -1,10 +1,7 @@
 import Phaser from 'phaser'
 import contain from 'licia/contain'
 import range from 'licia/range'
-import {
-  COLORS,
-  getNumberColor,
-} from '../game/constants'
+import { COLORS, getNumberColor } from '../game/constants'
 import {
   scaledCellCoverBorder,
   scaledCellFontSize,
@@ -12,7 +9,11 @@ import {
   scaledLabelOffsetY,
 } from '../game/cellMetrics'
 import { getCurrentLevel } from '../game/levels'
-import type { Cell, CellState, MinesweeperBoard } from '../game/MinesweeperBoard'
+import type {
+  Cell,
+  CellState,
+  MinesweeperBoard,
+} from '../game/MinesweeperBoard'
 import { s } from '../scale'
 import { drawCoverCell, drawOpenCell } from '../ui/drawCell'
 import { addSharpText, sharpTextStyle } from '../ui/sharpText'
@@ -50,7 +51,7 @@ export class CellLayer {
     this.coverBorder = scaledCellCoverBorder(cellSize)
     this.openBorder = scaledCellOpenBorder(cellSize)
     this.fontSize = scaledCellFontSize()
-    this.iconScale = Math.min(0.82, Math.max(0.62, cellSize / s(54) * 0.82))
+    this.iconScale = Math.min(0.82, Math.max(0.62, (cellSize / s(54)) * 0.82))
     this.iconOffsetY = -s(1)
     this.labelOffsetY = scaledLabelOffsetY(cellSize)
 
@@ -100,14 +101,9 @@ export class CellLayer {
     const labelY = pos.y + this.cellSize / 2 + this.labelOffsetY
     const iconY = pos.y + this.cellSize / 2 + this.iconOffsetY
 
-    const label = addSharpText(
-      this.scene,
-      centerX,
-      labelY,
-      '',
-      this.fontSize,
-      { fontStyle: 'bold' },
-    )
+    const label = addSharpText(this.scene, centerX, labelY, '', this.fontSize, {
+      fontStyle: 'bold',
+    })
       .setOrigin(0.5, 0.5)
       .setVisible(false)
 
@@ -140,7 +136,10 @@ export class CellLayer {
     visual.label.setVisible(false)
     visual.flag.setVisible(false)
     visual.mine.setVisible(false)
-    visual.label.setPosition(visual.flag.x, visual.flag.y + this.labelOffsetY - this.iconOffsetY)
+    visual.label.setPosition(
+      visual.flag.x,
+      visual.flag.y + this.labelOffsetY - this.iconOffsetY,
+    )
 
     if (isRevealed(cell)) {
       this.drawOpenBg(visual.bg, size, row, col, board)

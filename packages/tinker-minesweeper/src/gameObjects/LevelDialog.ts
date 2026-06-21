@@ -111,7 +111,13 @@ export class LevelDialog {
       size: s(CLOSE_SIZE),
     }
     const closeBg = this.scene.add.graphics()
-    this.drawRaisedButton(closeBg, closeRect.x, closeRect.y, closeRect.size, closeRect.size)
+    this.drawRaisedButton(
+      closeBg,
+      closeRect.x,
+      closeRect.y,
+      closeRect.size,
+      closeRect.size,
+    )
 
     const closeCenterX = closeRect.x + closeRect.size / 2
     const closeCenterY = closeRect.y + closeRect.size / 2 - s(2)
@@ -134,14 +140,32 @@ export class LevelDialog {
       )
       .setInteractive({ useHandCursor: true })
     closeHit.on('pointerdown', () => {
-      this.drawPressedButton(closeBg, closeRect.x, closeRect.y, closeRect.size, closeRect.size)
+      this.drawPressedButton(
+        closeBg,
+        closeRect.x,
+        closeRect.y,
+        closeRect.size,
+        closeRect.size,
+      )
     })
     closeHit.on('pointerup', () => {
-      this.drawRaisedButton(closeBg, closeRect.x, closeRect.y, closeRect.size, closeRect.size)
+      this.drawRaisedButton(
+        closeBg,
+        closeRect.x,
+        closeRect.y,
+        closeRect.size,
+        closeRect.size,
+      )
       this.hide()
     })
     closeHit.on('pointerout', () => {
-      this.drawRaisedButton(closeBg, closeRect.x, closeRect.y, closeRect.size, closeRect.size)
+      this.drawRaisedButton(
+        closeBg,
+        closeRect.x,
+        closeRect.y,
+        closeRect.size,
+        closeRect.size,
+      )
     })
 
     const title = addSharpText(

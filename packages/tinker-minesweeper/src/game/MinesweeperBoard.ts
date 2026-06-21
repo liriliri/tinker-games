@@ -4,7 +4,6 @@ import flatten from 'licia/flatten'
 import map from 'licia/map'
 import range from 'licia/range'
 import shuffle from 'licia/shuffle'
-
 export type GameStatus = 'new' | 'started' | 'died' | 'won'
 
 export type CellState =
@@ -209,10 +208,10 @@ export class MinesweeperBoard {
       ({ row, col }) => row !== excludeRow || col !== excludeCol,
     )
 
-    shuffle(positions)
+    const shuffled = shuffle(positions)
 
     for (let i = 0; i < this.mineCount; i++) {
-      const { row, col } = positions[i]
+      const { row, col } = shuffled[i]
       this.cells[row][col].minesAround = -10
       for (const pos of this.neighbors(row, col)) {
         const neighbor = this.cells[pos.row][pos.col]
@@ -224,7 +223,9 @@ export class MinesweeperBoard {
   }
 
   private autoCeils(row: number, col: number): Position[] {
-    const walked = map(range(this.rows), () => map(range(this.cols), () => false))
+    const walked = map(range(this.rows), () =>
+      map(range(this.cols), () => false),
+    )
 
     return this.walkCeils(row, col, walked)
   }
