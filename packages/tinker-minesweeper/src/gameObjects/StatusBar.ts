@@ -4,23 +4,31 @@ import type { GameMetadata } from '../game/GameManager'
 import { FIELD_WIDTH } from '../layout'
 import { s } from '../scale'
 import { drawRaisedRect, drawSunkenRect } from '../ui/drawRoundedRect'
-import { addSharpText } from '../ui/sharpText'
+import { SevenSegmentDisplay } from '../ui/sevenSegmentDisplay'
 
 const BEVEL = FRAME_BEVEL_SIZE
 const FACE_SIZE = 36
+const FACE_ICON_SCALE = 0.78
 const COUNTER_WIDTH = 54
 const COUNTER_HEIGHT = 30
-const COUNTER_FONT_SIZE = 15
 const COUNTER_FACE_GAP = 10
 const BAR_CENTER_Y = STATUS_BAR_HEIGHT / 2
-const COUNTER_COLOR = '#ff0000'
 const COUNTER_BG = 0x000000
+const COUNTER_INSET = 4
+
+const FACE_TEXTURES = {
+  idle: 'faceidle',
+  ohh: 'faceohh',
+  win: 'facewin',
+  lose: 'facelose',
+} as const
 
 export class StatusBar {
   private container: Phaser.GameObjects.Container
-  private minesText: Phaser.GameObjects.Text
-  private timerText: Phaser.GameObjects.Text
+  private minesDisplay: SevenSegmentDisplay
+  private timerDisplay: SevenSegmentDisplay
   private faceBg: Phaser.GameObjects.Graphics
+  private faceIcon: Phaser.GameObjects.Image
   private onReset: () => void
 
   private readonly faceRect = {
@@ -48,33 +56,28 @@ export class StatusBar {
     barBg.fillStyle(COLORS.statusBar, 1)
     barBg.fillRect(0, 0, s(FIELD_WIDTH), s(STATUS_BAR_HEIGHT))
 
-    this.minesText = addSharpText(
+    this.minesDisplay = new SevenSegmentDisplay(
       scene,
-      s(this.minesCounter.x + COUNTER_WIDTH / 2),
-      s(BAR_CENTER_Y),
-      '0010',
-      COUNTER_FONT_SIZE,
-      {
-        color: COUNTER_COLOR,
-        fontStyle: 'bold',
-        fontFamily: '"Lucida Console", "Courier New", monospace',
-      },
-    ).setOrigin(0.5)
+      s(this.minesCounter.x),
+      s(this.minesCounter.y),
+      s(COUNTER_WIDTH),
+      s(COUNTER_HEIGHT),
+      { padding: s(COUNTER_INSET) },
+    )
+    this.minesDisplay.setText('0010')
 
-    this.timerText = addSharpText(
+    this.timerDisplay = new SevenSegmentDisplay(
       scene,
-      s(this.timerCounter.x + COUNTER_WIDTH / 2),
-      s(BAR_CENTER_Y),
-      '0000',
-      COUNTER_FONT_SIZE,
-      {
-        color: COUNTER_COLOR,
-        fontStyle: 'bold',
-        fontFamily: '"Lucida Console", "Courier New", monospace',
-      },
-    ).setOrigin(0.5)
+      s(this.timerCounter.x),
+      s(this.timerCounter.y),
+      s(COUNTER_WIDTH),
+      s(COUNTER_HEIGHT),
+      { padding: s(COUNTER_INSET) },
+    )
+    this.timerDisplay.setText('0000')
 
     this.faceBg = scene.add.graphics()
+    this.faceIcon = scene.add.image(0, 0, FACE_TEXTURES.idle)
 
     const faceHit = this.scene.add
       .zone(s(FIELD_WIDTH / 2), s(BAR_CENTER_Y), s(FACE_SIZE), s(FACE_SIZE))
@@ -95,9 +98,10 @@ export class StatusBar {
       barBg,
       minesCounterBg,
       timerCounterBg,
-      this.minesText,
-      this.timerText,
+      this.minesDisplay.display,
+      this.timerDisplay.display,
       this.faceBg,
+      this.faceIcon,
       faceHit,
     ])
   }
@@ -107,8 +111,10 @@ export class StatusBar {
   }
 
   update(metadata: GameMetadata) {
-    this.minesText.setText(this.formatCounter(metadata.minesRemaining))
-    this.timerText.setText(this.pad(Math.min(9999, metadata.elapsedSeconds), 4))
+    this.minesDisplay.setText(this.formatCounter(metadata.minesRemaining))
+    this.timerDisplay.setText(
+      this.pad(Math.min(9999, metadata.elapsedSeconds), 4),
+    )
     this.updateFace(metadata.face)
   }
 
@@ -157,105 +163,11 @@ export class StatusBar {
       )
     }
 
-    this.drawFaceIcon(this.faceBg, cx, cy, size, face)
-  }
-
-  private drawFaceIcon(
-    gfx: Phaser.GameObjects.Graphics,
-    cx: number,
-    cy: number,
-    faceSize: number,
-    face: GameMetadata['face'],
-  ) {
-    const bevel = s(BEVEL)
-    const inner = faceSize - bevel * 2
-    const radius = inner * 0.36
-    const eyeOffsetX = radius * 0.4
-    const eyeY = cy - radius * 0.16
-    const eyeRadius = Math.max(1, inner * 0.05)
-
-    gfx.lineStyle(Math.max(1, inner * 0.04), 0x000000, 1)
-    gfx.fillStyle(0xffff00, 1)
-    gfx.fillCircle(cx, cy, radius)
-    gfx.strokeCircle(cx, cy, radius)
-
-    if (face === 'lose') {
-      const mark = eyeRadius * 1.6
-      gfx.lineStyle(Math.max(1.2, inner * 0.05), 0x000000, 1)
-      gfx.lineBetween(
-        cx - eyeOffsetX - mark,
-        eyeY - mark,
-        cx - eyeOffsetX + mark,
-        eyeY + mark,
-      )
-      gfx.lineBetween(
-        cx - eyeOffsetX - mark,
-        eyeY + mark,
-        cx - eyeOffsetX + mark,
-        eyeY - mark,
-      )
-      gfx.lineBetween(
-        cx + eyeOffsetX - mark,
-        eyeY - mark,
-        cx + eyeOffsetX + mark,
-        eyeY + mark,
-      )
-      gfx.lineBetween(
-        cx + eyeOffsetX - mark,
-        eyeY + mark,
-        cx + eyeOffsetX + mark,
-        eyeY - mark,
-      )
-
-      const mouthY = cy + radius * 0.38
-      gfx.lineStyle(Math.max(1.2, inner * 0.05), 0x000000, 1)
-      gfx.beginPath()
-      gfx.arc(cx, mouthY, radius * 0.34, 0.15, Math.PI - 0.15, true)
-      gfx.strokePath()
-      return
-    }
-
-    if (face === 'win') {
-      const glassW = eyeRadius * 4.8
-      const glassH = eyeRadius * 2.4
-      gfx.fillStyle(0x000000, 1)
-      gfx.fillRect(
-        cx - eyeOffsetX - glassW / 2,
-        eyeY - glassH / 2,
-        glassW,
-        glassH,
-      )
-      gfx.fillRect(
-        cx + eyeOffsetX - glassW / 2,
-        eyeY - glassH / 2,
-        glassW,
-        glassH,
-      )
-      gfx.fillRect(cx - glassW / 2, eyeY - eyeRadius * 0.5, glassW, eyeRadius)
-
-      const mouthY = cy + radius * 0.26
-      gfx.lineStyle(Math.max(1.2, inner * 0.05), 0x000000, 1)
-      gfx.beginPath()
-      gfx.arc(cx, mouthY, radius * 0.34, 0.2, Math.PI - 0.2, false)
-      gfx.strokePath()
-      return
-    }
-
-    gfx.fillStyle(0x000000, 1)
-    gfx.fillCircle(cx - eyeOffsetX, eyeY, eyeRadius)
-    gfx.fillCircle(cx + eyeOffsetX, eyeY, eyeRadius)
-
-    if (face === 'ohh') {
-      gfx.lineStyle(Math.max(1, inner * 0.04), 0x000000, 1)
-      gfx.strokeCircle(cx, cy + radius * 0.34, radius * 0.15)
-      return
-    }
-
-    const mouthY = cy + radius * 0.24
-    gfx.lineStyle(Math.max(1.2, inner * 0.05), 0x000000, 1)
-    gfx.beginPath()
-    gfx.arc(cx, mouthY, radius * 0.34, 0.2, Math.PI - 0.2, false)
-    gfx.strokePath()
+    const inner = size - s(BEVEL) * 2
+    const iconSize = inner * FACE_ICON_SCALE
+    this.faceIcon.setTexture(FACE_TEXTURES[face])
+    this.faceIcon.setPosition(cx, cy)
+    this.faceIcon.setDisplaySize(iconSize, iconSize)
   }
 
   private createCounterBg(x: number, y: number) {

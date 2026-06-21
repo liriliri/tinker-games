@@ -50,7 +50,7 @@ export function getNumberColor(value: number): string {
 
 export function computeCellSize() {
   const inner = FIELD_WIDTH - GRID_INSET * 2
-  return Math.floor(inner / GRID_COLS)
+  return inner / GRID_COLS
 }
 
 export function computeGridHeight() {

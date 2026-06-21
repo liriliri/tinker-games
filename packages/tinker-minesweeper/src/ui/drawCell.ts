@@ -105,15 +105,21 @@ export function drawOpenCell(
   fillColor: number,
   darkColor: number,
   border: number,
+  edges: { top?: boolean; left?: boolean } = {},
 ) {
   const b = Math.max(1, Math.round(border))
+  const half = b / 2
 
   gfx.fillStyle(fillColor, 1)
   gfx.fillRect(x, y, size, size)
 
   gfx.fillStyle(darkColor, 1)
-  gfx.fillRect(x, y, size, b)
-  gfx.fillRect(x, y, b, size)
+  if (edges.top) {
+    gfx.fillRect(x, y - half, size, b)
+  }
+  if (edges.left) {
+    gfx.fillRect(x - half, y, b, size)
+  }
 }
 
 export function drawPressedCell(

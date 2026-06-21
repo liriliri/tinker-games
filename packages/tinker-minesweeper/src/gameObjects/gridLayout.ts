@@ -11,7 +11,7 @@ import { s } from '../scale'
 
 export function computeCellSize() {
   const inner = s(FIELD_WIDTH - GRID_INSET * 2)
-  return Math.floor(inner / GRID_COLS)
+  return inner / GRID_COLS
 }
 
 export function gridOrigin(cellSize: number) {

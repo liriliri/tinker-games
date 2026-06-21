@@ -9,15 +9,15 @@ import {
 } from '../game/constants'
 import type { Cell, MinesweeperBoard } from '../game/MinesweeperBoard'
 import { s } from '../scale'
-import { drawCoverCell, drawOpenCell, drawPressedCell } from '../ui/drawCell'
+import { drawCoverCell, drawOpenCell } from '../ui/drawCell'
 import { addSharpText, sharpTextStyle } from '../ui/sharpText'
 import { cellPosition } from './gridLayout'
 
 interface CellVisual {
   bg: Phaser.GameObjects.Graphics
   label: Phaser.GameObjects.Text
-  flag: Phaser.GameObjects.Text
-  mine: Phaser.GameObjects.Text
+  flag: Phaser.GameObjects.Image
+  mine: Phaser.GameObjects.Image
 }
 
 export class CellLayer {
@@ -51,7 +51,13 @@ export class CellLayer {
   render(board: MinesweeperBoard) {
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
-        this.renderCell(board.getCell(row, col), this.cells[row][col])
+        this.renderCell(
+          board.getCell(row, col),
+          this.cells[row][col],
+          row,
+          col,
+          board,
+        )
       }
     }
   }
@@ -72,30 +78,38 @@ export class CellLayer {
       .setOrigin(0.5)
       .setVisible(false)
 
-    const flag = addSharpText(
-      this.scene,
-      pos.x + this.cellSize / 2,
-      pos.y + this.cellSize / 2 - s(1),
-      '🚩',
-      16,
-    )
+    const flagSize = Math.round(this.cellSize * 0.82)
+    const flag = this.scene.add
+      .image(
+        pos.x + this.cellSize / 2,
+        pos.y + this.cellSize / 2 - s(1),
+        'flag',
+      )
+      .setDisplaySize(flagSize, flagSize)
       .setOrigin(0.5)
       .setVisible(false)
 
-    const mine = addSharpText(
-      this.scene,
-      pos.x + this.cellSize / 2,
-      pos.y + this.cellSize / 2 - s(1),
-      '💣',
-      16,
-    )
+    const mineSize = Math.round(this.cellSize * 0.82)
+    const mine = this.scene.add
+      .image(
+        pos.x + this.cellSize / 2,
+        pos.y + this.cellSize / 2 - s(1),
+        'mine',
+      )
+      .setDisplaySize(mineSize, mineSize)
       .setOrigin(0.5)
       .setVisible(false)
 
     return { bg, label, flag, mine }
   }
 
-  private renderCell(cell: Cell, visual: CellVisual) {
+  private renderCell(
+    cell: Cell,
+    visual: CellVisual,
+    row: number,
+    col: number,
+    board: MinesweeperBoard,
+  ) {
     const size = this.cellSize
 
     visual.bg.clear()
@@ -103,25 +117,15 @@ export class CellLayer {
     visual.flag.setVisible(false)
     visual.mine.setVisible(false)
 
-    const pressed = cell.opening && ['cover', 'unknown'].includes(cell.state)
+    const previewOpen =
+      cell.opening && ['cover', 'unknown'].includes(cell.state)
     const useOpenBg =
-      pressed || !['cover', 'flag', 'unknown'].includes(cell.state)
+      previewOpen || !['cover', 'flag', 'unknown'].includes(cell.state)
 
-    if (pressed) {
-      this.drawPressedBg(visual.bg, size)
-    } else if (useOpenBg) {
-      this.drawOpenBg(visual.bg, size, cell.state === 'die')
+    if (useOpenBg) {
+      this.drawOpenBg(visual.bg, size, row, col, board)
     } else {
       this.drawCoverBg(visual.bg, size)
-    }
-
-    if (pressed) {
-      if (cell.state === 'unknown') {
-        visual.label.setText('?')
-        visual.label.setStyle(sharpTextStyle(14, { color: COLORS.text }))
-        visual.label.setVisible(true)
-      }
-      return
     }
 
     switch (cell.state) {
@@ -148,7 +152,11 @@ export class CellLayer {
         }
         break
       case 'mine':
+        visual.mine.setTexture('mine')
+        visual.mine.setVisible(true)
+        break
       case 'die':
+        visual.mine.setTexture('explode')
         visual.mine.setVisible(true)
         break
       case 'misflagged':
@@ -174,31 +182,32 @@ export class CellLayer {
     )
   }
 
-  private drawPressedBg(gfx: Phaser.GameObjects.Graphics, size: number) {
-    drawPressedCell(
-      gfx,
-      0,
-      0,
-      size,
-      COLORS.hiddenCell,
-      COLORS.borderDark,
-      s(CELL_OPEN_BORDER),
-    )
-  }
-
   private drawOpenBg(
     gfx: Phaser.GameObjects.Graphics,
     size: number,
-    exploded = false,
+    row: number,
+    col: number,
+    board: MinesweeperBoard,
   ) {
     drawOpenCell(
       gfx,
       0,
       0,
       size,
-      exploded ? 0xef5350 : COLORS.revealedCell,
+      COLORS.revealedCell,
       COLORS.borderDark,
       s(CELL_OPEN_BORDER),
+      {
+        top: row > 0 && this.isRevealed(board.getCell(row - 1, col)),
+        left: col > 0 && this.isRevealed(board.getCell(row, col - 1)),
+      },
     )
+  }
+
+  private isRevealed(cell: Cell) {
+    if (cell.opening && ['cover', 'unknown'].includes(cell.state)) {
+      return true
+    }
+    return !['cover', 'flag', 'unknown'].includes(cell.state)
   }
 }

@@ -33,6 +33,18 @@ export class GameScene extends Phaser.Scene implements Actuator {
     super(SCENE_GAME)
   }
 
+  preload() {
+    this.load.audio('click', 'sound/click.mp3')
+    this.load.audio('explode', 'sound/explode.mp3')
+    this.load.image('faceidle', 'images/faceidle.png')
+    this.load.image('faceohh', 'images/faceohh.png')
+    this.load.image('facewin', 'images/facewin.png')
+    this.load.image('facelose', 'images/facelose.png')
+    this.load.image('mine', 'images/mine.png')
+    this.load.image('explode', 'images/explode.png')
+    this.load.image('flag', 'images/flag.png')
+  }
+
   create() {
     initRegistry(this.game)
     applyRenderScale(this.game)
@@ -103,6 +115,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
     )
     if (!pos) return
 
+    this.sound.play('click')
+
     if (this.isTouchPointer(pointer)) {
       this.touchStartTime = Date.now()
       this.touchStartPos = pos
@@ -145,9 +159,9 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
       const cell = this.gameManager.board.getCell(pos.row, pos.col)
       if (cell.state === 'open' && cell.minesAround > 0) {
-        this.gameManager.openCeils(pos.row, pos.col)
+        this.openCells(pos.row, pos.col)
       } else {
-        this.gameManager.openCeil(pos.row, pos.col)
+        this.openCell(pos.row, pos.col)
       }
       this.resetPending()
       return
@@ -162,12 +176,24 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
     const { row, col } = this.pendingPos
     if (this.pendingAction === 'single') {
-      this.gameManager.openCeil(row, col)
+      this.openCell(row, col)
     } else if (this.pendingAction === 'multi') {
-      this.gameManager.openCeils(row, col)
+      this.openCells(row, col)
     }
 
     this.resetPending()
+  }
+
+  private openCell(row: number, col: number) {
+    if (this.gameManager.openCeil(row, col) === 'lose') {
+      this.sound.play('explode')
+    }
+  }
+
+  private openCells(row: number, col: number) {
+    if (this.gameManager.openCeils(row, col) === 'lose') {
+      this.sound.play('explode')
+    }
   }
 
   private isTouchPointer(pointer: Phaser.Input.Pointer) {
