@@ -121,24 +121,3 @@ export function drawOpenCell(
     gfx.fillRect(x - half, y, b, size)
   }
 }
-
-export function drawPressedCell(
-  gfx: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  size: number,
-  fillColor: number,
-  darkColor: number,
-  border: number,
-) {
-  const b = Math.max(1, Math.round(border))
-
-  gfx.fillStyle(fillColor, 1)
-  gfx.fillRect(x + b, y + b, size - b * 2, size - b * 2)
-
-  gfx.fillStyle(darkColor, 1)
-  gfx.fillRect(x, y, size, b)
-  gfx.fillRect(x, y, b, size)
-  gfx.fillRect(x, y + size - b, size, b)
-  gfx.fillRect(x + size - b, y, b, size)
-}

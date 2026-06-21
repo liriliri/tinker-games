@@ -1,17 +1,14 @@
 import Phaser from 'phaser'
-import {
-  GRID_COLS,
-  GRID_INSET,
-  GRID_ROWS,
-  GAME_CONTAINER_MARGIN_BOTTOM,
-} from '../game/constants'
+import { GAME_CONTAINER_MARGIN_BOTTOM, GRID_INSET } from '../game/constants'
+import { getCurrentLevel } from '../game/levels'
 import type { Position } from '../game/MinesweeperBoard'
 import { GAME_CONTAINER_Y, FIELD_WIDTH } from '../layout'
 import { s } from '../scale'
 
 export function computeCellSize() {
+  const { cols } = getCurrentLevel()
   const inner = s(FIELD_WIDTH - GRID_INSET * 2)
-  return inner / GRID_COLS
+  return inner / cols
 }
 
 export function gridOrigin(cellSize: number) {
@@ -30,12 +27,13 @@ export function cellPosition(position: Position, cellSize: number) {
 }
 
 export function boardBounds(cellSize: number) {
+  const { rows, cols } = getCurrentLevel()
   const origin = gridOrigin(cellSize)
   return new Phaser.Geom.Rectangle(
     origin.x,
     origin.y,
-    cellSize * GRID_COLS,
-    cellSize * GRID_ROWS,
+    cellSize * cols,
+    cellSize * rows,
   )
 }
 
@@ -61,11 +59,12 @@ export function positionFromPoint(
   y: number,
   cellSize: number,
 ): Position | null {
+  const { rows, cols } = getCurrentLevel()
   const origin = gridOrigin(cellSize)
   const col = Math.floor((x - origin.x) / cellSize)
   const row = Math.floor((y - origin.y) / cellSize)
 
-  if (row < 0 || row >= GRID_ROWS || col < 0 || col >= GRID_COLS) {
+  if (row < 0 || row >= rows || col < 0 || col >= cols) {
     return null
   }
 

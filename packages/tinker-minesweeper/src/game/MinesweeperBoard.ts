@@ -1,3 +1,10 @@
+import contain from 'licia/contain'
+import filter from 'licia/filter'
+import flatten from 'licia/flatten'
+import map from 'licia/map'
+import range from 'licia/range'
+import shuffle from 'licia/shuffle'
+
 export type GameStatus = 'new' | 'started' | 'died' | 'won'
 
 export type CellState =
@@ -22,6 +29,8 @@ export interface Cell {
 
 export type GameResult = 'continue' | 'win' | 'lose'
 
+const FLAG_STATES: CellState[] = ['flag', 'misflagged']
+
 export class MinesweeperBoard {
   readonly rows: number
   readonly cols: number
@@ -43,10 +52,6 @@ export class MinesweeperBoard {
     this.cells = this.createEmptyCells()
   }
 
-  toggleMarks() {
-    this.marks = !this.marks
-  }
-
   inBounds(row: number, col: number) {
     return row >= 0 && row < this.rows && col >= 0 && col < this.cols
   }
@@ -60,11 +65,9 @@ export class MinesweeperBoard {
   }
 
   minesRemaining() {
-    const flagged = this.cells
-      .flat()
-      .filter(
-        (cell) => cell.state === 'flag' || cell.state === 'misflagged',
-      ).length
+    const flagged = filter(flatten(this.cells), (cell) =>
+      contain(FLAG_STATES, cell.state),
+    ).length
     return this.mineCount - flagged
   }
 
@@ -83,9 +86,8 @@ export class MinesweeperBoard {
   }
 
   openingCeils(row: number, col: number) {
+    this.openingCeil(row, col)
     if (this.isTerminated() || !this.inBounds(row, col)) return
-    this.clearOpening()
-    this.cells[row][col].opening = true
     for (const pos of this.neighbors(row, col)) {
       this.cells[pos.row][pos.col].opening = true
     }
@@ -160,7 +162,8 @@ export class MinesweeperBoard {
     }
 
     const neighbors = this.neighbors(row, col)
-    const flaggedNeighbors = neighbors.filter(
+    const flaggedNeighbors = filter(
+      neighbors,
       (pos) => this.cells[pos.row][pos.col].state === 'flag',
     ).length
 
@@ -187,8 +190,8 @@ export class MinesweeperBoard {
   }
 
   private createEmptyCells(): Cell[][] {
-    return Array.from({ length: this.rows }, () =>
-      Array.from({ length: this.cols }, () => ({
+    return map(range(this.rows), () =>
+      map(range(this.cols), () => ({
         minesAround: 0,
         state: 'cover' as CellState,
         opening: false,
@@ -197,18 +200,16 @@ export class MinesweeperBoard {
   }
 
   private placeMines(excludeRow: number, excludeCol: number) {
-    const positions: Position[] = []
-    for (let row = 0; row < this.rows; row++) {
-      for (let col = 0; col < this.cols; col++) {
-        if (row === excludeRow && col === excludeCol) continue
-        positions.push({ row, col })
-      }
-    }
+    const positions = filter(
+      flatten(
+        map(range(this.rows), (row) =>
+          map(range(this.cols), (col) => ({ row, col })),
+        ),
+      ),
+      ({ row, col }) => row !== excludeRow || col !== excludeCol,
+    )
 
-    for (let i = positions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[positions[i], positions[j]] = [positions[j], positions[i]]
-    }
+    shuffle(positions)
 
     for (let i = 0; i < this.mineCount; i++) {
       const { row, col } = positions[i]
@@ -223,9 +224,7 @@ export class MinesweeperBoard {
   }
 
   private autoCeils(row: number, col: number): Position[] {
-    const walked = Array.from({ length: this.rows }, () =>
-      Array.from({ length: this.cols }, () => false),
-    )
+    const walked = map(range(this.rows), () => map(range(this.cols), () => false))
 
     return this.walkCeils(row, col, walked)
   }
@@ -244,8 +243,10 @@ export class MinesweeperBoard {
 
     return [
       { row, col },
-      ...this.neighbors(row, col).flatMap((pos) =>
-        this.walkCeils(pos.row, pos.col, walked),
+      ...flatten(
+        map(this.neighbors(row, col), (pos) =>
+          this.walkCeils(pos.row, pos.col, walked),
+        ),
       ),
     ]
   }
@@ -260,8 +261,8 @@ export class MinesweeperBoard {
 
   private applyGameOver(dieRow: number, dieCol: number) {
     this.status = 'died'
-    for (let row = 0; row < this.rows; row++) {
-      for (let col = 0; col < this.cols; col++) {
+    for (const row of range(this.rows)) {
+      for (const col of range(this.cols)) {
         const cell = this.cells[row][col]
         cell.opening = false
 
@@ -278,8 +279,8 @@ export class MinesweeperBoard {
 
   private applyWin() {
     this.status = 'won'
-    for (let row = 0; row < this.rows; row++) {
-      for (let col = 0; col < this.cols; col++) {
+    for (const row of range(this.rows)) {
+      for (const col of range(this.cols)) {
         const cell = this.cells[row][col]
         cell.opening = false
         if (cell.minesAround >= 0) {
@@ -292,9 +293,10 @@ export class MinesweeperBoard {
   }
 
   private checkWin(): GameResult {
-    const remains = this.cells
-      .flat()
-      .filter((cell) => cell.state !== 'open' && cell.minesAround >= 0).length
+    const remains = filter(
+      flatten(this.cells),
+      (cell) => cell.state !== 'open' && cell.minesAround >= 0,
+    ).length
 
     if (this.status === 'started' && remains === 0) {
       this.applyWin()
@@ -305,8 +307,8 @@ export class MinesweeperBoard {
 
   private neighbors(row: number, col: number) {
     const result: Position[] = []
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
+    for (const dr of range(-1, 2)) {
+      for (const dc of range(-1, 2)) {
         if (dr === 0 && dc === 0) continue
         const nr = row + dr
         const nc = col + dc

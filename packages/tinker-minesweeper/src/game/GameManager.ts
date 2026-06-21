@@ -1,20 +1,27 @@
 import Phaser from 'phaser'
+import clamp from 'licia/clamp'
 import type LocalStore from 'licia/LocalStore'
-import { GRID_COLS, GRID_ROWS, MINE_COUNT } from './constants'
+import {
+  DEFAULT_LEVEL_ID,
+  getCurrentLevel,
+  initCurrentLevel,
+  isLevelId,
+  type LevelId,
+} from './levels'
 import { MinesweeperBoard, type GameResult } from './MinesweeperBoard'
 
 export interface GameMetadata {
   elapsedSeconds: number
   minesRemaining: number
-  bestTime: number | null
   face: 'idle' | 'ohh' | 'win' | 'lose'
   terminated: boolean
   won: boolean
-  over: boolean
+  levelId: LevelId
 }
 
 export interface Actuator {
   actuate(board: MinesweeperBoard, metadata: GameMetadata): void
+  updateStatus(metadata: GameMetadata): void
 }
 
 export class GameManager {
@@ -28,11 +35,36 @@ export class GameManager {
     private store: LocalStore,
     private actuator: Actuator,
   ) {
-    this.board = new MinesweeperBoard(GRID_ROWS, GRID_COLS, MINE_COUNT)
+    const storedLevel = store.get('level')
+    const levelId = isLevelId(storedLevel) ? storedLevel : DEFAULT_LEVEL_ID
+    initCurrentLevel(levelId)
+    const level = getCurrentLevel()
+    this.board = new MinesweeperBoard(level.rows, level.cols, level.mines)
+  }
+
+  getLevelId() {
+    return getCurrentLevel().id
+  }
+
+  setLevel(levelId: LevelId) {
+    if (levelId === getCurrentLevel().id) return false
+
+    this.store.set('level', levelId)
+    initCurrentLevel(levelId)
+    this.stopTimer()
+    this.elapsedSeconds = 0
+    this.face = 'idle'
+    const level = getCurrentLevel()
+    this.board = new MinesweeperBoard(level.rows, level.cols, level.mines)
+    return true
   }
 
   refresh() {
     this.actuator.actuate(this.board, this.metadata())
+  }
+
+  private refreshStatus() {
+    this.actuator.updateStatus(this.metadata())
   }
 
   restart() {
@@ -74,16 +106,10 @@ export class GameManager {
     }
   }
 
-  previewOpen(row: number, col: number) {
+  preview(row: number, col: number, chord = false) {
     if (this.board.isTerminated()) return
-    this.board.openingCeil(row, col)
-    this.face = 'ohh'
-    this.refresh()
-  }
-
-  previewCeils(row: number, col: number) {
-    if (this.board.isTerminated()) return
-    this.board.openingCeils(row, col)
+    if (chord) this.board.openingCeils(row, col)
+    else this.board.openingCeil(row, col)
     this.face = 'ohh'
     this.refresh()
   }
@@ -104,8 +130,8 @@ export class GameManager {
       loop: true,
       callback: () => {
         if (!this.timerRunning || this.board.isTerminated()) return
-        this.elapsedSeconds = Math.min(999, this.elapsedSeconds + 1)
-        this.refresh()
+        this.elapsedSeconds = clamp(this.elapsedSeconds + 1, 0, 999)
+        this.refreshStatus()
       },
     })
   }
@@ -118,19 +144,6 @@ export class GameManager {
     }
   }
 
-  private getBestTime(): number | null {
-    const val = this.store.get('bestTime') as number | null | undefined
-    if (val == null) return null
-    return Number.isFinite(val) ? val : null
-  }
-
-  private setBestTime(seconds: number) {
-    const current = this.getBestTime()
-    if (current === null || seconds < current) {
-      this.store.set('bestTime', seconds)
-    }
-  }
-
   private updateFace(result: GameResult) {
     if (result === 'lose') {
       this.face = 'lose'
@@ -138,7 +151,6 @@ export class GameManager {
     } else if (result === 'win') {
       this.face = 'win'
       this.stopTimer()
-      this.setBestTime(this.elapsedSeconds)
     } else {
       this.face = 'idle'
     }
@@ -156,11 +168,10 @@ export class GameManager {
     return {
       elapsedSeconds: this.elapsedSeconds,
       minesRemaining: this.board.minesRemaining(),
-      bestTime: this.getBestTime(),
       face: this.face,
       terminated: this.board.isTerminated(),
       won: this.board.status === 'won',
-      over: this.board.status === 'died',
+      levelId: getCurrentLevel().id,
     }
   }
 }

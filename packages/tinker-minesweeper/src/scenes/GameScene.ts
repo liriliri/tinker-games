@@ -6,11 +6,13 @@ import {
 } from '../game/GameManager'
 import type { MinesweeperBoard } from '../game/MinesweeperBoard'
 import { SCENE_GAME } from '../game/constants'
+import type { LevelId } from '../game/levels'
 import { getStore, initRegistry } from '../registry'
-import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
+import { applyRenderScale, RELAYOUT_EVENT, suppressRelayout } from '../scale'
 import { BoardFrame } from '../gameObjects/BoardFrame'
 import { CellLayer } from '../gameObjects/CellLayer'
 import { GameOverlay } from '../gameObjects/GameOverlay'
+import { LevelDialog } from '../gameObjects/LevelDialog'
 import { StatusBar } from '../gameObjects/StatusBar'
 import { positionFromPoint } from '../gameObjects/gridLayout'
 
@@ -22,12 +24,14 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private cellLayer!: CellLayer
   private statusBar!: StatusBar
   private overlay!: GameOverlay
+  private levelDialog!: LevelDialog
   private inputZone!: Phaser.GameObjects.Zone
   private pendingAction: PendingAction = ''
   private pendingPos: { row: number; col: number } | null = null
   private touchStartTime = 0
   private touchStartPos: { row: number; col: number } | null = null
   private touchMoved = false
+  private victorySoundPlayed = false
 
   constructor() {
     super(SCENE_GAME)
@@ -36,6 +40,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   preload() {
     this.load.audio('click', 'sound/click.mp3')
     this.load.audio('explode', 'sound/explode.mp3')
+    this.load.audio('victory', 'sound/victory.mp3')
     this.load.image('faceidle', 'images/faceidle.png')
     this.load.image('faceohh', 'images/faceohh.png')
     this.load.image('facewin', 'images/facewin.png')
@@ -43,12 +48,17 @@ export class GameScene extends Phaser.Scene implements Actuator {
     this.load.image('mine', 'images/mine.png')
     this.load.image('explode', 'images/explode.png')
     this.load.image('flag', 'images/flag.png')
+    this.load.image('soundon', 'images/soundon.png')
+    this.load.image('soundoff', 'images/soundoff.png')
   }
 
   create() {
     initRegistry(this.game)
-    applyRenderScale(this.game)
     this.gameManager = new GameManager(getStore(this), this)
+    applyRenderScale(this.game)
+    this.levelDialog = new LevelDialog(this, (levelId) =>
+      this.handleLevelSelect(levelId),
+    )
     this.buildView()
     this.bindInput()
     this.gameManager.bindTimer(this)
@@ -60,12 +70,21 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
   actuate(board: MinesweeperBoard, metadata: GameMetadata) {
     this.cellLayer.render(board)
-    this.statusBar.update(metadata)
+    this.updateStatus(metadata)
     if (metadata.terminated) {
+      if (metadata.won && !this.victorySoundPlayed) {
+        this.victorySoundPlayed = true
+        this.sound.play('victory')
+      }
       this.overlay.show(metadata.won)
     } else {
+      this.victorySoundPlayed = false
       this.overlay.hide()
     }
+  }
+
+  updateStatus(metadata: GameMetadata) {
+    this.statusBar.update(metadata)
   }
 
   private buildView() {
@@ -73,7 +92,14 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
     this.boardFrame = new BoardFrame(this)
     this.cellLayer = new CellLayer(this, this.boardFrame.cellSize)
-    this.statusBar = new StatusBar(this, () => this.gameManager.restart())
+    this.statusBar = new StatusBar(
+      this,
+      {
+        onReset: () => this.gameManager.restart(),
+        onLevelClick: () => this.levelDialog.show(),
+      },
+      this.gameManager.getLevelId(),
+    )
     this.overlay = new GameOverlay(this, {
       onRestart: () => this.gameManager.restart(),
     })
@@ -89,6 +115,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
       .setInteractive()
 
     this.inputZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      this.sound.play('click')
       this.handlePointerDown(pointer)
     })
 
@@ -115,8 +142,6 @@ export class GameScene extends Phaser.Scene implements Actuator {
     )
     if (!pos) return
 
-    this.sound.play('click')
-
     if (this.isTouchPointer(pointer)) {
       this.touchStartTime = Date.now()
       this.touchStartPos = pos
@@ -134,7 +159,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
     if (chordIntent) {
       this.pendingAction = 'multi'
       this.pendingPos = pos
-      this.gameManager.previewCeils(pos.row, pos.col)
+      this.gameManager.preview(pos.row, pos.col, true)
       return
     }
 
@@ -142,7 +167,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
     this.pendingAction = 'single'
     this.pendingPos = pos
-    this.gameManager.previewOpen(pos.row, pos.col)
+    this.gameManager.preview(pos.row, pos.col)
   }
 
   private handlePointerUp() {
@@ -159,9 +184,9 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
       const cell = this.gameManager.board.getCell(pos.row, pos.col)
       if (cell.state === 'open' && cell.minesAround > 0) {
-        this.openCells(pos.row, pos.col)
+        this.performOpen(pos.row, pos.col, true)
       } else {
-        this.openCell(pos.row, pos.col)
+        this.performOpen(pos.row, pos.col, false)
       }
       this.resetPending()
       return
@@ -175,23 +200,18 @@ export class GameScene extends Phaser.Scene implements Actuator {
     }
 
     const { row, col } = this.pendingPos
-    if (this.pendingAction === 'single') {
-      this.openCell(row, col)
-    } else if (this.pendingAction === 'multi') {
-      this.openCells(row, col)
+    if (this.pendingAction === 'single' || this.pendingAction === 'multi') {
+      this.performOpen(row, col, this.pendingAction === 'multi')
     }
 
     this.resetPending()
   }
 
-  private openCell(row: number, col: number) {
-    if (this.gameManager.openCeil(row, col) === 'lose') {
-      this.sound.play('explode')
-    }
-  }
-
-  private openCells(row: number, col: number) {
-    if (this.gameManager.openCeils(row, col) === 'lose') {
+  private performOpen(row: number, col: number, chord: boolean) {
+    const result = chord
+      ? this.gameManager.openCeils(row, col)
+      : this.gameManager.openCeil(row, col)
+    if (result === 'lose') {
       this.sound.play('explode')
     }
   }
@@ -212,6 +232,23 @@ export class GameScene extends Phaser.Scene implements Actuator {
         mouseEvent?.metaKey,
       )
     )
+  }
+
+  private handleLevelSelect(levelId: LevelId) {
+    this.levelDialog.hide()
+    this.resetPending()
+    this.victorySoundPlayed = false
+
+    if (levelId === this.gameManager.getLevelId()) {
+      this.gameManager.restart()
+      return
+    }
+
+    if (!this.gameManager.setLevel(levelId)) return
+
+    suppressRelayout()
+    applyRenderScale(this.game)
+    this.relayout()
   }
 
   private resetPending() {
@@ -236,6 +273,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private onShutdown() {
     this.events.off(RELAYOUT_EVENT, this.relayout, this)
     this.gameManager.unbindTimer()
+    this.levelDialog?.destroy()
     this.destroyView()
     this.tweens.killAll()
   }
