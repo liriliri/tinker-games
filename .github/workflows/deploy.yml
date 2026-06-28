@@ -29,5 +29,5 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           source: "packages/tinker-${{ github.event.inputs.game }}/dist/"
-          target: "/var/www/tinker/games/${{ github.event.inputs.game }}"
+          target: "/var/www/liriliri/tinker/games/${{ github.event.inputs.game }}"
           strip_components: 2
