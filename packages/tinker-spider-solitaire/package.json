@@ -1,0 +1,30 @@
+{
+  "name": "tinker-spider-solitaire",
+  "version": "0.1.0",
+  "description": "Spider Solitaire Game Plugin for TINKER",
+  "files": [
+    "dist/",
+    "icon.png"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
+  "tinker": {
+    "name": "Spider Solitaire",
+    "description": "Build complete suits from King to Ace in this classic card game.",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "locales": {
+      "zh-CN": {
+        "name": "蜘蛛纸牌",
+        "description": "经典纸牌游戏，凑齐 K 到 A 的同花顺即可获胜。"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  }
+}
