@@ -23,11 +23,13 @@ jobs:
           npm i
           cd packages/tinker-${{ github.event.inputs.game }}
           npm run build
+          mkdir ../deploy
+          cp -r dist/* ../deploy/
       - uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
-          source: "packages/tinker-${{ github.event.inputs.game }}/dist/"
+          source: "packages/deploy/"
           target: "/var/www/liriliri/tinker/games/${{ github.event.inputs.game }}"
           strip_components: 2
