@@ -27,6 +27,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private overlay!: GameOverlay
   private toast!: Toast
   private difficultyDialog!: DifficultyDialog
+  private victorySoundPlayed = false
 
   constructor() {
     super(SCENE_GAME)
@@ -40,6 +41,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
     this.gameManager = new GameManager(this)
     applyRenderScale(this.game)
     this.buildView()
+    this.gameManager.refresh()
     this.difficultyDialog.show()
 
     this.events.on(RELAYOUT_EVENT, this.relayout, this)
@@ -52,8 +54,13 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
     if (metadata.won) {
       this.overlay.show()
+      if (!this.victorySoundPlayed) {
+        this.victorySoundPlayed = true
+        this.sound.play('victory')
+      }
     } else {
       this.overlay.hide()
+      this.victorySoundPlayed = false
     }
   }
 
@@ -66,6 +73,9 @@ export class GameScene extends Phaser.Scene implements Actuator {
     dealt: DealCardInfo[],
     onComplete: () => void,
   ) {
+    if (dealt.length > 0) {
+      this.sound.play('deal')
+    }
     this.tableLayer.animateDeal(board, dealt, onComplete)
   }
 

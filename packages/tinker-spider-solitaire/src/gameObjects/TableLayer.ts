@@ -154,6 +154,8 @@ export class TableLayer {
         cardView.setDepth(1000 + cardView.y)
       }
 
+      this.scene.sound.play('get')
+
       this.scene.input.on('pointermove', this.onPointerMove, this)
       this.scene.input.once('pointerup', this.onPointerUp, this)
     })
@@ -191,6 +193,8 @@ export class TableLayer {
     if (this.onMoveAttempt && targetCol >= 0) {
       moved = this.onMoveAttempt(sourceCol, startRow, targetCol)
     }
+
+    this.scene.sound.play('put')
 
     if (!moved && this.dragState) {
       this.returnStack(this.dragState)
@@ -405,6 +409,8 @@ export class TableLayer {
       onComplete()
       return
     }
+
+    this.scene.sound.play('scored')
 
     const targetX = s(foundationCenterX(info.foundationSlot))
     const targetY = s(FOUNDATION_Y)

@@ -61,6 +61,11 @@ export function getCardTextureKey(suit: number, rank: number): string {
 
 export function preloadGameAssets(scene: Phaser.Scene) {
   scene.load.image('backside', 'images/backside.png')
+  scene.load.audio('deal', 'sound/deal.mp3')
+  scene.load.audio('get', 'sound/get.mp3')
+  scene.load.audio('put', 'sound/put.mp3')
+  scene.load.audio('victory', 'sound/victory.mp3')
+  scene.load.audio('scored', 'sound/scored.mp3')
 
   for (const name of CARD_TEXTURE_NAMES) {
     scene.load.image(name, `images/cards/${name}.png`)

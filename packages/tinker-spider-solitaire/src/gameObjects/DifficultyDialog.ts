@@ -63,14 +63,6 @@ export class DifficultyDialog {
     const left = centerX - panelWidth / 2
     const top = centerY - panelHeight / 2
 
-    const backdrop = this.scene.add.graphics()
-    backdrop.fillStyle(0x000000, 0.45)
-    backdrop.fillRect(0, 0, s(FIELD_WIDTH), s(GAME_HEIGHT))
-    backdrop.setInteractive(
-      new Phaser.Geom.Rectangle(0, 0, s(FIELD_WIDTH), s(GAME_HEIGHT)),
-      Phaser.Geom.Rectangle.Contains,
-    )
-
     const panel = this.scene.add.graphics()
     panel.fillStyle(COLORS.dialogBg, 1)
     panel.fillRoundedRect(left, top, panelWidth, panelHeight, s(10))
@@ -92,7 +84,7 @@ export class DifficultyDialog {
       { color: COLORS.dialogText, fontStyle: 'bold' },
     ).setOrigin(0.5)
 
-    const nodes: Phaser.GameObjects.GameObject[] = [backdrop, panel, title]
+    const nodes: Phaser.GameObjects.GameObject[] = [panel, title]
 
     const buttonWidth = s(BUTTON_WIDTH)
     const buttonHeight = s(BUTTON_HEIGHT)
