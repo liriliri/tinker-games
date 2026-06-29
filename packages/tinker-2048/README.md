@@ -14,9 +14,7 @@ Join the numbers and get to the 2048 tile! A minimalist puzzle game for [TINKER]
 
 ## Installation
 
-Play directly in browser at https://tinker.liriliri.io/games/2048/.
-
-Or install via TINKER: download from `https://tinker.liriliri.io/`, then run `npm i -g tinker-2048`.
+Play directly in [browser](https://tinker.liriliri.io/games/2048/), or install via TINKER: download from `https://tinker.liriliri.io/`, then run `npm i -g tinker-2048`.
 
 ## How to Play
 
