@@ -9,7 +9,7 @@ export const GRID_W = 11
 export const GRID_H = 11
 export const CELL_R = 20
 export const HEX_CELL_SCALE = 0.92
-export const INITIAL_WALL_COUNT = 20
+export const INITIAL_WALL_COUNT = 16
 
 export const HEADER_HEIGHT = 44
 export const GRID_MARGIN_TOP = 8
