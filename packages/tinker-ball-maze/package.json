@@ -1,6 +1,6 @@
 {
   "name": "tinker-ball-maze",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ball Maze Game Plugin for TINKER",
   "files": [
     "dist/",
