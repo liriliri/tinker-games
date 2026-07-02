@@ -20,20 +20,85 @@
         display: block;
       }
 
+      .hud-panel {
+        position: fixed;
+        top: 13px;
+        border-radius: 9px;
+        border: 1px solid rgba(255, 246, 234, 0.16);
+        background: linear-gradient(
+          155deg,
+          rgba(24, 18, 14, 0.42) 0%,
+          rgba(12, 10, 8, 0.28) 100%
+        );
+        box-shadow:
+          0 8px 24px rgba(0, 0, 0, 0.22),
+          inset 0 1px 0 rgba(255, 246, 234, 0.1);
+        backdrop-filter: blur(14px) saturate(120%);
+        -webkit-backdrop-filter: blur(14px) saturate(120%);
+        pointer-events: none;
+        user-select: none;
+      }
+
       #level {
-        position: absolute;
-        left: 0;
-        top: 0;
-        padding: 8px;
-        color: #ff0;
-        font-weight: bold;
-        font-size: 14px;
-        font-family: Helvetica, Arial, sans-serif;
+        left: 13px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 64px;
+        padding: 7px 12px 6px 10px;
+        border-left: 2px solid rgba(184, 135, 74, 0.72);
+      }
+
+      #level .level-label {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: 0.17em;
+        text-transform: uppercase;
+        color: rgba(255, 246, 234, 0.58);
+      }
+
+      #level-number {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        color: rgba(255, 246, 234, 0.96);
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+      }
+
+      #minimap {
+        right: 13px;
+        padding: 4px;
+      }
+
+      #minimap-canvas {
+        display: block;
+        width: 84px;
+        height: 84px;
+      }
+
+      #victory-flash {
+        position: fixed;
+        inset: 0;
+        background: #fff;
+        opacity: 1;
+        pointer-events: none;
+        z-index: 100;
       }
     </style>
   </head>
   <body>
-    <div id="level">Level 1</div>
+    <div id="level" class="hud-panel">
+      <span class="level-label">Level</span>
+      <span id="level-number">1</span>
+    </div>
+    <div id="minimap" class="hud-panel">
+      <canvas id="minimap-canvas"></canvas>
+    </div>
+    <div id="victory-flash"></div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

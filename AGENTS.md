@@ -21,7 +21,7 @@ packages/
 ## Adding a new game
 
 1. Create `packages/tinker-xxx/`.
-2. Copy structure from an existing game (tinker-2048 for Phaser 2D, tinker-cube for Three.js 3D).
+2. Copy structure from an existing game (tinker-2048 for Phaser 2D, tinker-ball-maze for Three.js 3D).
 3. Update `package.json`: name, description, tinker.name, tinker.locales.
 4. Replace `icon.png` (200x200 px).
 5. Implement game logic.
@@ -29,7 +29,7 @@ packages/
 
 ## Naming convention
 
-- Directory name and npm package name both use: `tinker-xxx` (e.g., `tinker-2048`, `tinker-cube`)
+- Directory name and npm package name both use: `tinker-xxx` (e.g., `tinker-2048`, `tinker-ball-maze`)
 
 ## TINKER configuration
 

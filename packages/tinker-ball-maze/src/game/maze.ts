@@ -52,10 +52,8 @@ export function generateSquareMaze(dimension: number): MazeGrid {
   return iterate(field, seedX, seedY)
 }
 
-/** Chance to open extra passages. */
 export const BRAID_CHANCE = 0.1
 
-/** Wall sits between two opposite passages (not a corner or T-junction). */
 function isSeparatorWall(field: MazeGrid, i: number, j: number) {
   const left = field[i - 1][j] === false
   const right = field[i + 1][j] === false
@@ -65,7 +63,6 @@ function isSeparatorWall(field: MazeGrid, i: number, j: number) {
   return (left && right) || (up && down)
 }
 
-/** Turn a perfect maze into an imperfect one by removing separator walls. */
 export function braidMaze(field: MazeGrid, braidChance: number) {
   for (let i = 1; i < field.dimension - 1; i++) {
     for (let j = 1; j < field.dimension - 1; j++) {
@@ -149,7 +146,6 @@ function pickRandom<T>(items: T[]) {
   return items[Math.floor(Math.random() * items.length)]
 }
 
-/** Pick a random start and a single border exit far from the start. */
 export function pickLevelLayout(field: MazeGrid): LevelLayout {
   const passages = getPassages(field)
   const minDistance = Math.max(4, Math.floor(field.dimension / 3))

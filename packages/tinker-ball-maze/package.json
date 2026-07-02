@@ -26,6 +26,5 @@
     "dev": "vite",
     "build": "vite build",
     "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
-  },
-  "devDependencies": {}
+  }
 }
