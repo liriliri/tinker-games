@@ -16,5 +16,21 @@ All games in the list can be installed to TINKER by running `npm i -g tinker-xxx
       <th><img src="./packages/tinker-2048/screenshot.png"/></th>
       <th><img src="./packages/tinker-minesweeper/screenshot.png"/></th>
     </tr>
+    <tr>
+      <th width="50%"><a href="./packages/tinker-spider-solitaire/">tinker-spider-solitaire</a></th>
+      <th><a href="./packages/tinker-sudoku/">tinker-sudoku</a></th>
+    </tr>
+    <tr>
+      <th><img src="./packages/tinker-spider-solitaire/screenshot.png"/></th>
+      <th><img src="./packages/tinker-sudoku/screenshot.png"/></th>
+    </tr>
+    <tr>
+      <th width="50%"><a href="./packages/tinker-ball-maze/">tinker-ball-maze</a></th>
+      <th><a href="./packages/tinker-trap-the-cat/">tinker-trap-the-cat</a></th>
+    </tr>
+    <tr>
+      <th><img src="./packages/tinker-ball-maze/screenshot.png"/></th>
+      <th><img src="./packages/tinker-trap-the-cat/screenshot.png"/></th>
+    </tr>
   </tbody>
 </table>
