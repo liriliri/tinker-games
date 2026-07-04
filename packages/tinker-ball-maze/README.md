@@ -20,7 +20,7 @@ Play directly in [browser](https://tinker.liriliri.io/games/ball-maze/), or inst
 ## How to Play
 
 1. Open the **Ball Maze** plugin in TINKER
-2. Use **arrow keys** or **WASD** to push the ball through the maze
+2. Use **arrow keys**, **WASD**, or a **gamepad** (left stick or D-pad) to push the ball through the maze
 3. Reach the exit to advance — each level is bigger than the last
 4. Watch the **minimap** if you lose your bearings
 5. Keep going as far as you can!

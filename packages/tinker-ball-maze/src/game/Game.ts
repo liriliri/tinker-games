@@ -510,6 +510,7 @@ export class Game {
 
     window.addEventListener('keydown', unlock, { once: true })
     window.addEventListener('pointerdown', unlock, { once: true })
+    window.addEventListener('gamepadconnected', unlock, { once: true })
   }
 
   private updateRollingSound(speed: number) {
