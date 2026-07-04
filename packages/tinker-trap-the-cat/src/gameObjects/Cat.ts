@@ -18,6 +18,7 @@ export type CatSolver = (
 export class Cat extends Phaser.GameObjects.Sprite {
   declare scene: GameScene
   private escaped = false
+  private _isMoving = false
 
   constructor(scene: GameScene) {
     super(scene, 0, 0, '__DEFAULT')
@@ -63,8 +64,21 @@ export class Cat extends Phaser.GameObjects.Sprite {
     this.setData('solver', value)
   }
 
+  get isMoving(): boolean {
+    return this._isMoving
+  }
+
+  lockMovement() {
+    this._isMoving = true
+  }
+
+  unlockMovement() {
+    this._isMoving = false
+  }
+
   reset() {
     this.anims.stop()
+    this.unlockMovement()
     this.escaped = false
     this.direction = CAT_DEFAULT_DIRECTION
     this.resetIJ()
@@ -72,6 +86,7 @@ export class Cat extends Phaser.GameObjects.Sprite {
 
   undo(i: number, j: number) {
     this.anims.stop()
+    this.unlockMovement()
     this.setIJ(i, j)
   }
 
@@ -179,6 +194,7 @@ export class Cat extends Phaser.GameObjects.Sprite {
     this.once('animationcomplete', () => {
       this.moveForward()
       this.resetTextureToStop()
+      this.unlockMovement()
     })
     return true
   }

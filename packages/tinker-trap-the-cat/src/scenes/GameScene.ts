@@ -142,8 +142,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   playerClick(i: number, j: number): boolean {
-    if (this.cat.anims.isPlaying) {
-      this.cat.anims.stop()
+    if (this.cat.isMoving) {
+      return false
     }
     if (this.state !== GameState.PLAYING) {
       this.setStatusText(t('statusGameOverReset'))
@@ -164,8 +164,11 @@ export class GameScene extends Phaser.Scene {
       return false
     }
 
+    this.cat.lockMovement()
+
     block.isWall = true
     if (this.cat.isCaught()) {
+      this.cat.unlockMovement()
       this.setStatusText(t('statusWin'))
       this.state = GameState.WIN
       return false
@@ -177,6 +180,7 @@ export class GameScene extends Phaser.Scene {
     this.setStatusText(`${t('statusClicked')} (${i}, ${j})`)
     const result = this.cat.step()
     if (!result) {
+      this.cat.unlockMovement()
       this.setStatusText(t('statusCatSurrender'))
       this.state = GameState.WIN
     }
