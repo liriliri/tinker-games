@@ -12,6 +12,12 @@ import {
 
 export type Difficulty = 1 | 2 | 4
 
+export const DEFAULT_DIFFICULTY: Difficulty = 1
+
+export function isDifficulty(value: unknown): value is Difficulty {
+  return value === 1 || value === 2 || value === 4
+}
+
 interface FoundationSlot {
   suit: number
 }

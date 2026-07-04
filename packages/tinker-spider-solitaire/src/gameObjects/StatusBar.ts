@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import type { Difficulty } from '../game/SpiderBoard'
 import {
   COLORS,
   FIELD_WIDTH,
@@ -8,7 +9,7 @@ import {
   STATUS_BAR_WIDTH,
 } from '../game/constants'
 import { GAME_HEIGHT } from '../layout'
-import { t } from '../i18n'
+import { difficultyShortLabel, t } from '../i18n'
 import { s } from '../scale'
 import { addSharpText } from '../ui/sharpText'
 
@@ -19,14 +20,21 @@ function statusBarOrigin() {
   }
 }
 
+export interface StatusBarCallbacks {
+  onNewGame: () => void
+  onDifficultyClick: () => void
+}
+
 export class StatusBar {
   private container: Phaser.GameObjects.Container
   private scoreText!: Phaser.GameObjects.Text
   private movesText!: Phaser.GameObjects.Text
+  private difficultyText!: Phaser.GameObjects.Text
+  private difficulty = 1 as Difficulty
 
   constructor(
     private scene: Phaser.Scene,
-    private onNewGame: () => void,
+    private callbacks: StatusBarCallbacks,
   ) {
     const origin = statusBarOrigin()
     this.container = scene.add.container(s(origin.x), s(origin.y)).setDepth(100)
@@ -40,9 +48,11 @@ export class StatusBar {
     this.build()
   }
 
-  update(score: number, moves: number) {
+  update(score: number, moves: number, difficulty: Difficulty) {
+    this.difficulty = difficulty
     this.scoreText.setText(`${t('score')}: ${score}`)
     this.movesText.setText(`${t('moves')}: ${moves}`)
+    this.difficultyText.setText(difficultyShortLabel(difficulty))
   }
 
   destroy() {
@@ -62,20 +72,46 @@ export class StatusBar {
       color: COLORS.statusText,
     }).setOrigin(0, 0.5)
 
-    this.movesText = addSharpText(this.scene, s(130), barHeight / 2, '', 12, {
+    this.movesText = addSharpText(this.scene, s(110), barHeight / 2, '', 12, {
       color: COLORS.statusText,
     }).setOrigin(0, 0.5)
 
+    const buttonY = s(7)
+    const buttonHeight = s(28)
+    const buttonGap = s(6)
+    const newGameWidth = s(84)
+    const difficultyWidth = s(72)
+    const rightInset = s(8)
+
+    const newGameX = barWidth - rightInset - newGameWidth
+    const difficultyX = newGameX - buttonGap - difficultyWidth
+
+    const difficultyBtn = this.createButton(
+      difficultyX,
+      buttonY,
+      difficultyWidth,
+      buttonHeight,
+      difficultyShortLabel(this.difficulty),
+      this.callbacks.onDifficultyClick,
+    )
+    this.difficultyText = difficultyBtn.getAt(1) as Phaser.GameObjects.Text
+
     const newGameBtn = this.createButton(
-      barWidth - s(92),
-      s(7),
-      s(84),
-      s(28),
+      newGameX,
+      buttonY,
+      newGameWidth,
+      buttonHeight,
       t('newGame'),
-      this.onNewGame,
+      this.callbacks.onNewGame,
     )
 
-    this.container.add([bg, this.scoreText, this.movesText, newGameBtn])
+    this.container.add([
+      bg,
+      this.scoreText,
+      this.movesText,
+      difficultyBtn,
+      newGameBtn,
+    ])
   }
 
   private createButton(

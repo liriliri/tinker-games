@@ -20,9 +20,11 @@ const PANEL_HEIGHT = 320
 const BUTTON_WIDTH = 300
 const BUTTON_HEIGHT = 52
 const BUTTON_GAP = 14
+const BACKDROP_ALPHA = 0.35
 
 export class DifficultyDialog {
   private container: Phaser.GameObjects.Container
+  private backdrop!: Phaser.GameObjects.Graphics
 
   constructor(
     private scene: Phaser.Scene,
@@ -45,6 +47,8 @@ export class DifficultyDialog {
   }
 
   hide() {
+    this.backdrop?.clear()
+    this.backdrop?.disableInteractive()
     this.container.setVisible(false)
   }
 
@@ -62,6 +66,19 @@ export class DifficultyDialog {
     const centerY = s(GAME_HEIGHT / 2)
     const left = centerX - panelWidth / 2
     const top = centerY - panelHeight / 2
+
+    this.backdrop = this.scene.add.graphics()
+    this.backdrop.fillStyle(0x000000, BACKDROP_ALPHA)
+    this.backdrop.fillRect(0, 0, s(FIELD_WIDTH), s(GAME_HEIGHT))
+    this.backdrop.setInteractive(
+      new Phaser.Geom.Rectangle(0, 0, s(FIELD_WIDTH), s(GAME_HEIGHT)),
+      Phaser.Geom.Rectangle.Contains,
+    )
+    this.backdrop.on('pointerup', () => this.hide())
+
+    const panelHit = this.scene.add
+      .zone(centerX, centerY, panelWidth, panelHeight)
+      .setInteractive()
 
     const panel = this.scene.add.graphics()
     panel.fillStyle(COLORS.dialogBg, 1)
@@ -84,7 +101,12 @@ export class DifficultyDialog {
       { color: COLORS.dialogText, fontStyle: 'bold' },
     ).setOrigin(0.5)
 
-    const nodes: Phaser.GameObjects.GameObject[] = [panel, title]
+    const nodes: Phaser.GameObjects.GameObject[] = [
+      this.backdrop,
+      panelHit,
+      panel,
+      title,
+    ]
 
     const buttonWidth = s(BUTTON_WIDTH)
     const buttonHeight = s(BUTTON_HEIGHT)

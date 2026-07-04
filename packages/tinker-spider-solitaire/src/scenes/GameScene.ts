@@ -17,6 +17,7 @@ import { GameOverlay, Toast } from '../gameObjects/GameOverlay'
 import { StatusBar } from '../gameObjects/StatusBar'
 import { TableLayer } from '../gameObjects/TableLayer'
 import { t } from '../i18n'
+import { getStore, initRegistry } from '../registry'
 import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
 
 export class GameScene extends Phaser.Scene implements Actuator {
@@ -38,11 +39,11 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   create() {
-    this.gameManager = new GameManager(this)
+    initRegistry(this.game)
+    this.gameManager = new GameManager(getStore(this), this)
     applyRenderScale(this.game)
     this.buildView()
-    this.gameManager.refresh()
-    this.difficultyDialog.show()
+    this.gameManager.startGame(this.gameManager.board.difficulty)
 
     this.events.on(RELAYOUT_EVENT, this.relayout, this)
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown, this)
@@ -50,7 +51,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
   actuate(board: SpiderBoard, metadata: GameMetadata) {
     this.tableLayer.render(board)
-    this.statusBar.update(metadata.score, metadata.moves)
+    this.statusBar.update(metadata.score, metadata.moves, metadata.difficulty)
 
     if (metadata.won) {
       this.overlay.show()
@@ -100,10 +101,15 @@ export class GameScene extends Phaser.Scene implements Actuator {
     this.toast = new Toast(this)
 
     this.difficultyDialog = new DifficultyDialog(this, (difficulty) => {
-      this.gameManager.startGame(difficulty)
+      if (difficulty !== this.gameManager.board.difficulty) {
+        this.gameManager.startGame(difficulty)
+      }
     })
 
-    this.statusBar = new StatusBar(this, () => this.difficultyDialog.show())
+    this.statusBar = new StatusBar(this, {
+      onNewGame: () => this.gameManager.restart(),
+      onDifficultyClick: () => this.difficultyDialog.show(),
+    })
   }
 
   private relayout() {
