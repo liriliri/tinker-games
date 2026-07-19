@@ -11,7 +11,6 @@ Click dots to trap the cat before it escapes! A hex-grid puzzle game for [TINKER
 - **Fair starts** — random opening walls are checked so the puzzle stays winnable
 - **Undo support** — take back your last move when you need a second chance
 - **Satisfying feedback** — meow when the cat escapes, victory sound when you win
-- **Bilingual** — fully localized in English and Chinese (圈小猫)
 
 ## Installation
 

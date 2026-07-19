@@ -11,7 +11,6 @@ Clear the minefield without detonating a bomb! A retro-style puzzle game for [TI
 - **First-click safe** — mines are placed after your first tap, so you never lose on the opening move
 - **Smart auto-reveal** — clicking an empty cell flood-fills all connected safe tiles with numbered hints
 - **Play your way** — full keyboard modifiers, mouse, and touch support with long-press to flag
-- **Bilingual** — fully localized in English and Chinese
 
 ## Installation
 

@@ -12,7 +12,6 @@ Fill the grid so every row, column, and box contains 1–9! A classic logic puzz
 - **Play your way** — tap the digit pad, use keyboard (1–9 and arrow keys), or click cells directly
 - **Built-in timer** — track how long each puzzle takes
 - **Remembers your level** — difficulty choice is saved automatically
-- **Bilingual** — fully localized in English and Chinese (数独)
 
 ## Installation
 

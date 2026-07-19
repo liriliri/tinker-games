@@ -11,7 +11,6 @@ Build complete suits from King to Ace in this classic card game for [TINKER](htt
 - **Drag and drop** — move valid same-suit stacks between columns with smooth animations
 - **Satisfying feedback** — sound effects for dealing, picking up, placing, scoring, and winning
 - **Score tracking** — starting score, move counter, and bonus for completed suits
-- **Bilingual** — fully localized in English and Chinese
 
 ## Installation
 

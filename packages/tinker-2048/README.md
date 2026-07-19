@@ -10,7 +10,6 @@ Join the numbers and get to the 2048 tile! A minimalist puzzle game for [TINKER]
 - **Buttery smooth** — tiles glide and merge with satisfying animations and sound effects
 - **Play your way** — keyboard, touch, or gamepad, whatever feels right
 - **Never lose progress** — the game saves automatically, come back anytime
-- **Bilingual** — fully localized in English and Chinese
 
 ## Installation
 

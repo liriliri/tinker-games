@@ -11,7 +11,6 @@ Roll the ball through procedurally generated mazes and find the exit! A 3D physi
 - **Immersive 3D world** — stone walls, floor textures, dynamic lighting, and soft shadows
 - **Live minimap** — track your position in the top-right corner while you explore
 - **Satisfying feedback** — rolling and wall-hit sound effects that respond to speed and impact
-- **Bilingual** — fully localized in English and Chinese (滚球迷宫)
 
 ## Installation
 
