@@ -46,7 +46,7 @@ export class StatusBar {
       s(STATUS_BAR_CENTER_Y),
       '',
       14,
-      { color: COLORS.accent, fontStyle: 'bold' },
+      { color: '#3b82f6', fontStyle: 'bold' },
     ).setOrigin(0, 0.5)
 
     this.levelHit = scene.add
