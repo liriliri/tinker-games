@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Gomoku</title>
+  </head>
+  <body>
+    <main id="app">
+      <div id="ui">
+        <header class="topbar">
+          <button id="menuButton" class="ghost-button" type="button">
+            Menu
+          </button>
+          <div class="turn-pill" id="turnPill">
+            <span class="turn-stone black" id="turnStone"></span>
+            <span id="turnText">Black to move</span>
+          </div>
+          <div class="top-actions">
+            <button
+              id="soundButton"
+              class="ghost-button icon-button"
+              type="button"
+              aria-label="Sound"
+              aria-pressed="true"
+            >
+              <svg class="sound-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+                <path
+                  class="sound-waves"
+                  d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"
+                />
+                <path class="sound-off-line" d="m17 9 4 6m0-6-4 6" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <section id="menu" class="overlay">
+          <div class="menu-panel">
+            <div class="settings-grid">
+              <div class="setting">
+                <label data-i18n="mode">MODE</label>
+                <div class="segmented">
+                  <button class="choice selected" data-mode="pvp" type="button">
+                    <span data-i18n="local">LOCAL 2P</span>
+                  </button>
+                  <button class="choice" data-mode="pve" type="button">
+                    <span data-i18n="computer">VS CPU</span>
+                  </button>
+                </div>
+              </div>
+              <div class="setting" id="difficultySetting">
+                <label data-i18n="difficulty">DIFFICULTY</label>
+                <div class="segmented">
+                  <button class="choice" data-difficulty="easy" type="button">
+                    <span data-i18n="easy">EASY</span>
+                  </button>
+                  <button
+                    class="choice selected"
+                    data-difficulty="normal"
+                    type="button"
+                  >
+                    <span data-i18n="normal">NORMAL</span>
+                  </button>
+                  <button class="choice" data-difficulty="hard" type="button">
+                    <span data-i18n="hard">HARD</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button id="startButton" class="primary-button" type="button">
+              <span data-i18n="start">START MATCH</span>
+            </button>
+          </div>
+        </section>
+
+        <section id="result" class="overlay hidden">
+          <div class="result-panel">
+            <h2 id="resultTitle">Black wins</h2>
+            <p id="resultText">Five stones, one clean line.</p>
+            <div class="result-actions">
+              <button id="againButton" class="primary-button" type="button">
+                <span data-i18n="playAgain">PLAY AGAIN</span>
+              </button>
+              <button
+                id="resultMenuButton"
+                class="secondary-button"
+                type="button"
+                data-i18n="changeMode"
+              >
+                CHANGE MODE
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div class="mobile-controls" aria-label="Board controls">
+          <button data-direction="up" type="button">↑</button>
+          <button data-direction="left" type="button">←</button>
+          <button data-action="place" type="button">●</button>
+          <button data-direction="right" type="button">→</button>
+          <button data-direction="down" type="button">↓</button>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

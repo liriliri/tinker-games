@@ -1,0 +1,30 @@
+{
+  "name": "tinker-gomoku",
+  "version": "0.1.0",
+  "description": "Gomoku Game Plugin for TINKER",
+  "files": [
+    "dist/",
+    "icon.png"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
+  "tinker": {
+    "name": "Gomoku",
+    "description": "Play five in a row against a friend or the computer.",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "locales": {
+      "zh-CN": {
+        "name": "五子棋",
+        "description": "和朋友或电脑对弈，连成五子即可获胜。"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  }
+}
