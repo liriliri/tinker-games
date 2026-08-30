@@ -32,5 +32,13 @@ All games in the list can be installed to TINKER by running `npm i -g tinker-xxx
       <th><img src="./packages/tinker-ball-maze/screenshot.png"/></th>
       <th><img src="./packages/tinker-trap-the-cat/screenshot.png"/></th>
     </tr>
+    <tr>
+      <th width="50%"><a href="./packages/tinker-gomoku/">tinker-gomoku</a></th>
+      <th><a href="./packages/tinker-chinese-chess/">tinker-chinese-chess</a></th>
+    </tr>
+    <tr>
+      <th><img src="./packages/tinker-gomoku/screenshot.png"/></th>
+      <th><img src="./packages/tinker-chinese-chess/screenshot.png"/></th>
+    </tr>
   </tbody>
 </table>
