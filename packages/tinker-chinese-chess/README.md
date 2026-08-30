@@ -1,8 +1,8 @@
-# tinker-chiness-chess
+# tinker-chinese-chess
 
 A polished 3D Chinese chess game for [TINKER](https://github.com/liriliri/tinker), built with Three.js.
 
-![Screenshot](https://raw.githubusercontent.com/liriliri/tinker-games/master/packages/tinker-chiness-chess/screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/liriliri/tinker-games/master/packages/tinker-chinese-chess/screenshot.png)
 
 ## Highlights
 
@@ -14,7 +14,7 @@ A polished 3D Chinese chess game for [TINKER](https://github.com/liriliri/tinker
 
 ## Installation
 
-Play directly in [browser](https://tinker.liriliri.io/games/chiness-chess/), or install via TINKER: download from `https://tinker.liriliri.io/`, then run `npm i -g tinker-chiness-chess`.
+Play directly in [browser](https://tinker.liriliri.io/games/chinese-chess/), or install via TINKER: download from `https://tinker.liriliri.io/`, then run `npm i -g tinker-chinese-chess`.
 
 ## How to Play
 

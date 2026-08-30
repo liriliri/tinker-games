@@ -1,5 +1,5 @@
 {
-  "name": "tinker-chiness-chess",
+  "name": "tinker-chinese-chess",
   "version": "0.1.0",
   "description": "A 3D Chinese chess game with a thoughtful computer opponent.",
   "files": [
@@ -11,7 +11,7 @@
     "url": "git+https://github.com/liriliri/tinker-games.git"
   },
   "tinker": {
-    "name": "Chiness Chess",
+    "name": "Chinese Chess",
     "description": "Play Chinese chess against a friend or a thoughtful computer opponent.",
     "main": "dist/index.html",
     "icon": "icon.png",
