@@ -1,0 +1,30 @@
+{
+  "name": "tinker-reversi",
+  "version": "0.1.0",
+  "description": "Reversi Game Plugin for TINKER",
+  "files": [
+    "dist/",
+    "icon.png"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
+  "tinker": {
+    "name": "Reversi",
+    "description": "Capture territory in the classic game of Reversi.",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "locales": {
+      "zh-CN": {
+        "name": "黑白棋",
+        "description": "在经典黑白棋中包围并翻转对手的棋子。"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  }
+}
