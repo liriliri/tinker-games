@@ -1,7 +1,7 @@
-import type { Difficulty } from "./game/ai";
+import type { Difficulty } from "../game/ai";
 import type { GomokuScene } from "./scene";
-import type { Mode, Phase } from "./game/state";
-import type { GameUi } from "./ui/view";
+import type { Mode, Phase } from "../game/state";
+import type { GameUi } from "../ui/view";
 
 type Cursor = { row: number; column: number };
 

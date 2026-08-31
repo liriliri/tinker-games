@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import clamp from "licia/clamp";
-import { BOARD_SIZE, BLACK, type Stone } from "./game/rules";
+import { BOARD_SIZE, BLACK, type Stone } from "../game/rules";
 
 export const GRID_SPAN = BOARD_SIZE - 1;
 export const BOARD_TOP = 16.25;

@@ -1,6 +1,6 @@
-import "./style.css";
+import "./ui/style.css";
 import clamp from "licia/clamp";
-import { AudioKit } from "./audio";
+import { AudioKit } from "./lib/audio";
 import { chooseMove } from "./game/ai";
 import {
   BOARD_SIZE,
@@ -15,10 +15,15 @@ import {
   type Stone,
 } from "./game/rules";
 import { createGameState } from "./game/state";
-import { bindInput } from "./input";
-import { cellToWorld, createScene, updateSceneMotion } from "./scene";
-import { loadDifficulty, loadMode, saveDifficulty, saveMode } from "./storage";
-import { copy, detectLocale, type Locale } from "./ui/i18n";
+import { bindInput } from "./lib/input";
+import { cellToWorld, createScene, updateSceneMotion } from "./lib/scene";
+import {
+  loadDifficulty,
+  loadMode,
+  saveDifficulty,
+  saveMode,
+} from "./lib/storage";
+import { copy, detectLocale, type Locale } from "./lib/i18n";
 import {
   applyLocale as applyLocaleView,
   getGameUi,

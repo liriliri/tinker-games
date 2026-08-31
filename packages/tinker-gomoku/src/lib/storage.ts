@@ -1,6 +1,6 @@
 import LocalStore from "licia/LocalStore";
-import type { Difficulty } from "./game/ai";
-import type { Mode } from "./game/state";
+import type { Difficulty } from "../game/ai";
+import type { Mode } from "../game/state";
 
 const STORE_NAME = "tinker-gomoku";
 const store = new LocalStore(STORE_NAME);
