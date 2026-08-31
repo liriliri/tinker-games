@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import type { Direction } from '../game/GameManager'
+import type { Direction } from './game/GameManager'
 
 const KEY_MAP: Record<number, Direction> = {
   38: 0,

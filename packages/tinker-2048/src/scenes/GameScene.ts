@@ -11,7 +11,7 @@ import {
   bindSwipe,
   type GamepadBinding,
   type SwipeBinding,
-} from '../game/input'
+} from '../input'
 import { getStore } from '../registry'
 import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
 import { Board } from '../gameObjects/Board'

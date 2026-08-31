@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
-import { GRID_SPACING, GRID_SIZE } from '../game/constants'
-import { GAME_CONTAINER_Y, FIELD_WIDTH } from '../layout'
+import { GRID_SIZE } from '../game/constants'
+import { FIELD_WIDTH, GAME_CONTAINER_Y, GRID_SPACING } from '../layout'
 import type { Position } from '../game/Tile'
 import { s } from '../scale'
 

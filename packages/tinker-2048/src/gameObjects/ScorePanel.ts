@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { COLORS } from '../game/constants'
+import { COLORS } from '../ui/constants'
 import { FIELD_WIDTH } from '../layout'
 import { t } from '../i18n'
 import { getStore } from '../registry'

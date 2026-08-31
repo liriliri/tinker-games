@@ -1,7 +1,11 @@
 import Phaser from 'phaser'
 import type LocalStore from 'licia/LocalStore'
-import { COLORS, GAME_CONTAINER_MARGIN_BOTTOM } from '../game/constants'
-import { FIELD_WIDTH, GAME_HEIGHT } from '../layout'
+import { COLORS } from '../ui/constants'
+import {
+  FIELD_WIDTH,
+  GAME_CONTAINER_MARGIN_BOTTOM,
+  GAME_HEIGHT,
+} from '../layout'
 import { t } from '../i18n'
 import { getStore } from '../registry'
 import { applyRenderScale, RELAYOUT_EVENT, s } from '../scale'
