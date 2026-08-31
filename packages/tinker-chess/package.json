@@ -1,0 +1,30 @@
+{
+  "name": "tinker-chess",
+  "version": "0.1.0",
+  "description": "A focused international chess game with a thoughtful computer opponent.",
+  "files": [
+    "dist/",
+    "icon.svg"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
+  "tinker": {
+    "name": "Chess",
+    "description": "Play international chess against a friend or a thoughtful computer opponent.",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "locales": {
+      "zh-CN": {
+        "name": "国际象棋",
+        "description": "和朋友或电脑下一盘国际象棋。"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  }
+}
