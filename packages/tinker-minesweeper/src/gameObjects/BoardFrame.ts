@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import { COLORS, FRAME_BEVEL_SIZE } from '../game/constants'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 import { drawSunkenBorder, drawSunkenRect } from '../ui/drawRoundedRect'
 import { boardBounds, boardFrameRect, computeCellSize } from './gridLayout'
 

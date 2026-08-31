@@ -1,10 +1,10 @@
 import clamp from 'licia/clamp'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 import {
   CELL_COVER_BORDER,
   CELL_OPEN_BORDER,
   designCellSize,
-} from './constants'
+} from '../game/constants'
 
 const REF_CELL_SIZE = designCellSize(9)
 

@@ -2,8 +2,8 @@ import Phaser from 'phaser'
 import { GAME_CONTAINER_MARGIN_BOTTOM, GRID_INSET } from '../game/constants'
 import { getCurrentLevel } from '../game/levels'
 import type { Position } from '../game/MinesweeperBoard'
-import { GAME_CONTAINER_Y, FIELD_WIDTH } from '../layout'
-import { s } from '../scale'
+import { GAME_CONTAINER_Y, FIELD_WIDTH } from '../lib/layout'
+import { s } from '../lib/scale'
 
 export function computeCellSize() {
   const { cols } = getCurrentLevel()

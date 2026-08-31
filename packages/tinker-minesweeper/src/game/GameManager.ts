@@ -1,6 +1,5 @@
 import Phaser from 'phaser'
 import clamp from 'licia/clamp'
-import type LocalStore from 'licia/LocalStore'
 import {
   DEFAULT_LEVEL_ID,
   getCurrentLevel,
@@ -9,6 +8,7 @@ import {
   type LevelId,
 } from './levels'
 import { MinesweeperBoard, type GameResult } from './MinesweeperBoard'
+import type { GameStorage } from '../lib/storage'
 
 export interface GameMetadata {
   elapsedSeconds: number
@@ -32,10 +32,10 @@ export class GameManager {
   private face: GameMetadata['face'] = 'idle'
 
   constructor(
-    private store: LocalStore,
+    private storage: GameStorage,
     private actuator: Actuator,
   ) {
-    const storedLevel = store.get('level')
+    const storedLevel = storage.getLevel()
     const levelId = isLevelId(storedLevel) ? storedLevel : DEFAULT_LEVEL_ID
     initCurrentLevel(levelId)
     const level = getCurrentLevel()
@@ -49,7 +49,7 @@ export class GameManager {
   setLevel(levelId: LevelId) {
     if (levelId === getCurrentLevel().id) return false
 
-    this.store.set('level', levelId)
+    this.storage.setLevel(levelId)
     initCurrentLevel(levelId)
     this.stopTimer()
     this.elapsedSeconds = 0

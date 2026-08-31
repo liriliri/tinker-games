@@ -4,10 +4,10 @@ import lpad from 'licia/lpad'
 import { COLORS, FRAME_BEVEL_SIZE, STATUS_BAR_HEIGHT } from '../game/constants'
 import type { GameMetadata } from '../game/GameManager'
 import type { LevelId } from '../game/levels'
-import { FIELD_WIDTH } from '../layout'
-import { getStore } from '../registry'
-import { t } from '../i18n'
-import { s } from '../scale'
+import { FIELD_WIDTH } from '../lib/layout'
+import { getStorage } from '../lib/storage'
+import { t } from '../lib/i18n'
+import { s } from '../lib/scale'
 import { drawRaisedRect, drawSunkenRect } from '../ui/drawRoundedRect'
 import { SevenSegmentDisplay } from '../ui/sevenSegmentDisplay'
 import { addSharpText } from '../ui/sharpText'
@@ -75,7 +75,7 @@ export class StatusBar {
     private callbacks: StatusBarCallbacks,
     initialLevelId: LevelId,
   ) {
-    this.soundEnabled = getStore(scene).get('soundEnabled') ?? true
+    this.soundEnabled = getStorage(scene).getSoundEnabled()
     scene.sound.mute = !this.soundEnabled
     this.container = scene.add.container(0, 0)
     this.container.setDepth(10)
@@ -147,7 +147,7 @@ export class StatusBar {
       .setInteractive({ useHandCursor: true })
     soundHit.on('pointerup', () => {
       this.soundEnabled = !this.soundEnabled
-      getStore(this.scene).set('soundEnabled', this.soundEnabled)
+      getStorage(this.scene).setSoundEnabled(this.soundEnabled)
       this.scene.sound.mute = !this.soundEnabled
       this.updateSoundButton()
     })

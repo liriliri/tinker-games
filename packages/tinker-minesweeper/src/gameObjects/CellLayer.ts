@@ -7,14 +7,14 @@ import {
   scaledCellFontSize,
   scaledCellOpenBorder,
   scaledLabelOffsetY,
-} from '../game/cellMetrics'
+} from './cellMetrics'
 import { getCurrentLevel } from '../game/levels'
 import type {
   Cell,
   CellState,
   MinesweeperBoard,
 } from '../game/MinesweeperBoard'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 import { drawCoverCell, drawOpenCell } from '../ui/drawCell'
 import { addSharpText, sharpTextStyle } from '../ui/sharpText'
 import { cellPosition } from './gridLayout'

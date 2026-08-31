@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import { COLORS, TRANSITION_SPEED } from '../game/constants'
-import { t } from '../i18n'
-import { s } from '../scale'
+import { t } from '../lib/i18n'
+import { s } from '../lib/scale'
 import { addSharpText } from '../ui/sharpText'
 import { boardBounds, computeCellSize } from './gridLayout'
 

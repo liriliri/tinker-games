@@ -6,7 +6,7 @@ import {
   STATUS_BAR_HEIGHT,
   computeGridHeight,
   designCellSize,
-} from './game/constants'
+} from '../game/constants'
 
 export const GAME_CONTAINER_Y = STATUS_BAR_HEIGHT + GAME_CONTAINER_MARGIN_TOP
 

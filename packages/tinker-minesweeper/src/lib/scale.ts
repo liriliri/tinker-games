@@ -3,7 +3,7 @@ import clamp from 'licia/clamp'
 import {
   computeCellSize,
   computeGamePixelHeight,
-} from './gameObjects/gridLayout'
+} from '../gameObjects/gridLayout'
 import { FIELD_WIDTH, getReferenceGameHeight } from './layout'
 
 const MIN_FIT_SCALE = 0.5

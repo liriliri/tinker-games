@@ -1,7 +1,6 @@
 import { getCurrentLevel } from './levels'
 
 export const FIELD_WIDTH = 500
-export const SCENE_GAME = 'Game'
 export const GRID_INSET = 4
 export const CELL_COVER_BORDER = 4
 export const CELL_OPEN_BORDER = 2

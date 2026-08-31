@@ -5,16 +5,16 @@ import {
   type GameMetadata,
 } from '../game/GameManager'
 import type { MinesweeperBoard } from '../game/MinesweeperBoard'
-import { SCENE_GAME } from '../game/constants'
 import type { LevelId } from '../game/levels'
-import { getStore, initRegistry } from '../registry'
-import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
+import { getStorage, initStorage } from '../lib/storage'
+import { applyRenderScale, RELAYOUT_EVENT } from '../lib/scale'
 import { BoardFrame } from '../gameObjects/BoardFrame'
 import { CellLayer } from '../gameObjects/CellLayer'
 import { GameOverlay } from '../gameObjects/GameOverlay'
 import { LevelDialog } from '../gameObjects/LevelDialog'
 import { StatusBar } from '../gameObjects/StatusBar'
 import { positionFromPoint } from '../gameObjects/gridLayout'
+import { SCENE_GAME } from './keys'
 
 type PendingAction = 'single' | 'multi' | ''
 
@@ -53,8 +53,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   create() {
-    initRegistry(this.game)
-    this.gameManager = new GameManager(getStore(this), this)
+    initStorage(this.game)
+    this.gameManager = new GameManager(getStorage(this), this)
     applyRenderScale(this.game)
     this.levelDialog = new LevelDialog(this, (levelId) =>
       this.handleLevelSelect(levelId),
