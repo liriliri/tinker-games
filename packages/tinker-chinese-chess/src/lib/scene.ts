@@ -10,7 +10,7 @@ import {
   ROWS,
   rowOf,
   type Piece,
-} from "./game/rules";
+} from "../game/rules";
 
 const BOARD_Y = 0.72;
 const GRID_X = COLUMNS - 1;
@@ -205,11 +205,7 @@ function makeGrid() {
     riverSide.position.set(x, BOARD_Y + 0.022, 0);
     group.add(riverSide);
   }
-  const diagonalGeometry = new THREE.BoxGeometry(
-    Math.SQRT2 * 2,
-    0.014,
-    0.026,
-  );
+  const diagonalGeometry = new THREE.BoxGeometry(Math.SQRT2 * 2, 0.014, 0.026);
   for (const z of [-3.5, 3.5]) {
     for (const angle of [-Math.PI / 4, Math.PI / 4]) {
       const diagonal = new THREE.Mesh(diagonalGeometry, material);
@@ -298,11 +294,7 @@ function makeMarker(color: number, ring = false) {
   return mesh;
 }
 
-function makePiece(
-  piece: Piece,
-  animate: boolean,
-  woodTexture: THREE.Texture,
-) {
+function makePiece(piece: Piece, animate: boolean, woodTexture: THREE.Texture) {
   const side = pieceSide(piece);
   const labels = PIECE_LABELS[pieceType(piece)];
   const label = side === RED ? labels.red : labels.black;
@@ -317,10 +309,7 @@ function makePiece(
     clearcoat: 0.42,
     clearcoatRoughness: 0.18,
   });
-  const base = new THREE.Mesh(
-    makePieceGeometry(),
-    pieceMaterial,
-  );
+  const base = new THREE.Mesh(makePieceGeometry(), pieceMaterial);
   base.castShadow = !animate;
   base.receiveShadow = true;
   group.add(base);
@@ -358,10 +347,7 @@ function makePiece(
   const face = new THREE.Mesh(
     new THREE.CircleGeometry(0.32, 48),
     new THREE.MeshBasicMaterial({
-      map: makePieceLabelTexture(
-        label,
-        side === RED ? "#b11f2d" : "#171b1d",
-      ),
+      map: makePieceLabelTexture(label, side === RED ? "#b11f2d" : "#171b1d"),
       transparent: true,
       depthTest: false,
     }),
@@ -430,7 +416,12 @@ function makeBoardGeometry() {
   shape.lineTo(-halfWidth + radius, halfDepth);
   shape.quadraticCurveTo(-halfWidth, halfDepth, -halfWidth, halfDepth - radius);
   shape.lineTo(-halfWidth, -halfDepth + radius);
-  shape.quadraticCurveTo(-halfWidth, -halfDepth, -halfWidth + radius, -halfDepth);
+  shape.quadraticCurveTo(
+    -halfWidth,
+    -halfDepth,
+    -halfWidth + radius,
+    -halfDepth,
+  );
 
   const geometry = new THREE.ExtrudeGeometry(shape, {
     depth: 0.68,
@@ -450,9 +441,14 @@ function makeBoardGeometry() {
     const y = position.getY(index);
     const z = position.getZ(index);
     if (normal.getY(index) > 0.7) {
-      uv.setXY(index, (x + BOARD_WIDTH / 2) / BOARD_WIDTH, 0.5 - z / BOARD_DEPTH);
+      uv.setXY(
+        index,
+        (x + BOARD_WIDTH / 2) / BOARD_WIDTH,
+        0.5 - z / BOARD_DEPTH,
+      );
     } else {
-      const sideAlongZ = Math.abs(normal.getX(index)) > Math.abs(normal.getZ(index));
+      const sideAlongZ =
+        Math.abs(normal.getX(index)) > Math.abs(normal.getZ(index));
       const horizontalSize = sideAlongZ ? BOARD_DEPTH : BOARD_WIDTH;
       const horizontal = sideAlongZ
         ? (z + BOARD_DEPTH / 2) / BOARD_DEPTH
@@ -481,7 +477,12 @@ function makeBoardTopGeometry() {
   shape.lineTo(-halfWidth + radius, halfDepth);
   shape.quadraticCurveTo(-halfWidth, halfDepth, -halfWidth, halfDepth - radius);
   shape.lineTo(-halfWidth, -halfDepth + radius);
-  shape.quadraticCurveTo(-halfWidth, -halfDepth, -halfWidth + radius, -halfDepth);
+  shape.quadraticCurveTo(
+    -halfWidth,
+    -halfDepth,
+    -halfWidth + radius,
+    -halfDepth,
+  );
 
   const geometry = new THREE.ShapeGeometry(shape);
   geometry.rotateX(-Math.PI / 2);
@@ -545,18 +546,12 @@ export function createScene(): ChessScene {
   pieceWoodTexture.rotation = Math.PI / 2;
   pieceWoodTexture.needsUpdate = true;
 
-  const board = new THREE.Mesh(
-    makeBoardGeometry(),
-    boardMaterial,
-  );
+  const board = new THREE.Mesh(makeBoardGeometry(), boardMaterial);
   board.position.y = BOARD_Y - 0.76;
   board.castShadow = true;
   board.receiveShadow = false;
   scene.add(board);
-  const boardTop = new THREE.Mesh(
-    makeBoardTopGeometry(),
-    boardMaterial,
-  );
+  const boardTop = new THREE.Mesh(makeBoardTopGeometry(), boardMaterial);
   boardTop.position.y = BOARD_Y + 0.002;
   boardTop.receiveShadow = true;
   scene.add(boardTop);
@@ -590,6 +585,7 @@ export function createScene(): ChessScene {
 
   const pieces = new Map<number, THREE.Object3D>();
   const pieceShadows = new Map<number, THREE.Mesh>();
+  const targetMarkers: THREE.Mesh[] = [];
   const syncBoard = (
     boardState: Int8Array,
     selectedCell: number | null,
@@ -612,11 +608,7 @@ export function createScene(): ChessScene {
     for (let cell = 0; cell < boardState.length; cell++) {
       if (!boardState[cell]) continue;
       if (pieces.has(cell)) continue;
-      const object = makePiece(
-        boardState[cell],
-        animate,
-        pieceWoodTexture,
-      );
+      const object = makePiece(boardState[cell], animate, pieceWoodTexture);
       object.userData.piece = boardState[cell];
       const point = cellToWorld(rowOf(cell), columnOf(cell));
       object.position.set(
@@ -657,16 +649,23 @@ export function createScene(): ChessScene {
       selected.position.x = point.x;
       selected.position.z = point.z;
     }
-    while (targets.children.length) {
-      const marker = targets.children[targets.children.length - 1];
-      targets.remove(marker);
-      disposeObject(marker);
-    }
-    for (const cell of legalTargets) {
-      const marker = makeMarker(0xefd28b);
+    for (let index = 0; index < legalTargets.length; index++) {
+      const marker = targetMarkers[index] ?? makeMarker(0xefd28b);
+      if (!targetMarkers[index]) {
+        targetMarkers.push(marker);
+        targets.add(marker);
+      }
+      const cell = legalTargets[index];
       const point = cellToWorld(rowOf(cell), columnOf(cell));
       marker.position.set(point.x, BOARD_Y + 0.045, point.z);
-      targets.add(marker);
+      marker.visible = true;
+    }
+    for (
+      let index = legalTargets.length;
+      index < targetMarkers.length;
+      index++
+    ) {
+      targetMarkers[index].visible = false;
     }
   };
 
@@ -683,11 +682,11 @@ export function createScene(): ChessScene {
     pieceShadows.clear();
     selected.visible = false;
     lastMark.visible = false;
-    while (targets.children.length) {
-      const marker = targets.children[targets.children.length - 1];
+    for (const marker of targetMarkers) {
       targets.remove(marker);
       disposeObject(marker);
     }
+    targetMarkers.length = 0;
   };
 
   const keyLight = new THREE.DirectionalLight(0xffdfb0, 2.4);
@@ -787,11 +786,16 @@ export function createScene(): ChessScene {
 }
 
 export function updateSceneMotion(chessScene: ChessScene, now: number) {
-  const pulse = 1 + Math.sin(now * 0.005) * 0.06;
-  chessScene.cursor.scale.set(pulse, 1, pulse);
+  let hasMotion = false;
+  if (chessScene.cursor.visible) {
+    const pulse = 1 + Math.sin(now * 0.005) * 0.06;
+    chessScene.cursor.scale.set(pulse, 1, pulse);
+    hasMotion = true;
+  }
   if (chessScene.selected.visible) {
     const selectedPulse = 1 + Math.sin(now * 0.006) * 0.08;
     chessScene.selected.scale.set(selectedPulse, 1, selectedPulse);
+    hasMotion = true;
   }
   for (const object of chessScene.scene.children) {
     const revealAt = object.userData.revealAt as number | undefined;
@@ -799,11 +803,14 @@ export function updateSceneMotion(chessScene: ChessScene, now: number) {
       if (now >= revealAt) {
         object.visible = true;
         object.userData.revealAt = 0;
+      } else {
+        hasMotion = true;
       }
       continue;
     }
     const start = object.userData.dropStart as number | undefined;
     if (!start) continue;
+    hasMotion = true;
     const progress = clamp((now - start) / 360, 0, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     object.position.y = BOARD_Y + 0.16 + 0.7 * (1 - eased);
@@ -815,4 +822,5 @@ export function updateSceneMotion(chessScene: ChessScene, now: number) {
       });
     }
   }
+  return hasMotion;
 }

@@ -1,7 +1,7 @@
 import { isInCheck, RED } from "../game/rules";
 import type { GameState, Mode } from "../game/state";
 import type { Difficulty } from "../game/ai";
-import { copy, type Copy, type Locale } from "./i18n";
+import { copy, type Copy, type Locale } from "../lib/i18n";
 
 export type GameUi = {
   menu: HTMLElement;

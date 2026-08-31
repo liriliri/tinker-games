@@ -1,6 +1,6 @@
-import "./style.css";
+import "./ui/style.css";
 import clamp from "licia/clamp";
-import { AudioKit } from "./audio";
+import { AudioKit } from "./lib/audio";
 import { chooseMove } from "./game/ai";
 import {
   applyMove,
@@ -15,10 +15,15 @@ import {
   type Move,
 } from "./game/rules";
 import { computerSide, createGameState } from "./game/state";
-import { bindInput } from "./input";
-import { cellToWorld, createScene, updateSceneMotion } from "./scene";
-import { loadDifficulty, loadMode, saveDifficulty, saveMode } from "./storage";
-import { copy, detectLocale, type Locale } from "./ui/i18n";
+import { bindInput } from "./lib/input";
+import { cellToWorld, createScene, updateSceneMotion } from "./lib/scene";
+import {
+  loadDifficulty,
+  loadMode,
+  saveDifficulty,
+  saveMode,
+} from "./lib/storage";
+import { copy, detectLocale, type Locale } from "./lib/i18n";
 import {
   applyLocale as applyLocaleView,
   getGameUi,
@@ -37,8 +42,16 @@ let locale: Locale = "zh-CN";
 let computerMoveTimer: number | undefined;
 let matchVersion = 0;
 let lastMove: Move | null = null;
+let selectedMoves: Move[] = [];
+let renderScheduled = false;
 
 const strings = () => copy[locale];
+
+function requestRender() {
+  if (renderScheduled) return;
+  renderScheduled = true;
+  requestAnimationFrame(renderFrame);
+}
 
 function cancelComputerMove() {
   if (computerMoveTimer !== undefined) {
@@ -56,6 +69,7 @@ function setCursor(row: number, column: number) {
     chessScene.cursor.position.y,
     point.z,
   );
+  requestRender();
 }
 
 function refreshTurn() {
@@ -78,18 +92,24 @@ function refreshBoard(animate = false) {
   } else {
     chessScene.lastMark.visible = false;
   }
+  requestRender();
 }
 
-function startMatch() {
+function resetMatchState(phase: "menu" | "play") {
   cancelComputerMove();
   matchVersion++;
   game.board = newBoard();
   game.history.length = 0;
-  game.turn = RED;
-  game.phase = "play";
+  game.phase = phase;
+  if (phase === "play") game.turn = RED;
   game.selected = null;
   game.legalTargets = [];
+  selectedMoves = [];
   lastMove = null;
+}
+
+function startMatch() {
+  resetMatchState("play");
   setCursor(6, 4);
   setMenuVisible(ui, false);
   refreshBoard();
@@ -98,15 +118,9 @@ function startMatch() {
 }
 
 function openMenu() {
-  cancelComputerMove();
-  matchVersion++;
-  game.phase = "menu";
-  game.board = newBoard();
-  game.history.length = 0;
-  game.selected = null;
-  game.legalTargets = [];
-  lastMove = null;
+  resetMatchState("menu");
   chessScene.clear();
+  requestRender();
   setMenuVisible(ui, true);
   refreshTurn();
 }
@@ -123,6 +137,7 @@ function commitMove(move: Move) {
   game.history.push(move);
   game.selected = null;
   game.legalTargets = [];
+  selectedMoves = [];
   lastMove = move;
   audio.unlock();
   audio.play(move.captured !== 0);
@@ -149,7 +164,7 @@ function selectCell(row: number, column: number) {
   if (game.phase !== "play") return;
   const cell = index(row, column);
   if (game.selected !== null && game.legalTargets.includes(cell)) {
-    const move = generateLegalMoves(game.board, game.turn).find(
+    const move = selectedMoves.find(
       (candidate) => candidate.from === game.selected && candidate.to === cell,
     );
     if (move) commitMove(move);
@@ -157,14 +172,17 @@ function selectCell(row: number, column: number) {
   }
   if (game.board[cell] !== 0 && Math.sign(game.board[cell]) === game.turn) {
     game.selected = cell;
-    game.legalTargets = generateLegalMoves(game.board, game.turn)
-      .filter((move) => move.from === cell)
-      .map((move) => move.to);
+    selectedMoves = generateLegalMoves(game.board, game.turn).filter(
+      (move) => move.from === cell,
+    );
+    game.legalTargets = selectedMoves.map((move) => move.to);
   } else {
     game.selected = null;
     game.legalTargets = [];
+    selectedMoves = [];
   }
   chessScene.updateSelection(game.selected, game.legalTargets);
+  requestRender();
   refreshTurn();
 }
 
@@ -204,6 +222,7 @@ function undo() {
   game.phase = "play";
   game.selected = null;
   game.legalTargets = [];
+  selectedMoves = [];
   lastMove = game.history[game.history.length - 1] ?? null;
   chessScene.cursor.visible = true;
   refreshBoard();
@@ -238,6 +257,7 @@ const input = bindInput(chessScene, ui, {
     applyLocale();
   },
   unlockAudio: () => audio.unlock(),
+  requestRender,
 });
 
 function applyLocale() {
@@ -245,23 +265,25 @@ function applyLocale() {
 }
 
 function renderFrame(now: number) {
-  requestAnimationFrame(renderFrame);
+  renderScheduled = false;
   input.pollGamepad(now);
   const visible = game.phase === "play" || game.phase === "thinking";
   chessScene.cursor.visible = visible;
-  updateSceneMotion(chessScene, now);
+  const hasMotion = updateSceneMotion(chessScene, now);
   chessScene.renderer.render(chessScene.scene, chessScene.camera);
+  if (visible || hasMotion) requestRender();
 }
 
-window.addEventListener("resize", chessScene.resize);
+window.addEventListener("resize", () => {
+  chessScene.resize();
+  requestRender();
+});
 detectLocale().then((detectedLocale) => {
   locale = detectedLocale;
-  setModeSelection(ui, game.mode);
-  setDifficultySelection(game.difficulty);
   applyLocale();
 });
 setModeSelection(ui, game.mode);
 setDifficultySelection(game.difficulty);
 setMenuVisible(ui, true);
 refreshTurn();
-requestAnimationFrame(renderFrame);
+requestRender();

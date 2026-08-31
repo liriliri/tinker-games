@@ -9,6 +9,7 @@ import {
   pieceSide,
   pieceType,
   resultFor,
+  opposite,
   ROWS,
   type Move,
   type Side,
@@ -20,7 +21,6 @@ import {
   CANNON,
   PAWN,
   RED,
-  BLACK,
 } from "./rules";
 import gambitText from "./gambit.txt?raw";
 
@@ -63,10 +63,6 @@ type SearchContext = {
   stopped: boolean;
 };
 
-function otherSide(side: Side): Side {
-  return side === RED ? BLACK : RED;
-}
-
 function moveKey(move: Move) {
   return `${move.from}:${move.to}`;
 }
@@ -97,10 +93,7 @@ for (const line of GAMBIT_BOOK) {
   }
 }
 
-function gambitMove(
-  history: Move[],
-  legal: Move[],
-) {
+function gambitMove(history: Move[], legal: Move[]) {
   const prefix = history.map(moveKey).join(" ");
   const candidates = GAMBIT_INDEX.get(prefix);
   if (!candidates) return null;
@@ -136,11 +129,11 @@ function positionalBonus(piece: number, cell: number) {
   return 0;
 }
 
-function kingSafety(board: Int8Array, side: Side) {
+function kingSafety(board: Int8Array, side: Side, opponentMoves: Move[]) {
   let score = 0;
   const king = findKing(board, side);
   if (king < 0) return -MATE_SCORE;
-  if (isInCheck(board, side)) score -= 1800;
+  if (opponentMoves.some((move) => move.to === king)) score -= 1800;
 
   for (let cell = 0; cell < board.length; cell++) {
     if (!board[cell]) continue;
@@ -155,7 +148,7 @@ function kingSafety(board: Int8Array, side: Side) {
 
 function evaluate(board: Int8Array, perspective: Side) {
   const ownKing = findKing(board, perspective);
-  const enemyKing = findKing(board, otherSide(perspective));
+  const enemyKing = findKing(board, opposite(perspective));
   if (ownKing < 0) return -MATE_SCORE;
   if (enemyKing < 0) return MATE_SCORE;
 
@@ -167,17 +160,25 @@ function evaluate(board: Int8Array, perspective: Side) {
     score += pieceSide(piece) === perspective ? value : -value;
   }
 
-  const opponent = otherSide(perspective);
-  score += (generatePseudoMoves(board, perspective).length -
-    generatePseudoMoves(board, opponent).length) * 2;
-  score += kingSafety(board, perspective) - kingSafety(board, opponent);
+  const opponent = opposite(perspective);
+  const ownMoves = generatePseudoMoves(board, perspective);
+  const opponentMoves = generatePseudoMoves(board, opponent);
+  score += (ownMoves.length - opponentMoves.length) * 2;
+  score +=
+    kingSafety(board, perspective, opponentMoves) -
+    kingSafety(board, opponent, ownMoves);
   return score;
 }
 
 function isCheckingMove(board: Int8Array, move: Move) {
   const next = new Int8Array(board);
   applyMove(next, move);
-  return isInCheck(next, otherSide(pieceSide(move.piece)));
+  return isInCheck(next, opposite(pieceSide(move.piece)));
+}
+
+function undoMove(board: Int8Array, move: Move) {
+  board[move.from] = move.piece;
+  board[move.to] = move.captured;
 }
 
 function rememberKiller(context: SearchContext, ply: number, move: Move) {
@@ -194,6 +195,7 @@ function orderMoves(
   context: SearchContext,
   ply: number,
   preferred = "",
+  checkingMoves?: Set<string>,
 ) {
   const killers = context.killers.get(ply) ?? [];
   return moves
@@ -203,7 +205,8 @@ function orderMoves(
         ? PIECE_VALUE[pieceType(move.captured)] * 16 -
           PIECE_VALUE[pieceType(move.piece)]
         : 0;
-      const checkValue = isCheckingMove(board, move) ? 5000 : 0;
+      const checkValue =
+        (checkingMoves?.has(key) ?? isCheckingMove(board, move)) ? 5000 : 0;
       const preferredValue = key === preferred ? 100000 : 0;
       const killerValue = killers.includes(key) ? 1800 : 0;
       const historyValue = context.history.get(key) ?? 0;
@@ -238,7 +241,7 @@ function quiescence(
 ): number {
   if (hasStopped(context)) return evaluate(board, sideToMove);
   if (findKing(board, sideToMove) < 0) return -MATE_SCORE + ply;
-  if (findKing(board, otherSide(sideToMove)) < 0) return MATE_SCORE - ply;
+  if (findKing(board, opposite(sideToMove)) < 0) return MATE_SCORE - ply;
 
   const inCheck = isInCheck(board, sideToMove);
   const standPat = inCheck ? -Infinity : evaluate(board, sideToMove);
@@ -248,24 +251,37 @@ function quiescence(
   }
 
   const legal = generateLegalMoves(board, sideToMove);
+  const checkingMoves = inCheck ? undefined : new Set<string>();
   const tactical = inCheck
     ? legal
-    : legal.filter((move) => move.captured || isCheckingMove(board, move));
+    : legal.filter((move) => {
+        if (move.captured) return true;
+        const checking = isCheckingMove(board, move);
+        if (checking) checkingMoves?.add(moveKey(move));
+        return checking;
+      });
   if (!tactical.length) return standPat;
 
   let best = standPat;
-  for (const move of orderMoves(board, tactical, context, ply)) {
-    const next = new Int8Array(board);
-    applyMove(next, move);
+  for (const move of orderMoves(
+    board,
+    tactical,
+    context,
+    ply,
+    "",
+    checkingMoves,
+  )) {
+    applyMove(board, move);
     const value = -quiescence(
-      next,
-      otherSide(sideToMove),
+      board,
+      opposite(sideToMove),
       -beta,
       -alpha,
       remaining - 1,
       context,
       ply + 1,
     );
+    undoMove(board, move);
     best = Math.max(best, value);
     alpha = Math.max(alpha, value);
     if (alpha >= beta || hasStopped(context)) break;
@@ -284,7 +300,7 @@ function search(
 ): number {
   if (hasStopped(context)) return evaluate(board, sideToMove);
   if (findKing(board, sideToMove) < 0) return -MATE_SCORE + ply;
-  if (findKing(board, otherSide(sideToMove)) < 0) return MATE_SCORE - ply;
+  if (findKing(board, opposite(sideToMove)) < 0) return MATE_SCORE - ply;
   if (depth === 0) {
     return quiescence(board, sideToMove, alpha, beta, 2, context, ply);
   }
@@ -308,17 +324,17 @@ function search(
   let best = -Infinity;
   let bestMove = moves[0];
   for (const move of moves) {
-    const next = new Int8Array(board);
-    applyMove(next, move);
+    applyMove(board, move);
     const value = -search(
-      next,
-      otherSide(sideToMove),
+      board,
+      opposite(sideToMove),
       depth - 1,
       -beta,
       -alpha,
       context,
       ply + 1,
     );
+    undoMove(board, move);
     if (value > best) {
       best = value;
       bestMove = move;
@@ -367,17 +383,17 @@ function searchRoot(
   let alpha = -Infinity;
   for (const move of moves) {
     if (hasStopped(context)) break;
-    const next = new Int8Array(board);
-    applyMove(next, move);
+    applyMove(board, move);
     const value = -search(
-      next,
-      otherSide(side),
+      board,
+      opposite(side),
       depth - 1,
       -Infinity,
       -alpha,
       context,
       1,
     );
+    undoMove(board, move);
     if (value > bestValue) {
       bestValue = value;
       bestMove = move;
@@ -417,7 +433,11 @@ export function chooseMove(
     previousMove = moveKey(best);
   }
 
-  if (config.randomness && !best.captured && Math.random() < config.randomness) {
+  if (
+    config.randomness &&
+    !best.captured &&
+    Math.random() < config.randomness
+  ) {
     const alternatives = orderMoves(board, legal, context, 0)
       .filter((move) => moveKey(move) !== moveKey(best))
       .slice(0, 2);

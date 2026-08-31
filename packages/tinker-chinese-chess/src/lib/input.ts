@@ -1,8 +1,8 @@
 import throttle from "licia/throttle";
-import type { Difficulty } from "./game/ai";
+import type { Difficulty } from "../game/ai";
 import type { ChessScene } from "./scene";
-import type { GameUi } from "./ui/view";
-import type { Mode, Phase } from "./game/state";
+import type { GameUi } from "../ui/view";
+import type { Mode, Phase } from "../game/state";
 
 type Cursor = { row: number; column: number };
 
@@ -30,6 +30,7 @@ type InputActions = {
   setDifficulty: (difficulty: Difficulty) => void;
   toggleSound: () => void;
   unlockAudio: () => void;
+  requestRender: () => void;
 };
 
 export function bindInput(
@@ -142,6 +143,7 @@ export function bindInput(
       const deltaY = event.clientY - lastY;
       if (dragMode === "pan") scene.pan(deltaX, deltaY);
       else scene.orbit(deltaX, deltaY);
+      actions.requestRender();
       lastX = event.clientX;
       lastY = event.clientY;
       event.preventDefault();

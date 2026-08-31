@@ -128,10 +128,6 @@ export function newBoard() {
   return board;
 }
 
-export function cloneBoard(board: Int8Array) {
-  return new Int8Array(board);
-}
-
 function inPalace(side: Side, row: number, column: number) {
   return column >= 3 && column <= 5 && (side === RED ? row >= 7 : row <= 2);
 }
@@ -287,18 +283,106 @@ export function findKing(board: Int8Array, side: Side) {
   return -1;
 }
 
+function attacksSquare(
+  board: Int8Array,
+  from: number,
+  target: number,
+  side: Side,
+) {
+  const type = pieceType(board[from]);
+  const fromRow = rowOf(from);
+  const fromColumn = columnOf(from);
+  const targetRow = rowOf(target);
+  const targetColumn = columnOf(target);
+  const rowDelta = targetRow - fromRow;
+  const columnDelta = targetColumn - fromColumn;
+
+  if (type === KING) {
+    if (
+      inPalace(side, targetRow, targetColumn) &&
+      Math.abs(rowDelta) + Math.abs(columnDelta) === 1
+    ) {
+      return true;
+    }
+    if (fromColumn !== targetColumn) return false;
+    const step = rowDelta > 0 ? 1 : -1;
+    for (let row = fromRow + step; row !== targetRow; row += step) {
+      if (board[index(row, fromColumn)] !== EMPTY) return false;
+    }
+    return pieceType(board[target]) === KING;
+  }
+
+  if (type === ADVISOR) {
+    return (
+      inPalace(side, targetRow, targetColumn) &&
+      Math.abs(rowDelta) === 1 &&
+      Math.abs(columnDelta) === 1
+    );
+  }
+
+  if (type === ELEPHANT) {
+    return (
+      !crossedRiver(side, targetRow) &&
+      Math.abs(rowDelta) === 2 &&
+      Math.abs(columnDelta) === 2 &&
+      board[index(fromRow + rowDelta / 2, fromColumn + columnDelta / 2)] ===
+        EMPTY
+    );
+  }
+
+  if (type === HORSE) {
+    return horseSteps.some(
+      ([dr, dc, lr, lc]) =>
+        rowDelta === dr &&
+        columnDelta === dc &&
+        board[index(fromRow + lr, fromColumn + lc)] === EMPTY,
+    );
+  }
+
+  if (type === ROOK || type === CANNON) {
+    if (rowDelta !== 0 && columnDelta !== 0) return false;
+    const rowStep = Math.sign(rowDelta);
+    const columnStep = Math.sign(columnDelta);
+    let blockers = 0;
+    for (
+      let row = fromRow + rowStep, column = fromColumn + columnStep;
+      row !== targetRow || column !== targetColumn;
+      row += rowStep, column += columnStep
+    ) {
+      if (board[index(row, column)] !== EMPTY) blockers++;
+    }
+    return type === ROOK ? blockers === 0 : blockers === 1;
+  }
+
+  if (type === PAWN) {
+    if (side === RED && rowDelta === -1 && columnDelta === 0) return true;
+    if (side === BLACK && rowDelta === 1 && columnDelta === 0) return true;
+    return (
+      crossedRiver(side, fromRow) &&
+      rowDelta === 0 &&
+      Math.abs(columnDelta) === 1
+    );
+  }
+
+  return false;
+}
+
 export function isInCheck(board: Int8Array, side: Side) {
   const king = findKing(board, side);
   if (king < 0) return true;
-  return generatePseudoMoves(board, opposite(side)).some(
-    (move) => move.to === king,
-  );
+  const attacker = opposite(side);
+  for (let from = 0; from < CELL_COUNT; from++) {
+    if (board[from] !== EMPTY && pieceSide(board[from]) === attacker) {
+      if (attacksSquare(board, from, king, attacker)) return true;
+    }
+  }
+  return false;
 }
 
 export function generateLegalMoves(board: Int8Array, side: Side) {
   const legal: Move[] = [];
   for (const move of generatePseudoMoves(board, side)) {
-    const next = cloneBoard(board);
+    const next = new Int8Array(board);
     applyMove(next, move);
     if (!isInCheck(next, side)) legal.push(move);
   }
@@ -317,10 +401,4 @@ export function resultFor(
   if (legalMoves.length > 0) return "playing";
   if (isInCheck(board, sideToMove)) return sideToMove === RED ? "black" : "red";
   return "draw";
-}
-
-export function moveLabel(move: Move) {
-  const side = pieceSide(move.piece);
-  const labels = PIECE_LABELS[pieceType(move.piece)];
-  return side === RED ? labels.red : labels.black;
 }
