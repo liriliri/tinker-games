@@ -3,6 +3,7 @@ import {
   EMPTY,
   getFlips,
   getLegalMoves,
+  countLegalMoves,
   opposite,
   type Move,
   type Stone,
@@ -15,6 +16,12 @@ const POSITION_VALUES = [
   120, -25, 20, 5, 5, 20, -25, 120, -25, -45, 1, 1, 1, 1, -45, -25, 20, 1, 5, 2,
   2, 5, 1, 20, 5, 1, 2, 1, 1, 2, 1, 5, 5, 1, 2, 1, 1, 2, 1, 5, 20, 1, 5, 2, 2,
   5, 1, 20, -25, -45, 1, 1, 1, 1, -45, -25, 120, -25, 20, 5, 5, 20, -25, 120,
+];
+const CORNERS = [
+  0,
+  BOARD_SIZE - 1,
+  BOARD_SIZE * (BOARD_SIZE - 1),
+  BOARD_SIZE * BOARD_SIZE - 1,
 ];
 
 type OrderedMove = { move: Move; flips: number[] };
@@ -52,16 +59,10 @@ function evaluate(board: Uint8Array, me: Stone) {
     }
   }
 
-  const myMoves = getLegalMoves(board, me).length;
-  const theirMoves = getLegalMoves(board, them).length;
+  const myMoves = countLegalMoves(board, me);
+  const theirMoves = countLegalMoves(board, them);
   const mobility = (myMoves - theirMoves) * 7;
-  const corners = [
-    0,
-    BOARD_SIZE - 1,
-    board.length - BOARD_SIZE,
-    board.length - 1,
-  ];
-  const cornerScore = corners.reduce(
+  const cornerScore = CORNERS.reduce(
     (score, cell) =>
       score + (board[cell] === me ? 1 : board[cell] === them ? -1 : 0),
     0,
@@ -77,11 +78,11 @@ function search(
   alpha: number,
   beta: number,
 ): number {
-  const moves = orderedMoves(board, turn);
   if (depth === 0) return evaluate(board, me);
 
+  const moves = orderedMoves(board, turn);
   if (moves.length === 0) {
-    if (orderedMoves(board, opposite(turn)).length === 0) {
+    if (countLegalMoves(board, opposite(turn)) === 0) {
       return evaluate(board, me);
     }
     return search(board, me, opposite(turn), depth - 1, alpha, beta);

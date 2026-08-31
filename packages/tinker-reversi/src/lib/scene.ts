@@ -10,7 +10,7 @@ import {
   EMPTY,
   type Move,
   type Stone,
-} from "./game/rules";
+} from "../game/rules";
 
 export const CELL_SPACING = 1.05;
 export const GRID_SPAN = CELL_SPACING * BOARD_SIZE;
@@ -26,6 +26,7 @@ export type ReversiScene = {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   cursor: THREE.Group;
+  animatedStones: Set<THREE.Object3D>;
   syncBoard: (
     board: Uint8Array,
     animatedCell?: number,
@@ -259,7 +260,6 @@ export function createScene(): ReversiScene {
     antialias: true,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.88;
@@ -517,6 +517,7 @@ export function createScene(): ReversiScene {
   });
   const stones: Array<THREE.Mesh | null> = Array(CELL_COUNT).fill(null);
   const stoneShadows: Array<THREE.Mesh | null> = Array(CELL_COUNT).fill(null);
+  const animatedStones = new Set<THREE.Object3D>();
 
   const cursor = new THREE.Group();
   cursor.add(makeCornerMarker(0x4cb4ff));
@@ -674,6 +675,7 @@ export function createScene(): ReversiScene {
       scene.add(mesh);
       stones[cell] = mesh;
     }
+    animatedStones.delete(mesh);
     mesh.material =
       stone === BLACK
         ? [whiteTopMaterial, blackSideMaterial, blackTopMaterial]
@@ -685,6 +687,7 @@ export function createScene(): ReversiScene {
     mesh.userData.dropStart = animate ? performance.now() : 0;
     mesh.userData.flipStart = 0;
     mesh.userData.flipAxis = undefined;
+    if (animate) animatedStones.add(mesh);
     return mesh;
   };
 
@@ -699,6 +702,7 @@ export function createScene(): ReversiScene {
     for (const shadow of stoneShadows) {
       if (shadow) shadow.visible = false;
     }
+    animatedStones.clear();
   };
 
   const syncBoard = (
@@ -706,10 +710,31 @@ export function createScene(): ReversiScene {
     animatedCell?: number,
     flippedCells: number[] = [],
   ) => {
-    clearStones();
     const flipOrder = new Map(flippedCells.map((cell, order) => [cell, order]));
-    for (let cell = 0; cell < board.length; cell++) {
-      if (board[cell] === EMPTY) continue;
+    const cells =
+      animatedCell === undefined && flippedCells.length === 0
+        ? Array.from({ length: board.length }, (_, cell) => cell)
+        : (() => {
+            const affected = new Set(flippedCells);
+            if (animatedCell !== undefined) affected.add(animatedCell);
+            return affected;
+          })();
+
+    if (animatedCell === undefined && flippedCells.length === 0) {
+      clearStones();
+    }
+
+    for (const cell of cells) {
+      if (board[cell] === EMPTY) {
+        const stone = stones[cell];
+        const shadow = stoneShadows[cell];
+        if (stone) {
+          stone.visible = false;
+          animatedStones.delete(stone);
+        }
+        if (shadow) shadow.visible = false;
+        continue;
+      }
       const flipIndex = flipOrder.get(cell);
       const isFlipping = flipIndex !== undefined;
       const stone = addStone(
@@ -723,6 +748,7 @@ export function createScene(): ReversiScene {
         stone.userData.flipStart = performance.now() + flipIndex * 40;
         stone.userData.flipAxis = DIAGONAL_FLIP_AXIS.clone();
         stone.quaternion.setFromAxisAngle(DIAGONAL_FLIP_AXIS, Math.PI);
+        animatedStones.add(stone);
       }
     }
   };
@@ -745,6 +771,7 @@ export function createScene(): ReversiScene {
     scene,
     camera,
     cursor,
+    animatedStones,
     syncBoard,
     clearStones,
     updateLegalMoves,
@@ -756,9 +783,13 @@ export function createScene(): ReversiScene {
 }
 
 export function updateSceneMotion(gameScene: ReversiScene, now: number) {
-  const pulse = 1 + Math.sin(now * 0.005) * 0.055;
-  gameScene.cursor.scale.set(pulse, 1, pulse);
-  for (const child of gameScene.scene.children) {
+  let hasMotion = gameScene.cursor.visible;
+  if (gameScene.cursor.visible) {
+    const pulse = 1 + Math.sin(now * 0.005) * 0.055;
+    gameScene.cursor.scale.set(pulse, 1, pulse);
+  }
+  for (const child of gameScene.animatedStones) {
+    hasMotion = true;
     const flipStart = child.userData.flipStart as number | undefined;
     if (flipStart) {
       const progress = clamp((now - flipStart) / 620, 0, 1);
@@ -782,6 +813,7 @@ export function updateSceneMotion(gameScene: ReversiScene, now: number) {
         child.userData.flipAxis = undefined;
         child.position.y = STONE_Y;
         child.quaternion.identity();
+        gameScene.animatedStones.delete(child);
       }
       continue;
     }
@@ -801,6 +833,8 @@ export function updateSceneMotion(gameScene: ReversiScene, now: number) {
       child.userData.dropStart = 0;
       child.position.y = STONE_Y;
       child.scale.set(1, 1, 1);
+      gameScene.animatedStones.delete(child);
     }
   }
+  return hasMotion;
 }

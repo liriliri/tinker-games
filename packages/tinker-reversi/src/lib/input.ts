@@ -1,7 +1,7 @@
-import type { Difficulty } from "./game/ai";
-import type { Mode, Phase } from "./game/state";
+import type { Difficulty } from "../game/ai";
+import type { Mode, Phase } from "../game/state";
 import type { ReversiScene } from "./scene";
-import type { GameUi } from "./ui/view";
+import type { GameUi } from "../ui/view";
 
 type Cursor = { row: number; column: number };
 
@@ -17,6 +17,7 @@ type InputActions = {
   setDifficulty: (difficulty: Difficulty) => void;
   toggleSound: () => void;
   unlockAudio: () => void;
+  requestRender: () => void;
 };
 
 export function bindInput(
@@ -100,17 +101,22 @@ export function bindInput(
   let lastOrbitX = 0;
   let lastOrbitY = 0;
   let dragMode: "rotate" | "pan" | null = null;
+  let pendingCell: { row: number; column: number } | null = null;
+  const dragThreshold = 4;
 
-  const endOrbit = (event: PointerEvent) => {
+  const endOrbit = (event: PointerEvent, place = false) => {
     if (event.pointerId !== orbitPointerId) return;
+    const shouldPlace = place && dragMode === null && pendingCell;
     orbitPointerId = null;
     dragMode = null;
+    pendingCell = null;
     scene.renderer.domElement.style.cursor = "grab";
     try {
       scene.renderer.domElement.releasePointerCapture(event.pointerId);
     } catch {
       // Pointer capture may already be released by the browser.
     }
+    if (shouldPlace) actions.placeStone(shouldPlace.row, shouldPlace.column);
   };
 
   scene.renderer.domElement.addEventListener("pointerdown", (event) => {
@@ -118,14 +124,16 @@ export function bindInput(
     const cell = scene.pickCell(event.clientX, event.clientY);
     if (event.button === 0 && cell && actions.getPhase() === "play") {
       actions.setCursor(cell.row, cell.column);
-      actions.placeStone(cell.row, cell.column);
-      return;
     }
     if (event.button === 0 || event.button === 2) {
       orbitPointerId = event.pointerId;
       lastOrbitX = event.clientX;
       lastOrbitY = event.clientY;
-      dragMode = event.button === 2 ? "pan" : "rotate";
+      dragMode = event.button === 2 ? "pan" : null;
+      pendingCell =
+        event.button === 0 && cell && actions.getPhase() === "play"
+          ? cell
+          : null;
       scene.renderer.domElement.style.cursor = "grabbing";
       scene.renderer.domElement.setPointerCapture(event.pointerId);
       event.preventDefault();
@@ -136,8 +144,17 @@ export function bindInput(
     if (event.pointerId === orbitPointerId) {
       const deltaX = event.clientX - lastOrbitX;
       const deltaY = event.clientY - lastOrbitY;
+      if (
+        dragMode === null &&
+        Math.hypot(event.clientX - lastOrbitX, event.clientY - lastOrbitY) >=
+          dragThreshold
+      ) {
+        dragMode = "rotate";
+        pendingCell = null;
+      }
       if (dragMode === "pan") scene.pan(deltaX, deltaY);
-      else scene.orbit(deltaX, deltaY);
+      if (dragMode === "rotate") scene.orbit(deltaX, deltaY);
+      if (dragMode !== null) actions.requestRender();
       lastOrbitX = event.clientX;
       lastOrbitY = event.clientY;
       event.preventDefault();
@@ -148,8 +165,12 @@ export function bindInput(
     if (cell) actions.setCursor(cell.row, cell.column);
   });
 
-  scene.renderer.domElement.addEventListener("pointerup", endOrbit);
-  scene.renderer.domElement.addEventListener("pointercancel", endOrbit);
+  scene.renderer.domElement.addEventListener("pointerup", (event) =>
+    endOrbit(event, true),
+  );
+  scene.renderer.domElement.addEventListener("pointercancel", (event) =>
+    endOrbit(event),
+  );
   scene.renderer.domElement.addEventListener("contextmenu", (event) =>
     event.preventDefault(),
   );
@@ -158,13 +179,16 @@ export function bindInput(
   let lastGamepadAction = false;
   const pollGamepad = () => {
     const pad = navigator.getGamepads?.()[0];
+    const action = Boolean(pad?.buttons[0]?.pressed);
     if (
       !pad ||
       actions.getPhase() === "menu" ||
       actions.getPhase() === "over" ||
       actions.getPhase() === "thinking"
-    )
+    ) {
+      lastGamepadAction = action;
       return;
+    }
     const threshold = 0.55;
     const x = pad.axes[0] ?? 0;
     const y = pad.axes[1] ?? 0;
@@ -185,7 +209,6 @@ export function bindInput(
       actions.moveCursor(direction[0], direction[1]);
       lastGamepadMove = now;
     }
-    const action = Boolean(pad.buttons[0]?.pressed);
     if (action && !lastGamepadAction) {
       const cursor = actions.getCursor();
       actions.placeStone(cursor.row, cursor.column);

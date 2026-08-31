@@ -1,24 +1,27 @@
-import "./style.css";
+import "./ui/style.css";
 import clamp from "licia/clamp";
-import { AudioKit } from "./audio";
+import { AudioKit } from "./lib/audio";
 import { chooseMove } from "./game/ai";
 import {
   BLACK,
   BOARD_SIZE,
   getFlips,
   getLegalMoves,
-  isGameOver,
   newBoard,
   opposite,
   countStones,
   index,
-  type Stone,
 } from "./game/rules";
 import { createGameState } from "./game/state";
-import { bindInput } from "./input";
-import { cellToWorld, createScene, updateSceneMotion } from "./scene";
-import { loadDifficulty, loadMode, saveDifficulty, saveMode } from "./storage";
-import { copy, detectLocale, type Locale } from "./ui/i18n";
+import { bindInput } from "./lib/input";
+import { cellToWorld, createScene, updateSceneMotion } from "./lib/scene";
+import {
+  loadDifficulty,
+  loadMode,
+  saveDifficulty,
+  saveMode,
+} from "./lib/storage";
+import { copy, detectLocale, type Locale } from "./lib/i18n";
 import {
   applyLocale as applyLocaleView,
   getGameUi,
@@ -39,6 +42,13 @@ let computerMoveTimer: number | undefined;
 let passTimer: number | undefined;
 let animationTimer: number | undefined;
 let matchVersion = 0;
+let renderScheduled = false;
+
+function requestRender() {
+  if (renderScheduled) return;
+  renderScheduled = true;
+  requestAnimationFrame(renderFrame);
+}
 
 function cancelPendingTimers() {
   if (computerMoveTimer !== undefined) {
@@ -69,10 +79,12 @@ function setCursor(row: number, column: number) {
   const point = cellToWorld(game.cursor.row, game.cursor.column);
   boardScene.cursor.position.x = point.x;
   boardScene.cursor.position.z = point.z;
+  requestRender();
 }
 
-function refreshLegalMoves(moves = getLegalMoves(game.board, game.turn)) {
+function refreshLegalMoves(moves: ReturnType<typeof getLegalMoves>) {
   boardScene.updateLegalMoves(game.phase === "play" ? moves : []);
+  requestRender();
 }
 
 function showResult() {
@@ -82,6 +94,7 @@ function showResult() {
   game.passed = false;
   boardScene.cursor.visible = false;
   boardScene.updateLegalMoves([]);
+  requestRender();
   ui.result.classList.remove("hidden");
   ui.resultBlack.textContent = String(score.black);
   ui.resultWhite.textContent = String(score.white);
@@ -95,18 +108,18 @@ function showResult() {
 }
 
 function beginTurn() {
-  if (isGameOver(game.board)) {
-    showResult();
-    return;
-  }
-
   const moves = getLegalMoves(game.board, game.turn);
   if (moves.length === 0) {
+    if (getLegalMoves(game.board, opposite(game.turn)).length === 0) {
+      showResult();
+      return;
+    }
     const currentMatch = matchVersion;
     const passedStone = game.turn;
     game.passed = true;
     updateTurn();
     boardScene.updateLegalMoves([]);
+    requestRender();
     passTimer = window.setTimeout(() => {
       passTimer = undefined;
       if (game.phase !== "play" || matchVersion !== currentMatch) return;
@@ -124,6 +137,7 @@ function beginTurn() {
   if (game.mode === "pve" && game.turn !== BLACK) {
     game.phase = "thinking";
     boardScene.updateLegalMoves([]);
+    requestRender();
     updateTurn();
     const currentMatch = matchVersion;
     computerMoveTimer = window.setTimeout(() => {
@@ -134,15 +148,11 @@ function beginTurn() {
 }
 
 function startMatch() {
-  cancelPendingTimers();
-  matchVersion++;
-  game.board = newBoard();
-  game.turn = BLACK;
-  game.phase = "play";
-  game.passed = false;
+  resetMatchState("play");
   setCursor(2, 3);
   boardScene.syncBoard(game.board);
   boardScene.cursor.visible = true;
+  requestRender();
   setMenuVisible(false);
   updateScore(ui, game.board);
   beginTurn();
@@ -150,18 +160,23 @@ function startMatch() {
 }
 
 function openMenu() {
-  cancelPendingTimers();
-  matchVersion++;
-  game.phase = "menu";
-  game.board = newBoard();
-  game.turn = BLACK;
-  game.passed = false;
+  resetMatchState("menu");
   boardScene.clearStones();
   boardScene.updateLegalMoves([]);
   boardScene.cursor.visible = false;
+  requestRender();
   setMenuVisible(true);
   updateScore(ui, game.board);
   updateTurn();
+}
+
+function resetMatchState(phase: "menu" | "play") {
+  cancelPendingTimers();
+  matchVersion++;
+  game.board = newBoard();
+  game.turn = BLACK;
+  game.passed = false;
+  game.phase = phase;
 }
 
 function placeStone(row: number, column: number) {
@@ -174,6 +189,7 @@ function placeStone(row: number, column: number) {
   game.board[cell] = stone;
   for (const flip of flips) game.board[flip] = stone;
   boardScene.syncBoard(game.board, cell, flips);
+  requestRender();
   updateScore(ui, game.board);
   audio.unlock();
   audio.play();
@@ -186,7 +202,6 @@ function placeStone(row: number, column: number) {
   animationTimer = window.setTimeout(() => {
     animationTimer = undefined;
     if (game.phase !== "animating" || matchVersion !== currentMatch) return;
-    audio.play();
     game.turn = opposite(stone);
     game.phase = "play";
     beginTurn();
@@ -236,23 +251,26 @@ const input = bindInput(boardScene, ui, {
     applyLocale();
   },
   unlockAudio: () => audio.unlock(),
+  requestRender,
 });
 
 function renderFrame(now: number) {
-  requestAnimationFrame(renderFrame);
+  renderScheduled = false;
   input.pollGamepad();
   const visible = game.phase === "play" || game.phase === "thinking";
   boardScene.cursor.visible = visible;
-  updateSceneMotion(boardScene, now);
+  const hasMotion = updateSceneMotion(boardScene, now);
   boardScene.renderer.render(boardScene.scene, boardScene.camera);
+  if (visible || hasMotion) requestRender();
 }
 
-window.addEventListener("resize", boardScene.resize);
+window.addEventListener("resize", () => {
+  boardScene.resize();
+  requestRender();
+});
 
 detectLocale().then((detectedLocale) => {
   locale = detectedLocale;
-  setModeSelection(ui, game.mode);
-  setDifficultySelection(game.difficulty);
   applyLocale();
 });
 setMenuVisible(true);
@@ -260,4 +278,4 @@ setModeSelection(ui, game.mode);
 setDifficultySelection(game.difficulty);
 updateScore(ui, game.board);
 boardScene.cursor.visible = false;
-requestAnimationFrame(renderFrame);
+requestRender();

@@ -76,15 +76,6 @@ export function getFlips(
   return flips;
 }
 
-export function isLegalMove(
-  board: Uint8Array,
-  row: number,
-  column: number,
-  stone: Stone,
-) {
-  return getFlips(board, row, column, stone).length > 0;
-}
-
 export function getLegalMoves(board: Uint8Array, stone: Stone): Move[] {
   const moves: Move[] = [];
   for (let cell = 0; cell < CELL_COUNT; cell++) {
@@ -98,18 +89,15 @@ export function getLegalMoves(board: Uint8Array, stone: Stone): Move[] {
   return moves;
 }
 
-export function applyMove(
-  board: Uint8Array,
-  row: number,
-  column: number,
-  stone: Stone,
-) {
-  const cell = index(row, column);
-  const flips = getFlips(board, row, column, stone);
-  if (flips.length === 0) return [];
-  board[cell] = stone;
-  for (const flip of flips) board[flip] = stone;
-  return [cell, ...flips];
+export function countLegalMoves(board: Uint8Array, stone: Stone) {
+  let count = 0;
+  for (let cell = 0; cell < CELL_COUNT; cell++) {
+    if (board[cell] !== EMPTY) continue;
+    const row = Math.floor(cell / BOARD_SIZE);
+    const column = cell % BOARD_SIZE;
+    if (getFlips(board, row, column, stone).length > 0) count++;
+  }
+  return count;
 }
 
 export function countStones(board: Uint8Array) {
@@ -124,11 +112,4 @@ export function countStones(board: Uint8Array) {
 
 export function isFull(board: Uint8Array) {
   return !board.includes(EMPTY);
-}
-
-export function isGameOver(board: Uint8Array) {
-  return (
-    getLegalMoves(board, BLACK).length === 0 &&
-    getLegalMoves(board, WHITE).length === 0
-  );
 }
