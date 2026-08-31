@@ -1,8 +1,8 @@
 import Phaser from 'phaser'
 import randomItem from 'licia/randomItem'
 import { getTileStyle } from '../ui/constants'
-import { FIELD_WIDTH, GAME_HEIGHT, TILE_BORDER_RADIUS } from '../layout'
-import { s, sf } from '../scale'
+import { FIELD_WIDTH, GAME_HEIGHT, TILE_BORDER_RADIUS } from '../lib/layout'
+import { s, sf } from '../lib/scale'
 import { fillSmoothRoundedRect } from '../ui/drawRoundedRect'
 import { sharpTextStyle } from '../ui/sharpText'
 

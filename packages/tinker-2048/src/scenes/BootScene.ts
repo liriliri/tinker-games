@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { initRegistry } from '../registry'
+import { initStorage } from '../lib/storage'
 import { SCENE_BOOT, SCENE_MENU } from './keys'
 
 export class BootScene extends Phaser.Scene {
@@ -17,7 +17,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    initRegistry(this.game)
+    initStorage(this.game)
     this.scene.start(SCENE_MENU)
   }
 }

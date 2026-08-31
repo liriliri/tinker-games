@@ -1,12 +1,12 @@
 import Phaser from 'phaser'
-import { GRID_SIZE } from '../game/constants'
 import {
   GAME_CONTAINER_BORDER_RADIUS,
   GAME_CONTAINER_Y,
   FIELD_WIDTH,
+  GRID_SIZE,
   TILE_BORDER_RADIUS,
-} from '../layout'
-import { s } from '../scale'
+} from '../lib/layout'
+import { s } from '../lib/scale'
 import { COLORS } from '../ui/constants'
 import { fillSmoothRoundedRect } from '../ui/drawRoundedRect'
 import { boardBounds, computeTileSize, tilePosition } from './gridLayout'

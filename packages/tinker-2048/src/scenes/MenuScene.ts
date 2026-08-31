@@ -1,14 +1,13 @@
 import Phaser from 'phaser'
-import type LocalStore from 'licia/LocalStore'
 import { COLORS } from '../ui/constants'
 import {
   FIELD_WIDTH,
   GAME_CONTAINER_MARGIN_BOTTOM,
   GAME_HEIGHT,
-} from '../layout'
-import { t } from '../i18n'
-import { getStore } from '../registry'
-import { applyRenderScale, RELAYOUT_EVENT, s } from '../scale'
+} from '../lib/layout'
+import { t } from '../lib/i18n'
+import { getStorage } from '../lib/storage'
+import { applyRenderScale, RELAYOUT_EVENT, s } from '../lib/scale'
 import { createButton } from '../ui/createButton'
 import { addSharpText } from '../ui/sharpText'
 import { MenuBackground } from './MenuBackground'
@@ -20,17 +19,6 @@ const MENU_BUTTON_GAP = 16
 
 const MENU_TITLE_WIDTH = 300
 const MENU_TITLE_HEIGHT = 76
-
-function hasResumableGame(store: LocalStore): boolean {
-  const state = store.get('gameState') as
-    | { gameGeneration?: number }
-    | undefined
-  if (!state) return false
-  const inSession = store.get('inSession') === true
-  if (!inSession) return true
-  const gen = store.get('gameGeneration') ?? 0
-  return (state.gameGeneration ?? 0) === gen
-}
 
 export class MenuScene extends Phaser.Scene {
   private background?: MenuBackground
@@ -81,10 +69,10 @@ export class MenuScene extends Phaser.Scene {
     prefix.setX(s(FIELD_WIDTH / 2) - (prefix.width + bold.width) / 2)
     bold.setX(prefix.x + prefix.width)
 
-    const store = getStore(this)
+    const storage = getStorage(this)
     const items: { label: string; action: () => void }[] = []
 
-    if (hasResumableGame(store)) {
+    if (storage.hasResumableGame()) {
       items.push({
         label: t('continue'),
         action: () => this.scene.start(SCENE_GAME),
@@ -95,8 +83,7 @@ export class MenuScene extends Phaser.Scene {
       {
         label: t('newGame'),
         action: () => {
-          store.remove('gameState')
-          store.set('gameGeneration', (store.get('gameGeneration') ?? 0) + 1)
+          storage.startNewGame()
           this.scene.start(SCENE_GAME)
         },
       },

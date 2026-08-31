@@ -2,9 +2,9 @@ import Phaser from 'phaser'
 import { BootScene } from './scenes/BootScene'
 import { MenuScene } from './scenes/MenuScene'
 import { GameScene } from './scenes/GameScene'
-import { bindRenderScale } from './scale'
-import { FIELD_WIDTH, GAME_HEIGHT } from './layout'
-import { setLocale } from './i18n'
+import { bindRenderScale } from './lib/scale'
+import { FIELD_WIDTH, GAME_HEIGHT } from './lib/layout'
+import { setLocale } from './lib/i18n'
 
 // Patch Phaser GamepadPlugin.stopListeners to safely handle null gamepad entries.
 // Phaser 3.90.0 bug: stopListeners iterates this.gamepads[i].removeAllListeners()

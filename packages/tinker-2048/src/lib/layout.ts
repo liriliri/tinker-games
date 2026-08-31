@@ -1,4 +1,5 @@
 export const FIELD_WIDTH = 500
+export const GRID_SIZE = 4
 export const GRID_SPACING = 15
 export const TILE_BORDER_RADIUS = 6
 export const GAME_CONTAINER_BORDER_RADIUS = 12

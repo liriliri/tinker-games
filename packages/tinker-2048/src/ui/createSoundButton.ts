@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 import { tweenScale } from './tweenScale'
 
 const SOUND_BUTTON_SIZE = 26

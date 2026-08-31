@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import type { Direction } from './game/GameManager'
+import type { Direction } from '../game/GameManager'
 
 const KEY_MAP: Record<number, Direction> = {
   38: 0,
@@ -24,12 +24,16 @@ export interface SwipeBinding {
   destroy(): void
 }
 
+export interface KeyboardBinding {
+  destroy(): void
+}
+
 export function bindKeyboard(
   scene: Phaser.Scene,
   onMove: (direction: Direction) => void,
   onRestart: () => void,
-) {
-  scene.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+): KeyboardBinding {
+  const onKeyDown = (event: KeyboardEvent) => {
     const modifiers =
       event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
     const mapped = KEY_MAP[event.which]
@@ -43,7 +47,15 @@ export function bindKeyboard(
       event.preventDefault()
       onRestart()
     }
-  })
+  }
+
+  scene.input.keyboard?.on('keydown', onKeyDown)
+
+  return {
+    destroy() {
+      scene.input.keyboard?.off('keydown', onKeyDown)
+    },
+  }
 }
 
 export function bindSwipe(
@@ -84,14 +96,7 @@ export function bindSwipe(
   }
 }
 
-interface GamepadMenuCallbacks {
-  onNavigate: (direction: 0 | 2) => void
-  onConfirm: () => void
-  onCancel: () => void
-}
-
 export interface GamepadBinding {
-  setMenuCallbacks(callbacks: GamepadMenuCallbacks | null): void
   destroy(): void
 }
 
@@ -104,11 +109,8 @@ export function bindGamepad(
   let prevDown = false
   let prevLeft = false
   let prevRight = false
-  let prevA = false
-  let prevB = false
   let prevSelect = false
   let prevStickActive = false
-  let menuCallbacks: GamepadMenuCallbacks | null = null
 
   const pollGamepad = () => {
     if (!scene.sys.isActive()) return
@@ -122,23 +124,6 @@ export function bindGamepad(
     }
     prevSelect = selectPressed
 
-    // Menu mode
-    if (menuCallbacks) {
-      if (pad.up && !prevUp) menuCallbacks.onNavigate(0)
-      else if (pad.down && !prevDown) menuCallbacks.onNavigate(2)
-
-      prevUp = pad.up
-      prevDown = pad.down
-
-      if (pad.A && !prevA) menuCallbacks.onConfirm()
-      if (pad.B && !prevB) menuCallbacks.onCancel()
-
-      prevA = pad.A
-      prevB = !!pad.B
-      return
-    }
-
-    // Game mode
     if (pad.up && !prevUp) onMove(0)
     else if (pad.down && !prevDown) onMove(2)
     else if (pad.left && !prevLeft) onMove(3)
@@ -176,18 +161,6 @@ export function bindGamepad(
   scene.events.on(Phaser.Scenes.Events.UPDATE, pollGamepad)
 
   return {
-    setMenuCallbacks(callbacks: GamepadMenuCallbacks | null) {
-      menuCallbacks = callbacks
-      // Reset edge detection when switching modes
-      prevUp = false
-      prevDown = false
-      prevLeft = false
-      prevRight = false
-      prevA = false
-      prevB = false
-      prevSelect = false
-      prevStickActive = false
-    },
     destroy() {
       scene.events.off(Phaser.Scenes.Events.UPDATE, pollGamepad)
     },

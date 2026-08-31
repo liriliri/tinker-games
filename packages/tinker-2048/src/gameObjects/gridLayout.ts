@@ -1,8 +1,12 @@
 import Phaser from 'phaser'
-import { GRID_SIZE } from '../game/constants'
-import { FIELD_WIDTH, GAME_CONTAINER_Y, GRID_SPACING } from '../layout'
+import {
+  FIELD_WIDTH,
+  GAME_CONTAINER_Y,
+  GRID_SIZE,
+  GRID_SPACING,
+} from '../lib/layout'
 import type { Position } from '../game/Tile'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 
 export function computeTileSize() {
   const spacing = s(GRID_SPACING)

@@ -1,8 +1,8 @@
 import Phaser from 'phaser'
 import { COLORS, TRANSITION_SPEED } from '../ui/constants'
-import { FIELD_WIDTH, GAME_CONTAINER_Y } from '../layout'
-import { t } from '../i18n'
-import { s } from '../scale'
+import { FIELD_WIDTH, GAME_CONTAINER_Y } from '../lib/layout'
+import { t } from '../lib/i18n'
+import { s } from '../lib/scale'
 import { createButton } from '../ui/createButton'
 import { addSharpText } from '../ui/sharpText'
 

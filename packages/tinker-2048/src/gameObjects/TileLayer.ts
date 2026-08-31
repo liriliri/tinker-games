@@ -1,9 +1,9 @@
 import Phaser from 'phaser'
 import { TRANSITION_SPEED, getTileStyle } from '../ui/constants'
-import { TILE_BORDER_RADIUS } from '../layout'
+import { TILE_BORDER_RADIUS } from '../lib/layout'
 import type { Grid } from '../game/Grid'
 import type { Position, Tile } from '../game/Tile'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 import {
   fillSmoothRoundedRect,
   strokeSmoothRoundedRect,

@@ -12,10 +12,6 @@ export const RELAYOUT_EVENT = 'relayout'
 let layoutScale = 1
 let resizeTimer: ReturnType<typeof setTimeout> | null = null
 
-function getLayoutScale() {
-  return layoutScale
-}
-
 function getFitScale(scale: Phaser.Scale.ScaleManager): number {
   let parentWidth = scale.parentSize.width
   let parentHeight = scale.parentSize.height

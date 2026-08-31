@@ -1,18 +1,16 @@
 import range from 'licia/range'
-import type LocalStore from 'licia/LocalStore'
-import { Grid, type SerializedGrid } from './Grid'
+import { Grid } from './Grid'
 import { Tile, type Position } from './Tile'
-import { GRID_SIZE } from './constants'
+import type { GameStorage } from '../lib/storage'
+import { GRID_SIZE } from '../lib/layout'
 
 export type Direction = 0 | 1 | 2 | 3 // up, right, down, left
 
-export interface SerializedGameState {
-  grid: SerializedGrid
-  score: number
-  over: boolean
-  won: boolean
-  keepPlaying: boolean
-  gameGeneration?: number
+const DIRECTION_VECTORS: Record<Direction, Position> = {
+  0: { x: 0, y: -1 },
+  1: { x: 1, y: 0 },
+  2: { x: 0, y: 1 },
+  3: { x: -1, y: 0 },
 }
 
 export interface GameMetadata {
@@ -39,7 +37,7 @@ export class GameManager {
   private startTiles = 2
 
   constructor(
-    private store: LocalStore,
+    private storage: GameStorage,
     private actuator: Actuator,
   ) {
     this.setup()
@@ -96,7 +94,7 @@ export class GameManager {
   }
 
   restart() {
-    this.store.remove('gameState')
+    this.storage.clearGameState()
     this.actuator.continueGame()
     this.setup()
   }
@@ -114,65 +112,8 @@ export class GameManager {
     return this.over || (this.won && !this.keepPlaying)
   }
 
-  // Session helpers (persisted in LocalStore)
-
-  markInSession() {
-    this.store.set('inSession', true)
-  }
-
-  isInSession(): boolean {
-    return this.store.get('inSession') === true
-  }
-
-  getGameGeneration(): number {
-    return this.store.get('gameGeneration') ?? 0
-  }
-
-  bumpGameGeneration(): number {
-    const next = this.getGameGeneration() + 1
-    this.store.set('gameGeneration', next)
-    return next
-  }
-
-  hasResumableGame(): boolean {
-    const state = this.getGameState()
-    if (!state) return false
-    if (!this.isInSession()) return true
-    return (state.gameGeneration ?? 0) === this.getGameGeneration()
-  }
-
-  // Storage helpers
-
-  getBestScore(): number {
-    return this.store.get('bestScore') ?? 0
-  }
-
-  setBestScore(score: number) {
-    this.store.set('bestScore', score)
-  }
-
-  getGameState(): SerializedGameState | null {
-    return this.store.get('gameState') ?? null
-  }
-
-  setGameState(state: SerializedGameState) {
-    this.store.set('gameState', state)
-  }
-
-  clearGameState() {
-    this.store.remove('gameState')
-  }
-
-  getSoundEnabled(): boolean {
-    return this.store.get('soundEnabled') ?? true
-  }
-
-  setSoundEnabled(enabled: boolean) {
-    this.store.set('soundEnabled', enabled)
-  }
-
   private setup() {
-    const previousState = this.getGameState()
+    const previousState = this.storage.getGameState()
 
     if (previousState) {
       this.grid = new Grid(previousState.grid.size, previousState.grid)
@@ -208,21 +149,21 @@ export class GameManager {
   }
 
   private sync(action?: { moved: boolean; merged: boolean }) {
-    if (this.getBestScore() < this.score) {
-      this.setBestScore(this.score)
+    if (this.storage.getBestScore() < this.score) {
+      this.storage.setBestScore(this.score)
     }
 
     if (this.over) {
-      this.clearGameState()
+      this.storage.clearGameState()
     } else {
-      this.setGameState(this.serialize())
+      this.storage.setGameState(this.serialize())
     }
 
     this.actuator.actuate(this.grid, {
       score: this.score,
       over: this.over,
       won: this.won,
-      bestScore: this.getBestScore(),
+      bestScore: this.storage.getBestScore(),
       terminated: this.isGameTerminated(),
       moved: action?.moved ?? false,
       merged: action?.merged ?? false,
@@ -236,7 +177,7 @@ export class GameManager {
       over: this.over,
       won: this.won,
       keepPlaying: this.keepPlaying,
-      gameGeneration: this.getGameGeneration(),
+      gameGeneration: this.storage.getGameGeneration(),
     }
   }
 
@@ -256,19 +197,13 @@ export class GameManager {
   }
 
   private getVector(direction: Direction): Position {
-    const map: Record<Direction, Position> = {
-      0: { x: 0, y: -1 },
-      1: { x: 1, y: 0 },
-      2: { x: 0, y: 1 },
-      3: { x: -1, y: 0 },
-    }
-    return map[direction]
+    return DIRECTION_VECTORS[direction]
   }
 
   private buildTraversals(vector: Position) {
     const traversals = {
-      x: range(GRID_SIZE),
-      y: range(GRID_SIZE),
+      x: range(this.grid.size),
+      y: range(this.grid.size),
     }
     if (vector.x === 1) traversals.x.reverse()
     if (vector.y === 1) traversals.y.reverse()
@@ -292,8 +227,8 @@ export class GameManager {
   }
 
   private tileMatchesAvailable(): boolean {
-    for (let x = 0; x < GRID_SIZE; x++) {
-      for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < this.grid.size; x++) {
+      for (let y = 0; y < this.grid.size; y++) {
         const tile = this.grid.cellContent({ x, y })
         if (tile) {
           for (let direction = 0; direction < 4; direction++) {

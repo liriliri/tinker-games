@@ -10,10 +10,11 @@ import {
   bindKeyboard,
   bindSwipe,
   type GamepadBinding,
+  type KeyboardBinding,
   type SwipeBinding,
-} from '../input'
-import { getStore } from '../registry'
-import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
+} from '../lib/input'
+import { getStorage } from '../lib/storage'
+import { applyRenderScale, RELAYOUT_EVENT } from '../lib/scale'
 import { Board } from '../gameObjects/Board'
 import { GameOverlay } from '../gameObjects/GameOverlay'
 import { ScorePanel } from '../gameObjects/ScorePanel'
@@ -27,6 +28,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private scorePanel!: ScorePanel
   private overlay!: GameOverlay
   private swipeBounds = new Phaser.Geom.Rectangle()
+  private keyboardBinding?: KeyboardBinding
   private swipeBinding?: SwipeBinding
   private gamepadBinding?: GamepadBinding
   private inputBound = false
@@ -37,8 +39,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   init() {
-    const store = getStore(this)
-    store.set('inSession', true)
+    getStorage(this).markInSession()
   }
 
   create() {
@@ -81,22 +82,18 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   private startGame() {
-    this.gameManager = new GameManager(getStore(this), this)
+    this.gameManager = new GameManager(getStorage(this), this)
   }
 
   private buildView() {
     this.destroyView()
 
-    const store = getStore(this)
+    const storage = getStorage(this)
     const currentScore = this.gameManager?.score ?? 0
 
     this.board = new Board(this)
     this.tileLayer = new TileLayer(this, this.board.tileSize)
-    this.scorePanel = new ScorePanel(
-      this,
-      store.get('bestScore') ?? 0,
-      currentScore,
-    )
+    this.scorePanel = new ScorePanel(this, storage.getBestScore(), currentScore)
     this.overlay = new GameOverlay(this, {
       onKeepPlaying: () => this.gameManager.continuePlaying(),
       onRestart: () => this.gameManager.restart(),
@@ -114,7 +111,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   private bindInput() {
     if (this.inputBound) return
 
-    bindKeyboard(
+    this.keyboardBinding = bindKeyboard(
       this,
       (direction) => this.gameManager.move(direction),
       () => this.gameManager.restart(),
@@ -150,6 +147,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
 
   private onShutdown() {
     this.events.off(RELAYOUT_EVENT, this.relayout, this)
+    this.keyboardBinding?.destroy()
+    this.keyboardBinding = undefined
     this.swipeBinding?.destroy()
     this.swipeBinding = undefined
     this.gamepadBinding?.destroy()
