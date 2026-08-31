@@ -1,6 +1,8 @@
 export type GameState = 'boot' | 'play' | 'victory flash'
 export type ScreenFlashPhase = 'fade-in' | 'hold' | 'fade-out'
 
+export const BALL_RADIUS = 0.25
+
 export const TONE_MAPPING_EXPOSURE = 1.42
 export const VICTORY_FLASH_PEAK_EXPOSURE = 4.2
 export const VICTORY_FLASH_FADE_IN_MS = 520
@@ -12,7 +14,6 @@ export const ENV_MAP_SIZE = 128
 export const ENV_MAP_UPDATE_INTERVAL = 3
 export const ENV_MAP_MOVE_THRESHOLD = 0.05
 
-export const BALL_RADIUS = 0.25
 export const POINT_LIGHT_INTENSITY = 2.0
 export const PLAY_LIGHT_INTENSITY = POINT_LIGHT_INTENSITY * 0.85
 export const AMBIENT_LIGHT_INTENSITY = 0.52

@@ -1,3 +1,5 @@
+import randomItem from 'licia/randomItem'
+
 export type MazeGrid = boolean[][] & { dimension: number }
 
 export type LevelLayout = {
@@ -12,8 +14,8 @@ function randomOddCell(dimension: number): [number, number] {
   for (let i = 1; i < dimension - 1; i += 2) {
     coords.push(i)
   }
-  const x = coords[Math.floor(Math.random() * coords.length)]
-  const y = coords[Math.floor(Math.random() * coords.length)]
+  const x = randomItem(coords)
+  const y = randomItem(coords)
   return [x, y]
 }
 
@@ -37,7 +39,7 @@ export function generateSquareMaze(dimension: number): MazeGrid {
       if (directions.length === 0) {
         return field
       }
-      const dir = directions[Math.floor(Math.random() * directions.length)]
+      const dir = randomItem(directions)
       field[x + dir[0]][y + dir[1]] = false
       field = iterate(field, x + dir[0] * 2, y + dir[1] * 2)
     }
@@ -142,14 +144,10 @@ function carveExit(field: MazeGrid, exitX: number, exitY: number) {
   return { escapeX: exitX, escapeY: 0 }
 }
 
-function pickRandom<T>(items: T[]) {
-  return items[Math.floor(Math.random() * items.length)]
-}
-
 export function pickLevelLayout(field: MazeGrid): LevelLayout {
   const passages = getPassages(field)
   const minDistance = Math.max(4, Math.floor(field.dimension / 3))
-  const start = pickRandom(passages)
+  const start = randomItem(passages)
 
   let exitCandidates = passages.filter(
     ([x, y]) =>
@@ -174,7 +172,7 @@ export function pickLevelLayout(field: MazeGrid): LevelLayout {
 
   exitCandidates.sort((a, b) => manhattan(b, start) - manhattan(a, start))
   const farCount = Math.max(1, Math.ceil(exitCandidates.length * 0.25))
-  const [exitX, exitY] = pickRandom(exitCandidates.slice(0, farCount))
+  const [exitX, exitY] = randomItem(exitCandidates.slice(0, farCount))
   const { escapeX, escapeY } = carveExit(field, exitX, exitY)
 
   return {

@@ -1,3 +1,5 @@
+import clamp from 'licia/clamp'
+
 const MINIMAP_SIZE = 84
 const MINIMAP_PADDING = 8
 
@@ -18,8 +20,8 @@ export class Minimap {
     const ctx = this.ctx
     const inner = MINIMAP_SIZE - MINIMAP_PADDING * 2
     const max = Math.max(dimension - 1, 1)
-    const tX = Math.min(Math.max(ballX / max, 0), 1)
-    const tY = Math.min(Math.max(ballY / max, 0), 1)
+    const tX = clamp(ballX / max, 0, 1)
+    const tY = clamp(ballY / max, 0, 1)
 
     ctx.clearRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE)
 

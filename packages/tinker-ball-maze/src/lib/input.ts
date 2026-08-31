@@ -1,3 +1,5 @@
+import clamp from 'licia/clamp'
+
 type Axis = [number, number]
 
 const STICK_DEADZONE = 0.15
@@ -23,10 +25,6 @@ function applyDeadzone(value: number, deadzone: number) {
     return 0
   }
   return Math.sign(value) * ((abs - deadzone) / (1 - deadzone))
-}
-
-function clampAxis(value: number) {
-  return Math.max(-1, Math.min(1, value))
 }
 
 function getGamepadAxis(): Axis {
@@ -70,7 +68,7 @@ function getGamepadAxis(): Axis {
 
   const x = pickAxis(stickX, dpadX)
   const y = pickAxis(-stickY, dpadY)
-  return [clampAxis(x), clampAxis(y)]
+  return [clamp(x, -1, 1), clamp(y, -1, 1)]
 }
 
 function pickAxis(a: number, b: number) {

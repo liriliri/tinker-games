@@ -1,11 +1,11 @@
 import * as THREE from 'three'
 import { Howl, Howler } from 'howler'
 import { Body, Box, Circle, Contact, ContactImpulse, Vec2, World } from 'planck'
+import clamp from 'licia/clamp'
 import {
   AMBIENT_LIGHT_INTENSITY,
   BALL_RADIUS,
   ENV_MAP_SIZE,
-  type GameState,
   HIT_SOUND_COOLDOWN_MS,
   HIT_SOUND_MAX_IMPULSE,
   HIT_SOUND_MAX_VOLUME,
@@ -22,6 +22,7 @@ import {
   SHADOW_NORMAL_BIAS,
   SHADOW_RADIUS,
   SHADOW_WARMUP_FRAMES,
+  type GameState,
   type ScreenFlashPhase,
   TONE_MAPPING_EXPOSURE,
   VICTORY_FLASH_FADE_IN_MS,
@@ -29,8 +30,8 @@ import {
   VICTORY_FLASH_MIN_HOLD_MS,
   VICTORY_FLASH_PEAK_EXPOSURE,
 } from './constants'
-import { AxisInput } from './input'
-import { Minimap } from './minimap'
+import { AxisInput } from '../lib/input'
+import { Minimap } from '../ui/Minimap'
 import {
   braidMaze,
   BRAID_CHANCE,
@@ -524,7 +525,7 @@ export class Game {
     const t =
       (this.rollingSpeedSmoothed - ROLLING_SOUND_MIN_SPEED) /
       (ROLLING_SOUND_MAX_SPEED - ROLLING_SOUND_MIN_SPEED)
-    const targetVolume = Math.min(Math.max(t, 0), 1) * ROLLING_SOUND_MAX_VOLUME
+    const targetVolume = clamp(t, 0, 1) * ROLLING_SOUND_MAX_VOLUME
     this.rollingSoundVolume +=
       (targetVolume - this.rollingSoundVolume) * ROLLING_SOUND_VOLUME_SMOOTHING
     this.rollingSound.volume(this.rollingSoundVolume)
