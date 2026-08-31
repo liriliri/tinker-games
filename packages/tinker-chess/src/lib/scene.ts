@@ -2,7 +2,7 @@ import * as THREE from "three";
 import clamp from "licia/clamp";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 import {
   BISHOP,
@@ -92,7 +92,7 @@ function makeMarker(color: number, ring: boolean): THREE.Object3D {
   return mesh;
 }
 
-function normalizeFbxModel(model: THREE.Group, targetHeight: number) {
+function normalizePieceModel(model: THREE.Group, targetHeight: number) {
   const bounds = new THREE.Box3().setFromObject(model);
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
@@ -124,7 +124,7 @@ function normalizeFbxModel(model: THREE.Group, targetHeight: number) {
   return model;
 }
 
-function tintFbxModel(
+function tintPieceModel(
   model: THREE.Group,
   side: number,
   texture: THREE.Texture,
@@ -197,7 +197,7 @@ function makePiece(
   const orientation = new THREE.Group();
   orientation.rotation.y =
     (pieceSide(piece) > 0 ? 0 : Math.PI) + (type === KNIGHT ? Math.PI / 2 : 0);
-  tintFbxModel(model, pieceSide(piece), texture);
+  tintPieceModel(model, pieceSide(piece), texture);
   pieceObject.userData.piece = piece;
   pieceObject.userData.modelType = type;
   orientation.add(model);
@@ -456,9 +456,7 @@ function makeBoard(woodTextures: {
   return group;
 }
 
-export function createScene(
-  onAssetLoad: () => void = () => {},
-): ChessScene {
+export function createScene(onAssetLoad: () => void = () => {}): ChessScene {
   RectAreaLightUniformsLib.init();
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -496,11 +494,7 @@ export function createScene(
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = 0.2;
   floor.receiveShadow = true;
-  scene.add(
-    floor,
-    makeBoardShadow(),
-    makeBoard(loadWoodTextures(onAssetLoad)),
-  );
+  scene.add(floor, makeBoardShadow(), makeBoard(loadWoodTextures(onAssetLoad)));
   const onyxTexture = loadOnyxTexture(onAssetLoad);
 
   const cursor = makeMarker(0xf1dfb8, true);
@@ -536,16 +530,14 @@ export function createScene(
   }[] = [];
   let pieceMotionComplete: (() => void) | null = null;
   const finishPieceAnimations = () => {
-    pieceAnimations.forEach(
-      ({ object, end, captured, capturedRemoved }) => {
+    pieceAnimations.forEach(({ object, end, captured, capturedRemoved }) => {
       object.position.copy(end);
       object.userData.animatingMove = false;
       if (captured && !capturedRemoved) {
         scene.remove(captured);
         disposePieceObject(captured);
       }
-    },
-    );
+    });
     pieceAnimations.length = 0;
   };
   const syncBoard = (board: Int8Array, move: Move | null = null) => {
@@ -639,14 +631,14 @@ export function createScene(
     }
   };
 
-  const modelLoader = new FBXLoader();
+  const modelLoader = new GLTFLoader();
   const modelPaths: Record<number, string> = {
-    [PAWN]: "models/pawn.fbx",
-    [KNIGHT]: "models/knight.fbx",
-    [BISHOP]: "models/bishop.fbx",
-    [ROOK]: "models/rook.fbx",
-    [QUEEN]: "models/queen.fbx",
-    [KING]: "models/king.fbx",
+    [PAWN]: "models/pawn.glb",
+    [KNIGHT]: "models/knight.glb",
+    [BISHOP]: "models/bishop.glb",
+    [ROOK]: "models/rook.glb",
+    [QUEEN]: "models/queen.glb",
+    [KING]: "models/king.glb",
   };
   const modelHeights: Record<number, number> = {
     [PAWN]: 1.08,
@@ -659,8 +651,11 @@ export function createScene(
   for (const type of modelTypes) {
     modelLoader.load(
       modelPaths[type],
-      (model) => {
-        pieceTemplates[type] = normalizeFbxModel(model, modelHeights[type]);
+      (gltf) => {
+        pieceTemplates[type] = normalizePieceModel(
+          gltf.scene,
+          modelHeights[type],
+        );
         syncBoard(currentBoard);
         onAssetLoad();
       },

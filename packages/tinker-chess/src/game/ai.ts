@@ -217,11 +217,7 @@ function search(
     if (stopped(context)) break;
   }
   const bound =
-    best <= originalAlpha
-      ? "upper"
-      : best >= originalBeta
-        ? "lower"
-        : "exact";
+    best <= originalAlpha ? "upper" : best >= originalBeta ? "lower" : "exact";
   context.table.set(key, {
     depth,
     value: best,
