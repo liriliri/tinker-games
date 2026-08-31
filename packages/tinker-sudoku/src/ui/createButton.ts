@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import { COLORS } from '../game/constants'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 import { fillSmoothRoundedRect } from './drawRoundedRect'
 import { digitTextStyle, sharpTextStyle } from './sharpText'
 

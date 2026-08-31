@@ -1,17 +1,7 @@
+import shuffle from 'licia/shuffle'
+
 export type Grid = number[][]
 export type CellPos = { row: number; col: number }
-
-function shuffle<T>(array: T[]): T[] {
-  let counter = array.length
-  while (counter > 0) {
-    const index = Math.floor(Math.random() * counter)
-    counter--
-    const temp = array[counter]
-    array[counter] = array[index]
-    array[index] = temp
-  }
-  return array
-}
 
 export function createEmptyGrid(): Grid {
   return Array.from({ length: 9 }, () => new Array(9).fill(0))

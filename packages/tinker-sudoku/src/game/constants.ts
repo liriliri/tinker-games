@@ -1,5 +1,4 @@
 export const FIELD_WIDTH = 500
-export const SCENE_GAME = 'Game'
 export const GRID_SIZE = 9
 
 export const STATUS_BAR_HEIGHT = 36

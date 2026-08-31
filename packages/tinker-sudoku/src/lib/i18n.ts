@@ -54,12 +54,12 @@ export function t(key: keyof Messages): string {
   return messages[locale][key]
 }
 
+export function getDigitFontFamily(): string {
+  return getFontFamily()
+}
+
 export function getFontFamily(): string {
   return locale === 'zh-CN'
     ? '"PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif'
     : '"Helvetica Neue", Arial, sans-serif'
-}
-
-export function getDigitFontFamily(): string {
-  return getFontFamily()
 }

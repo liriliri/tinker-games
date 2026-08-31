@@ -7,9 +7,9 @@ import {
 } from '../game/GameManager'
 import type { LevelId } from '../game/levels'
 import type { Grid } from '../game/SudokuEngine'
-import { SCENE_GAME } from '../game/constants'
-import { getStore, initRegistry } from '../registry'
-import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
+import { SCENE_GAME } from './keys'
+import { getStorage, initStorage } from '../lib/storage'
+import { applyRenderScale, RELAYOUT_EVENT } from '../lib/scale'
 import { DigitPad } from '../gameObjects/DigitPad'
 import { LevelDialog } from '../gameObjects/LevelDialog'
 import { StatusBar } from '../gameObjects/StatusBar'
@@ -33,8 +33,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   create() {
-    initRegistry(this.game)
-    this.gameManager = new GameManager(getStore(this), this)
+    initStorage(this.game)
+    this.gameManager = new GameManager(getStorage(this), this)
     applyRenderScale(this.game)
 
     this.levelDialog = new LevelDialog(this, (levelId) =>

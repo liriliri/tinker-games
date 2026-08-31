@@ -1,6 +1,6 @@
-import type LocalStore from 'licia/LocalStore'
 import Phaser from 'phaser'
 import clamp from 'licia/clamp'
+import randomItem from 'licia/randomItem'
 import {
   DEFAULT_LEVEL_ID,
   getCurrentLevel,
@@ -18,6 +18,7 @@ import {
   type CellPos,
   type Grid,
 } from './SudokuEngine'
+import type { GameStorage } from '../lib/storage'
 
 export type CellKind = 'given' | 'user'
 
@@ -61,10 +62,10 @@ export class GameManager {
   private timerRunning = false
 
   constructor(
-    private store: LocalStore,
+    private storage: GameStorage,
     private actuator: Actuator,
   ) {
-    const storedLevel = store.get('level')
+    const storedLevel = storage.getLevel()
     const levelId = isLevelId(storedLevel) ? storedLevel : DEFAULT_LEVEL_ID
     initCurrentLevel(levelId)
   }
@@ -78,7 +79,7 @@ export class GameManager {
   }
 
   setLevel(levelId: LevelId) {
-    this.store.set('level', levelId)
+    this.storage.setLevel(levelId)
     initCurrentLevel(levelId)
     this.startNewPuzzle(levelId)
   }
@@ -126,7 +127,7 @@ export class GameManager {
   }
 
   requestNewPuzzle(levelId: LevelId) {
-    this.store.set('level', levelId)
+    this.storage.setLevel(levelId)
     initCurrentLevel(levelId)
     this.startNewPuzzle(levelId)
   }
@@ -183,8 +184,7 @@ export class GameManager {
     const candidates = this.getHintCandidates()
     if (candidates.length === 0) return
 
-    const { row, col } =
-      candidates[Math.floor(Math.random() * candidates.length)]
+    const { row, col } = randomItem(candidates)
     this.grid[row][col] = this.solution[row][col]
     this.cellKinds[row][col] = 'user'
     this.selected = { row, col }

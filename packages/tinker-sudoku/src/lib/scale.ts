@@ -25,7 +25,7 @@ function getFitScale(scale: Phaser.Scale.ScaleManager): number {
     parentHeight / GAME_HEIGHT,
   )
 
-  return Phaser.Math.Clamp(fitScale, MIN_FIT_SCALE, MAX_FIT_SCALE)
+  return clamp(fitScale, MIN_FIT_SCALE, MAX_FIT_SCALE)
 }
 
 function computeLayoutScale(fitScale: number) {

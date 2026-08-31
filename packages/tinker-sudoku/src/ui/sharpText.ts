@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
-import { getDigitFontFamily, getFontFamily } from '../i18n'
-import { s } from '../scale'
+import { getDigitFontFamily, getFontFamily } from '../lib/i18n'
+import { s } from '../lib/scale'
 
 export function sharpTextStyle(
   designPx: number,

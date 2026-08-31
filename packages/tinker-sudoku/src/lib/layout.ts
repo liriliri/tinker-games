@@ -5,8 +5,8 @@ import {
   GAME_CONTAINER_MARGIN_TOP,
   GRID_PADDING,
   STATUS_BAR_HEIGHT,
-} from './game/constants'
-import { computeGridPixelSize } from './game/gridMetrics'
+} from '../game/constants'
+import { computeGridPixelSize } from '../gameObjects/gridMetrics'
 
 export const CONTROLS_GAP = 8
 

@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 
 export function fillSmoothRoundedRect(
   gfx: Phaser.GameObjects.Graphics,

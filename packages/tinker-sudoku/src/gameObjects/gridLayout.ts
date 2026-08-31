@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import { GRID_PADDING, GRID_SIZE } from '../game/constants'
-import { GAME_CONTAINER_Y, FIELD_WIDTH } from '../layout'
-import { s } from '../scale'
+import { GAME_CONTAINER_Y, FIELD_WIDTH } from '../lib/layout'
+import { s } from '../lib/scale'
 
 export function computeCellSize() {
   return (s(FIELD_WIDTH) - s(GRID_PADDING) * 2) / GRID_SIZE
