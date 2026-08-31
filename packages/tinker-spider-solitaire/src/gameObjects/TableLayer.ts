@@ -24,12 +24,12 @@ import {
   TABLEAU_Y,
 } from '../game/constants'
 import { tableauCardY } from './BoardBackground'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 import {
   sizeCardSprite,
   scaledCardHeight,
   scaledCardWidth,
-} from '../game/spriteScale'
+} from './spriteScale'
 import { CardView } from './CardView'
 
 export interface DragState {

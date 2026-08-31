@@ -13,7 +13,7 @@ import {
   slotX,
   TABLEAU_SLOT_Y,
 } from '../game/constants'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 
 const SLOT_RADIUS = 4
 

@@ -1,6 +1,5 @@
 import Phaser from 'phaser'
 import { preloadGameAssets } from '../game/cardAssets'
-import { SCENE_GAME } from '../game/constants'
 import {
   GameManager,
   type Actuator,
@@ -16,9 +15,10 @@ import { DifficultyDialog } from '../gameObjects/DifficultyDialog'
 import { GameOverlay, Toast } from '../gameObjects/GameOverlay'
 import { StatusBar } from '../gameObjects/StatusBar'
 import { TableLayer } from '../gameObjects/TableLayer'
-import { t } from '../i18n'
-import { getStore, initRegistry } from '../registry'
-import { applyRenderScale, RELAYOUT_EVENT } from '../scale'
+import { t } from '../lib/i18n'
+import { getStorage, initStorage } from '../lib/storage'
+import { applyRenderScale, RELAYOUT_EVENT } from '../lib/scale'
+import { SCENE_GAME } from './keys'
 
 export class GameScene extends Phaser.Scene implements Actuator {
   private gameManager!: GameManager
@@ -39,8 +39,8 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   create() {
-    initRegistry(this.game)
-    this.gameManager = new GameManager(getStore(this), this)
+    initStorage(this.game)
+    this.gameManager = new GameManager(getStorage(this), this)
     applyRenderScale(this.game)
     this.buildView()
     this.gameManager.startGame(this.gameManager.board.difficulty)

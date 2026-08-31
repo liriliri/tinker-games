@@ -5,7 +5,7 @@ import {
   sizeCardSprite,
   scaledCardHeight,
   scaledCardWidth,
-} from '../game/spriteScale'
+} from './spriteScale'
 
 export class CardView extends Phaser.GameObjects.Container {
   readonly cardId: number

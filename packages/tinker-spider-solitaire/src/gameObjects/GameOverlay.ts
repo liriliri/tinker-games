@@ -1,8 +1,8 @@
 import Phaser from 'phaser'
 import { COLORS, FIELD_WIDTH } from '../game/constants'
-import { GAME_HEIGHT } from '../layout'
-import { t } from '../i18n'
-import { s } from '../scale'
+import { GAME_HEIGHT } from '../lib/layout'
+import { t } from '../lib/i18n'
+import { s } from '../lib/scale'
 import { addSharpText } from '../ui/sharpText'
 
 export class GameOverlay {

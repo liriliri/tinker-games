@@ -1,5 +1,4 @@
 export const FIELD_WIDTH = 880
-export const SCENE_GAME = 'Game'
 
 export const NUM_COLUMNS = 10
 export const NUM_DECKS = 8

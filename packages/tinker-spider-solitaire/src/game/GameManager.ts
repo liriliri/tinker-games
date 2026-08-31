@@ -1,10 +1,10 @@
-import type LocalStore from 'licia/LocalStore'
 import type {
   CompletedStackInfo,
   DealCardInfo,
   Difficulty,
 } from './SpiderBoard'
 import { DEFAULT_DIFFICULTY, isDifficulty, SpiderBoard } from './SpiderBoard'
+import type { GameStorage } from '../lib/storage'
 
 export interface GameMetadata {
   score: number
@@ -35,14 +35,14 @@ export class GameManager {
   private animating = false
 
   constructor(
-    private store: LocalStore,
+    private storage: GameStorage,
     private actuator: Actuator,
   ) {
     this.board = new SpiderBoard(this.loadDifficulty())
   }
 
   startGame(difficulty: Difficulty) {
-    this.store.set('difficulty', difficulty)
+    this.storage.setDifficulty(difficulty)
     this.board = new SpiderBoard(difficulty)
     this.refresh()
   }
@@ -117,7 +117,7 @@ export class GameManager {
   }
 
   private loadDifficulty(): Difficulty {
-    const stored = this.store.get('difficulty')
+    const stored = this.storage.getDifficulty()
     return isDifficulty(stored) ? stored : DEFAULT_DIFFICULTY
   }
 }

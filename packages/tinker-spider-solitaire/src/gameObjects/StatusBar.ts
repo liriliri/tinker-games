@@ -8,9 +8,9 @@ import {
   STATUS_BAR_RADIUS,
   STATUS_BAR_WIDTH,
 } from '../game/constants'
-import { GAME_HEIGHT } from '../layout'
-import { difficultyShortLabel, t } from '../i18n'
-import { s } from '../scale'
+import { GAME_HEIGHT } from '../lib/layout'
+import { difficultyShortLabel, t } from '../lib/i18n'
+import { s } from '../lib/scale'
 import { addSharpText } from '../ui/sharpText'
 
 function statusBarOrigin() {
