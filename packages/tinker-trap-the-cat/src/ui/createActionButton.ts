@@ -5,7 +5,7 @@ import {
   BUTTON_FONT_SIZE,
   COLORS,
 } from '../game/constants'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 import {
   fillSmoothRoundedRect,
   strokeSmoothRoundedRect,

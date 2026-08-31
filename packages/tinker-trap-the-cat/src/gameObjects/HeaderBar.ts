@@ -4,9 +4,9 @@ import {
   HEADER_PADDING_X,
   STATUS_FONT_SIZE,
 } from '../game/constants'
-import { t } from '../i18n'
+import { t } from '../lib/i18n'
 import { GameScene } from '../scenes/GameScene'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 import { createActionButton } from '../ui/createActionButton'
 import { sharpTextStyle } from '../ui/sharpText'
 

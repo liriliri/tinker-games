@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import { CELL_R } from './constants'
-import { s } from '../scale'
+import { s } from '../lib/scale'
 
 export const CAT_TEXTURES = {
   bottom_left_1: 'images/bottom_left/1.svg',

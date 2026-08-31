@@ -15,23 +15,24 @@ import {
   HEX_CELL_SCALE,
   MEOW_SOUND_KEY,
   MEOW_SOUND_PATH,
-  SCENE_GAME,
   VICTORY_SOUND_KEY,
   VICTORY_SOUND_PATH,
+  GameState,
 } from '../game/constants'
 import {
   isFairRandomStart,
   MAX_RANDOM_WALL_ATTEMPTS,
 } from '../game/playability'
-import { t } from '../i18n'
+import { t } from '../lib/i18n'
 import { Block } from '../gameObjects/Block'
 import { Cat } from '../gameObjects/Cat'
 import { HeaderBar } from '../gameObjects/HeaderBar'
-import { applyRenderScale, RELAYOUT_EVENT, s } from '../scale'
+import { applyRenderScale, RELAYOUT_EVENT, s } from '../lib/scale'
 import filter from 'licia/filter'
 import map from 'licia/map'
 import range from 'licia/range'
 import shuffle from 'licia/shuffle'
+import { SCENE_GAME } from './keys'
 
 type GridPosition = {
   x: number
@@ -51,12 +52,6 @@ type SavedState = {
   recordCoord: RecordCoord
   state: GameState
   statusText: string
-}
-
-enum GameState {
-  PLAYING = 'playing',
-  WIN = 'win',
-  LOSE = 'lose',
 }
 
 export class GameScene extends Phaser.Scene {

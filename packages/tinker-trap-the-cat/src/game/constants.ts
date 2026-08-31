@@ -1,5 +1,3 @@
-export const SCENE_GAME = 'GameScene'
-
 export const MEOW_SOUND_KEY = 'meow'
 export const MEOW_SOUND_PATH = 'sound/meow.mp3'
 export const VICTORY_SOUND_KEY = 'victory'
@@ -10,6 +8,12 @@ export const GRID_H = 11
 export const CELL_R = 20
 export const HEX_CELL_SCALE = 0.92
 export const INITIAL_WALL_COUNT = 16
+
+export enum GameState {
+  PLAYING = 'playing',
+  WIN = 'win',
+  LOSE = 'lose',
+}
 
 export const HEADER_HEIGHT = 44
 export const GRID_MARGIN_TOP = 8

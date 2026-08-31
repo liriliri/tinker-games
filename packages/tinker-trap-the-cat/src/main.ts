@@ -1,8 +1,8 @@
 import Phaser from 'phaser'
-import { setLocale } from './i18n'
-import { GAME_HEIGHT, GAME_WIDTH } from './layout'
+import { setLocale } from './lib/i18n'
+import { GAME_HEIGHT, GAME_WIDTH } from './lib/layout'
 import { GameScene } from './scenes/GameScene'
-import { bindRenderScale } from './scale'
+import { bindRenderScale } from './lib/scale'
 
 async function initLanguage() {
   if (typeof tinker !== 'undefined') {
