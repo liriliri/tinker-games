@@ -1,10 +1,10 @@
 {
   "name": "tinker-chess",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A focused international chess game with a thoughtful computer opponent.",
   "files": [
     "dist/",
-    "icon.svg"
+    "icon.png"
   ],
   "repository": {
     "type": "git",
