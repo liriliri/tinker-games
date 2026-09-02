@@ -4,8 +4,15 @@ import { BLACK, newBoard, type Stone } from "./rules";
 export type Mode = "pvp" | "pve";
 export type Phase = "menu" | "play" | "thinking" | "over";
 
+export type MoveRecord = {
+  row: number;
+  column: number;
+  stone: Stone;
+};
+
 export type GameState = {
   board: ReturnType<typeof newBoard>;
+  history: MoveRecord[];
   mode: Mode;
   difficulty: Difficulty;
   phase: Phase;
@@ -20,6 +27,7 @@ export function createGameState(
 ): GameState {
   return {
     board: newBoard(),
+    history: [],
     mode,
     difficulty,
     phase: "menu",

@@ -1,7 +1,7 @@
 import "./ui/style.css";
 import clamp from "licia/clamp";
 import { AudioKit } from "./lib/audio";
-import { chooseMove } from "./game/ai";
+import { chooseMove } from "./game/ai/index";
 import {
   BOARD_SIZE,
   BLACK,
@@ -73,6 +73,7 @@ function startMatch() {
   cancelPendingTimers();
   matchVersion++;
   game.board = newBoard();
+  game.history = [];
   game.turn = BLACK;
   game.phase = "play";
   setCursor(7, 7);
@@ -87,6 +88,7 @@ function openMenu() {
   matchVersion++;
   game.phase = "menu";
   game.board = newBoard();
+  game.history = [];
   boardScene.clearStones();
   setMenuVisible(true);
   updateTurn();
@@ -114,6 +116,7 @@ function placeStone(row: number, column: number) {
   if (game.phase !== "play" || game.board[index(row, column)] !== EMPTY) return;
   const stone = game.turn;
   game.board[index(row, column)] = stone;
+  game.history.push({ row, column, stone });
   boardScene.addStone(stone, row, column, true);
   const point = cellToWorld(row, column);
   boardScene.lastMark.position.set(
@@ -157,7 +160,7 @@ function placeStone(row: number, column: number) {
 
 function runComputerMove() {
   if (game.phase !== "thinking") return;
-  const move = chooseMove(game.board, WHITE, game.difficulty);
+  const move = chooseMove(game.history, WHITE, game.difficulty);
   if (!move) {
     showResult(0);
     return;
