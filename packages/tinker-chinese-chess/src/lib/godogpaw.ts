@@ -31,17 +31,29 @@ const ENGINE_CONFIG: Record<Difficulty, { depth: number; time: number }> = {
   hard: { depth: 8, time: 15000 },
 };
 
-let ready: Promise<boolean> | undefined;
+const ENGINE_WAIT_MS = 15_000;
 
-function assetUrl(path: string) {
-  return `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`;
+let bootPromise: Promise<void> | undefined;
+
+function assetUrl(relativePath: string) {
+  return new URL(relativePath.replace(/^\//, ""), document.baseURI).href;
+}
+
+function missingEngineApis() {
+  return ENGINE_APIS.filter((name) => typeof globalThis[name] !== "function");
 }
 
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${src}"]`,
+    );
+    if (existing) {
+      if (typeof globalThis.Go === "function") {
+        resolve();
+        return;
+      }
+      existing.remove();
     }
     const script = document.createElement("script");
     script.src = src;
@@ -51,43 +63,70 @@ function loadScript(src: string) {
   });
 }
 
-function hasEngineApis() {
-  return ENGINE_APIS.every((name) => typeof globalThis[name] === "function");
+async function waitForEngineApis(deadline = Date.now() + ENGINE_WAIT_MS) {
+  while (Date.now() < deadline) {
+    const missing = missingEngineApis();
+    if (missing.length === 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 16));
+  }
+  const missing = missingEngineApis();
+  throw new Error(
+    missing.length
+      ? `godogpaw engine APIs missing: ${missing.join(", ")}`
+      : "godogpaw engine APIs missing",
+  );
+}
+
+async function instantiateWasm(url: string, importObject: WebAssembly.Imports) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status}`);
+  }
+  const contentType = response.headers.get("Content-Type") ?? "";
+  if (contentType.includes("application/wasm")) {
+    return WebAssembly.instantiateStreaming(
+      Promise.resolve(response),
+      importObject,
+    );
+  }
+  const bytes = await response.arrayBuffer();
+  return WebAssembly.instantiate(bytes, importObject);
 }
 
 async function bootEngine() {
-  await loadScript(assetUrl("engine/wasm_exec.js"));
+  const wasmExecUrl = assetUrl("engine/wasm_exec.js");
+  const wasmUrl = assetUrl("engine/godogpaw.wasm");
+  await loadScript(wasmExecUrl);
+  if (typeof globalThis.Go !== "function") {
+    throw new Error("Go runtime missing after loading wasm_exec.js");
+  }
   const go = new Go();
-  const result = await WebAssembly.instantiateStreaming(
-    fetch(assetUrl("engine/godogpaw.wasm")),
-    go.importObject,
-  );
+  let runtimeError: unknown;
+  const result = await instantiateWasm(wasmUrl, go.importObject);
   go.run(result.instance).catch((error) => {
+    runtimeError = error;
     console.error("godogpaw runtime error:", error);
   });
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (!hasEngineApis()) {
-    throw new Error("godogpaw engine APIs missing after startup");
-  }
+  await waitForEngineApis();
+  if (runtimeError) throw runtimeError;
   engineNewGame("");
-  return true;
 }
 
 export function initGodogpawEngine() {
-  if (!ready) {
-    ready = bootEngine().catch((error) => {
-      ready = undefined;
-      console.warn("godogpaw engine unavailable:", error);
-      return false;
+  if (!bootPromise) {
+    bootPromise = bootEngine().catch((error) => {
+      bootPromise = undefined;
+      throw error;
     });
   }
-  return ready;
+  return bootPromise;
 }
 
 async function ensureReady() {
-  const ok = await initGodogpawEngine();
-  if (!ok || !hasEngineApis()) {
-    throw new Error("godogpaw engine is not ready");
+  await initGodogpawEngine();
+  const missing = missingEngineApis();
+  if (missing.length) {
+    throw new Error(`godogpaw engine is not ready: ${missing.join(", ")}`);
   }
 }
 
