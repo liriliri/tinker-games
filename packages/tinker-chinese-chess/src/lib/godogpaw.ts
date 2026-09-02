@@ -2,11 +2,14 @@ import { COLUMNS, ROWS, index, type Move } from "../game/rules";
 import type { Difficulty } from "../game/state";
 
 declare global {
-  class Go {
+  interface GoInstance {
     importObject: WebAssembly.Imports;
     run(instance: WebAssembly.Instance): Promise<void>;
-    constructor();
   }
+
+  var Go: {
+    new (): GoInstance;
+  };
 
   function engineNewGame(fen?: string): null;
   function engineGetBoard(): string;
