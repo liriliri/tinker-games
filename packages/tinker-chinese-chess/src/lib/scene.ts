@@ -792,7 +792,7 @@ export function createScene(): ChessScene {
     camera.aspect = width / height;
     const fit =
       BOARD_DEPTH / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
-    orbitDistance = fit * Math.max(1, 1 / (width / height)) * 1.08;
+    orbitDistance = fit * Math.max(1, 1 / (width / height)) * 1.15;
     applyCameraOrbit();
     camera.updateProjectionMatrix();
   };
