@@ -1,7 +1,7 @@
 import "./ui/style.css";
 import clamp from "licia/clamp";
 import { AudioKit } from "./lib/audio";
-import { chooseMove } from "./game/ai";
+import { chooseEngineMove, initGodogpawEngine } from "./lib/godogpaw";
 import {
   applyMove,
   BLACK,
@@ -119,9 +119,8 @@ function startMatch() {
 
 function openMenu() {
   resetMatchState("menu");
-  chessScene.clear();
-  requestRender();
   setMenuVisible(ui, true);
+  refreshBoard();
   refreshTurn();
 }
 
@@ -186,21 +185,29 @@ function selectCell(row: number, column: number) {
   refreshTurn();
 }
 
-function runComputerMove() {
+async function runComputerMove() {
   if (game.phase !== "thinking") return;
-  const move = chooseMove(
-    game.board,
-    computerSide,
-    game.difficulty,
-    game.history,
-  );
-  if (!move) {
-    finish(resultFor(game.board, computerSide) as "red" | "black" | "draw");
-    return;
+  const currentMatch = matchVersion;
+  try {
+    const move = await chooseEngineMove(
+      game.board,
+      game.history,
+      game.difficulty,
+    );
+    if (currentMatch !== matchVersion || game.phase !== "thinking") return;
+    if (!move) {
+      finish(resultFor(game.board, computerSide) as "red" | "black" | "draw");
+      return;
+    }
+    setCursor(Math.floor(move.to / COLUMNS), move.to % COLUMNS);
+    game.phase = "play";
+    commitMove(move);
+  } catch (error) {
+    console.error("godogpaw search failed:", error);
+    if (currentMatch !== matchVersion || game.phase !== "thinking") return;
+    game.phase = "play";
+    refreshTurn();
   }
-  setCursor(Math.floor(move.to / COLUMNS), move.to % COLUMNS);
-  game.phase = "play";
-  commitMove(move);
 }
 
 function undo() {
@@ -282,8 +289,10 @@ detectLocale().then((detectedLocale) => {
   locale = detectedLocale;
   applyLocale();
 });
+initGodogpawEngine();
 setModeSelection(ui, game.mode);
 setDifficultySelection(game.difficulty);
 setMenuVisible(ui, true);
+refreshBoard();
 refreshTurn();
 requestRender();

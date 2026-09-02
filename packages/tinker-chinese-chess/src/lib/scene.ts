@@ -169,6 +169,43 @@ function makePlaneText(text: string, color: string) {
   return plane;
 }
 
+function makeBoardShadow() {
+  const shadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(BOARD_WIDTH + 0.8, BOARD_DEPTH + 0.8),
+    new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        shadowColor: { value: new THREE.Color(0x050806) },
+        opacity: { value: 0.48 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 shadowColor;
+        uniform float opacity;
+        varying vec2 vUv;
+
+        void main() {
+          float edge = max(abs(vUv.x * 2.0 - 1.0), abs(vUv.y * 2.0 - 1.0));
+          float alpha = 1.0 - smoothstep(0.84, 1.0, edge);
+          gl_FragColor = vec4(shadowColor, alpha * opacity);
+        }
+      `,
+    }),
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = BOARD_Y - 0.518;
+  shadow.renderOrder = 0;
+  return shadow;
+}
+
 function makeGrid() {
   const group = new THREE.Group();
   const material = new THREE.MeshBasicMaterial({ color: 0x211008 });
@@ -518,14 +555,14 @@ export function createScene(): ChessScene {
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
   scene.add(camera);
 
-  const table = new THREE.Mesh(
-    new THREE.PlaneGeometry(80, 80),
-    new THREE.MeshStandardMaterial({ color: 0x202a2d, roughness: 0.96 }),
+  const floor = new THREE.Mesh(
+    new THREE.CircleGeometry(30, 64),
+    new THREE.MeshStandardMaterial({ color: 0x111618, roughness: 0.98 }),
   );
-  table.rotation.x = -Math.PI / 2;
-  table.position.y = -0.45;
-  table.receiveShadow = true;
-  scene.add(table);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = BOARD_Y - 0.52;
+  floor.receiveShadow = true;
+  scene.add(floor, makeBoardShadow());
 
   const woodTextures = loadWoodTextures();
   const contactShadowTexture = makeContactShadowTexture();
@@ -715,17 +752,20 @@ export function createScene(): ChessScene {
   const orbitTarget = new THREE.Vector3(0, 0.3, 0);
 
   const applyCameraOrbit = () => {
+    const topDown = orbitPitch < 0.001;
     const horizontal = Math.sin(orbitPitch) * orbitDistance;
+    camera.up.set(0, topDown ? 0 : 1, topDown ? -1 : 0);
     camera.position.set(
       orbitTarget.x + Math.sin(orbitYaw) * horizontal,
-      orbitTarget.y + Math.cos(orbitPitch) * orbitDistance,
+      orbitTarget.y +
+        (topDown ? orbitDistance : Math.cos(orbitPitch) * orbitDistance),
       orbitTarget.z + Math.cos(orbitYaw) * horizontal,
     );
     camera.lookAt(orbitTarget);
   };
   const orbit = (deltaX: number, deltaY: number) => {
     orbitYaw -= deltaX * 0.008;
-    orbitPitch = clamp(orbitPitch - deltaY * 0.006, 0.04, 1.12);
+    orbitPitch = clamp(orbitPitch - deltaY * 0.006, 0, 1.12);
     applyCameraOrbit();
   };
   const pan = (deltaX: number, deltaY: number) => {
@@ -738,7 +778,8 @@ export function createScene(): ChessScene {
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     forward.y = 0;
-    forward.normalize();
+    if (forward.lengthSq() > 0.0001) forward.normalize();
+    else forward.set(0, 0, -1);
     const scale = orbitDistance * 0.0012;
     orbitTarget.addScaledVector(right, -deltaX * scale);
     orbitTarget.addScaledVector(forward, deltaY * scale);

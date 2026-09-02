@@ -1,5 +1,5 @@
 import throttle from "licia/throttle";
-import type { Difficulty } from "../game/ai";
+import type { Difficulty } from "../game/state";
 import type { ChessScene } from "./scene";
 import type { GameUi } from "../ui/view";
 import type { Mode, Phase } from "../game/state";

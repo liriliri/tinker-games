@@ -1,5 +1,5 @@
 import LocalStore from "licia/LocalStore";
-import type { Difficulty } from "../game/ai";
+import type { Difficulty } from "../game/state";
 import type { Mode } from "../game/state";
 
 const store = new LocalStore("tinker-chinese-chess");
