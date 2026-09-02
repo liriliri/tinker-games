@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Checkers</title>
+  </head>
+  <body>
+    <main id="app">
+      <header class="topbar">
+        <button
+          id="menuButton"
+          class="text-button"
+          type="button"
+          data-i18n="menu"
+        >
+          Menu
+        </button>
+        <div class="top-actions">
+          <button
+            id="undoButton"
+            class="text-button"
+            type="button"
+            data-i18n="undo"
+          >
+            Undo
+          </button>
+          <button
+            id="soundButton"
+            class="text-button icon-button"
+            type="button"
+            aria-label="Sound"
+            aria-pressed="true"
+          >
+            <svg class="sound-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+              <path
+                class="sound-waves"
+                d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"
+              />
+              <path class="sound-off-line" d="m17 9 4 6m0-6-4 6" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <aside class="game-info">
+        <div id="turnPill" class="turn-pill">
+          <span id="turnStone" class="turn-stone black"></span>
+          <span id="turnText">Black to move</span>
+        </div>
+        <p class="hint" data-i18n="hint">
+          Select a piece to see its legal moves
+        </p>
+        <p class="rules-note" data-i18n="rulesNote">
+          Black moves first · Captures are mandatory
+        </p>
+      </aside>
+
+      <section id="menu" class="overlay">
+        <div class="menu-panel">
+          <div class="settings-grid">
+            <div class="setting">
+              <label data-i18n="mode">MATCH</label>
+              <div class="segmented">
+                <button class="choice selected" data-mode="pvp" type="button">
+                  <span data-i18n="local">LOCAL 2P</span>
+                </button>
+                <button class="choice" data-mode="pve" type="button">
+                  <span data-i18n="computer">VS CPU</span>
+                </button>
+              </div>
+            </div>
+            <div class="setting" id="difficultySetting">
+              <label data-i18n="difficulty">CPU LEVEL</label>
+              <div class="segmented">
+                <button class="choice" data-difficulty="easy" type="button">
+                  <span data-i18n="easy">BEGINNER</span>
+                </button>
+                <button
+                  class="choice selected"
+                  data-difficulty="normal"
+                  type="button"
+                >
+                  <span data-i18n="normal">STEADY</span>
+                </button>
+                <button class="choice" data-difficulty="hard" type="button">
+                  <span data-i18n="hard">MASTER</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button id="startButton" class="primary-button" type="button">
+            <span data-i18n="start">START MATCH</span
+            ><span class="button-piece-mark" aria-hidden="true"></span>
+          </button>
+        </div>
+      </section>
+
+      <section id="result" class="overlay hidden">
+        <div class="result-panel">
+          <div class="panel-kicker" data-i18n="gameOver">THE LAST MOVE</div>
+          <h2 id="resultTitle">Black wins</h2>
+          <div class="result-actions">
+            <button id="againButton" class="primary-button" type="button">
+              <span data-i18n="playAgain">PLAY AGAIN</span><span>↗</span>
+            </button>
+            <button
+              id="resultMenuButton"
+              class="secondary-button"
+              type="button"
+              data-i18n="changeMode"
+            >
+              CHANGE MODE
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

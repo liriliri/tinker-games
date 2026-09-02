@@ -1,0 +1,30 @@
+{
+  "name": "tinker-checkers",
+  "version": "0.1.0",
+  "description": "A 3D English draughts (checkers) game with a thoughtful computer opponent.",
+  "files": [
+    "dist/",
+    "icon.png"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
+  "tinker": {
+    "name": "Checkers",
+    "description": "Play English draughts against a friend or the computer.",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "locales": {
+      "zh-CN": {
+        "name": "英式跳棋",
+        "description": "和朋友或电脑下一盘英式跳棋。"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  }
+}
