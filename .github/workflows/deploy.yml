@@ -23,6 +23,7 @@ jobs:
           npm i
           cd packages/tinker-${{ github.event.inputs.game }}
           npm run build
+          node ../../script/ga.js dist/index.html
           mkdir ../deploy
           cp -r dist/* ../deploy/
       - uses: appleboy/scp-action@master
