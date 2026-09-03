@@ -8,6 +8,7 @@ import {
   type EnglishDraughtsEngineData,
   type EnglishDraughtsGame,
 } from "rapid-draughts/english";
+import filter from "licia/filter";
 
 export const BOARD_SIZE = 8;
 export const CELL_COUNT = BOARD_SIZE * BOARD_SIZE;
@@ -50,6 +51,9 @@ export function darkPosToCell(position: number): number {
   return index(row, column);
 }
 
+/** Default cursor: dark square 20 (near the human side). */
+export const DEFAULT_CURSOR_CELL = darkPosToCell(20);
+
 export function cellToDarkPos(cell: number): number | null {
   const row = rowOf(cell);
   const column = columnOf(cell);
@@ -81,10 +85,6 @@ export function playerToSide(player: DraughtsPlayer): Side {
   return player === DraughtsPlayer.DARK ? DARK : LIGHT;
 }
 
-export function sideToPlayer(side: Side): DraughtsPlayer {
-  return side === DARK ? DraughtsPlayer.DARK : DraughtsPlayer.LIGHT;
-}
-
 export function boardFromGame(game: CheckersGame): Int8Array {
   const board = new Int8Array(CELL_COUNT);
   for (const square of game.board) {
@@ -108,16 +108,8 @@ export function isKing(piece: Piece) {
   return Math.abs(piece) === 2;
 }
 
-export function legalMoves(game: CheckersGame): Move[] {
-  return game.moves;
-}
-
 export function movesFrom(game: CheckersGame, darkPos: number): Move[] {
-  return game.moves.filter((move) => move.origin === darkPos);
-}
-
-export function applyMove(game: CheckersGame, move: Move) {
-  game.move(move);
+  return filter(game.moves, (move) => move.origin === darkPos);
 }
 
 export function resultFor(

@@ -179,10 +179,6 @@ button {
   color: var(--signal);
 }
 
-.turn-pill.check {
-  color: #d99d72;
-}
-
 .turn-stone {
   display: block;
   width: 15px;

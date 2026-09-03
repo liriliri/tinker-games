@@ -2,6 +2,8 @@ import {
   EnglishDraughtsComputerFactory,
   type EnglishDraughtsGame,
 } from "rapid-draughts/english";
+import random from "licia/random";
+import randomItem from "licia/randomItem";
 import type { Move } from "./rules";
 
 export type Difficulty = "easy" | "normal" | "hard";
@@ -17,8 +19,8 @@ export async function chooseMove(
   difficulty: Difficulty,
 ): Promise<Move | null> {
   if (game.moves.length === 0) return null;
-  if (difficulty === "easy" && Math.random() < 0.35) {
-    return game.moves[Math.floor(Math.random() * game.moves.length)] ?? null;
+  if (difficulty === "easy" && random(0, 1, true) < 0.35) {
+    return randomItem(game.moves) ?? null;
   }
   const computer = EnglishDraughtsComputerFactory.alphaBeta({
     maxDepth: DEPTH[difficulty],

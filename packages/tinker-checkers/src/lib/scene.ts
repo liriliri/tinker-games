@@ -1,5 +1,15 @@
 import * as THREE from "three";
 import clamp from "licia/clamp";
+import each from "licia/each";
+import Emitter from "licia/Emitter";
+import find from "licia/find";
+import isEqual from "licia/isEqual";
+import last from "licia/last";
+import map from "licia/map";
+import max from "licia/max";
+import min from "licia/min";
+import perfNow from "licia/perfNow";
+import random from "licia/random";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
 import {
@@ -18,13 +28,12 @@ import {
 
 const BOARD_Y = 0.62;
 const FACE_TOP = BOARD_Y - 0.05;
-const PIECE_BASE_Y = FACE_TOP + 0.08;
+const PIECE_BASE_Y = FACE_TOP + 0.006;
 const PIECE_MOVE_BASE_DURATION = 220;
 const PIECE_MOVE_LIFT = 0.28;
 const CAPTURE_DISAPPEAR_PROGRESS = 0.55;
 const WHITE_COLOR = 0xbdbdb8;
 const BLACK_COLOR = 0x161616;
-const KING_ACCENT = 0xd4af50;
 
 export type Cell = { row: number; column: number };
 
@@ -39,12 +48,14 @@ export type CheckersScene = {
   syncBoard: (board: Int8Array, move?: Move | null) => void;
   updatePieceMotion: (now: number) => boolean;
   isPieceMoving: () => boolean;
-  onPieceMotionComplete: (callback: () => void) => void;
+  /** Register a listener; returns unsubscribe. */
+  onPieceMotionComplete: (callback: () => void) => () => void;
   updateSelection: (selected: number | null, legalTargets: number[]) => void;
   updateLastMove: (cell: number | null) => void;
   pickCell: (clientX: number, clientY: number) => Cell | null;
   orbit: (deltaX: number, deltaY: number) => void;
   pan: (deltaX: number, deltaY: number) => void;
+  settleView: () => void;
   resize: () => void;
 };
 
@@ -146,6 +157,119 @@ function makeFrameSurface(
   return new THREE.Mesh(geometry, material);
 }
 
+function paintNoise(
+  context: CanvasRenderingContext2D,
+  x0: number,
+  y0: number,
+  width: number,
+  height: number,
+  intensity: number,
+) {
+  const image = context.getImageData(x0, y0, width, height);
+  const data = image.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const n = (random(0, 1, true) - 0.5) * 18 * intensity;
+    data[i] = clamp(data[i]! + n, 0, 255);
+    data[i + 1] = clamp(data[i + 1]! + n, 0, 255);
+    data[i + 2] = clamp(data[i + 2]! + n, 0, 255);
+  }
+  context.putImageData(image, x0, y0);
+}
+
+function paintScratches(
+  context: CanvasRenderingContext2D,
+  x0: number,
+  y0: number,
+  width: number,
+  height: number,
+  scratch: [number, number, number],
+  count: number,
+  intensity: number,
+  lengthRange: [number, number],
+  widthRange: [number, number],
+) {
+  const [sr, sg, sb] = scratch;
+  for (let i = 0; i < count; i++) {
+    const alpha = (0.04 + random(0, 0.1, true)) * intensity;
+    context.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${alpha})`;
+    context.lineWidth = random(widthRange[0], widthRange[1], true);
+    context.beginPath();
+    const x = x0 + random(0, width, true);
+    const y = y0 + random(0, height, true);
+    const length = random(lengthRange[0], lengthRange[1], true);
+    const angle = random(0, Math.PI, true);
+    context.moveTo(x, y);
+    context.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
+    context.stroke();
+  }
+}
+
+function paintScratchCell(
+  context: CanvasRenderingContext2D,
+  x0: number,
+  y0: number,
+  cell: number,
+  base: [number, number, number],
+  scratch: [number, number, number],
+) {
+  const [br, bg, bb] = base;
+  context.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
+  context.fillRect(x0, y0, cell, cell);
+  paintNoise(context, x0, y0, cell, cell, 1);
+  context.save();
+  context.beginPath();
+  context.rect(x0, y0, cell, cell);
+  context.clip();
+  paintScratches(
+    context,
+    x0,
+    y0,
+    cell,
+    cell,
+    scratch,
+    28,
+    1,
+    [12, 60],
+    [0.6, 1.8],
+  );
+  context.restore();
+}
+
+function makeBoardFaceTexture() {
+  const cell = 128;
+  const size = cell * BOARD_SIZE;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext("2d")!;
+  const light: [number, number, number] = [212, 212, 208];
+  const dark: [number, number, number] = [26, 26, 26];
+  const lightScratch: [number, number, number] = [70, 70, 66];
+  const darkScratch: [number, number, number] = [210, 210, 205];
+
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    for (let column = 0; column < BOARD_SIZE; column++) {
+      const lightSquare = (row + column) % 2 === 0;
+      // Plane UV samples image bottom at +Z (row 0), so flip canvas rows.
+      paintScratchCell(
+        context,
+        column * cell,
+        (BOARD_SIZE - 1 - row) * cell,
+        cell,
+        lightSquare ? light : dark,
+        lightSquare ? lightScratch : darkScratch,
+      );
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  return texture;
+}
+
 function makeScratchTexture(
   base: [number, number, number],
   scratch: [number, number, number],
@@ -158,42 +282,30 @@ function makeScratchTexture(
   const [br, bg, bb] = base;
   context.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
   context.fillRect(0, 0, size, size);
-
-  const image = context.getImageData(0, 0, size, size);
-  const data = image.data;
-  for (let i = 0; i < data.length; i += 4) {
-    const n = (Math.random() - 0.5) * 18 * intensity;
-    data[i] = Math.max(0, Math.min(255, data[i]! + n));
-    data[i + 1] = Math.max(0, Math.min(255, data[i + 1]! + n));
-    data[i + 2] = Math.max(0, Math.min(255, data[i + 2]! + n));
-  }
-  context.putImageData(image, 0, 0);
-
+  paintNoise(context, 0, 0, size, size, intensity);
+  paintScratches(
+    context,
+    0,
+    0,
+    size,
+    size,
+    scratch,
+    Math.round(42 * intensity),
+    intensity,
+    [18, 88],
+    [0.6, 2],
+  );
   const [sr, sg, sb] = scratch;
-  const scratchCount = Math.round(42 * intensity);
-  for (let i = 0; i < scratchCount; i++) {
-    const alpha = (0.04 + Math.random() * 0.1) * intensity;
-    context.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${alpha})`;
-    context.lineWidth = 0.6 + Math.random() * 1.4;
-    context.beginPath();
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const length = 18 + Math.random() * 70;
-    const angle = Math.random() * Math.PI;
-    context.moveTo(x, y);
-    context.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
-    context.stroke();
-  }
   const fineCount = Math.round(18 * intensity);
   for (let i = 0; i < fineCount; i++) {
-    const alpha = (0.03 + Math.random() * 0.07) * intensity;
+    const alpha = (0.03 + random(0, 0.07, true)) * intensity;
     context.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${alpha})`;
-    context.lineWidth = 0.4 + Math.random();
+    context.lineWidth = 0.4 + random(0, 1, true);
     context.beginPath();
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const length = 8 + Math.random() * 28;
-    const angle = (Math.random() - 0.5) * 0.5 + (i % 2 === 0 ? 0.2 : 1.4);
+    const x = random(0, size, true);
+    const y = random(0, size, true);
+    const length = random(8, 36, true);
+    const angle = (random(0, 1, true) - 0.5) * 0.5 + (i % 2 === 0 ? 0.2 : 1.4);
     context.moveTo(x, y);
     context.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
     context.stroke();
@@ -289,35 +401,32 @@ function makeBoard() {
     ),
   );
 
-  const squareGeometry = new THREE.BoxGeometry(1.01, 0.08, 1.01);
-  const lightSquareMap = makeScratchTexture([212, 212, 208], [70, 70, 66]);
-  const darkSquareMap = makeScratchTexture([26, 26, 26], [210, 210, 205]);
-  const squareMaterials = [
+  const faceMap = makeBoardFaceTexture();
+  const faceGeometry = new THREE.PlaneGeometry(8, 8);
+  faceGeometry.rotateX(-Math.PI / 2);
+  const face = new THREE.Mesh(
+    faceGeometry,
     new THREE.MeshStandardMaterial({
-      map: lightSquareMap,
+      map: faceMap,
       color: 0xffffff,
-      roughness: 0.82,
+      roughness: 0.86,
       metalness: 0.02,
     }),
+  );
+  face.position.y = FACE_TOP;
+  face.receiveShadow = true;
+  group.add(face);
+
+  const underFace = new THREE.Mesh(
+    new THREE.BoxGeometry(8, 0.06, 8),
     new THREE.MeshStandardMaterial({
-      map: darkSquareMap,
-      color: 0xffffff,
-      roughness: 0.88,
-      metalness: 0.02,
+      color: 0x101010,
+      roughness: 0.9,
     }),
-  ];
-  for (let row = 0; row < BOARD_SIZE; row++) {
-    for (let column = 0; column < BOARD_SIZE; column++) {
-      const { x, z } = cellToWorld(row, column);
-      const square = new THREE.Mesh(
-        squareGeometry,
-        squareMaterials[(row + column) % 2],
-      );
-      square.position.set(x, FACE_TOP - 0.04, z);
-      square.receiveShadow = true;
-      group.add(square);
-    }
-  }
+  );
+  underFace.position.y = FACE_TOP - 0.04;
+  underFace.receiveShadow = true;
+  group.add(underFace);
 
   const borderMaterial = new THREE.MeshStandardMaterial({
     color: 0x0b1117,
@@ -341,7 +450,7 @@ function makeBoard() {
 }
 
 function checkerRingRadii(outerRadius: number) {
-  return [0.22, 0.4, 0.58, 0.76].map((t) => outerRadius * t);
+  return map([0.22, 0.4, 0.58, 0.76], (t) => outerRadius * t);
 }
 
 /** Classic draughts disc: short cylinder with concentric face grooves. */
@@ -380,8 +489,29 @@ function makeCheckerProfile(height: number, outerRadius = 0.4) {
   return points;
 }
 
-function makePieceGeometry(king: boolean) {
-  return new THREE.LatheGeometry(makeCheckerProfile(king ? 0.3 : 0.152), 48);
+const MAN_HEIGHT = 0.152;
+
+function makePieceGeometry() {
+  return new THREE.LatheGeometry(makeCheckerProfile(MAN_HEIGHT), 48);
+}
+
+const sharedPieceGeometry = makePieceGeometry();
+
+function addFaceRings(
+  group: THREE.Group,
+  faceY: number,
+  accent: THREE.Material,
+) {
+  for (const radius of checkerRingRadii(0.36)) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(radius, 0.006, 8, 48),
+      accent,
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = faceY - 0.001;
+    ring.castShadow = true;
+    group.add(ring);
+  }
 }
 
 function makePiece(piece: Piece): THREE.Group {
@@ -396,41 +526,27 @@ function makePiece(piece: Piece): THREE.Group {
     clearcoat: 0.18,
     clearcoatRoughness: 0.55,
   });
-  const body = new THREE.Mesh(makePieceGeometry(king), material);
-  body.castShadow = true;
-  body.receiveShadow = true;
-  group.add(body);
-
-  // Subtle ring highlights so the face grooves read from above.
-  const faceY = king ? 0.3 : 0.152;
   const accent = new THREE.MeshStandardMaterial({
     color: side > 0 ? 0x9a9a96 : 0x2a2a2a,
     roughness: 0.55,
     metalness: 0.02,
   });
-  for (const radius of checkerRingRadii(0.36)) {
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(radius, 0.006, 8, 48),
-      accent,
-    );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = faceY - 0.001;
-    ring.castShadow = true;
-    group.add(ring);
-  }
+  const bottom = new THREE.Mesh(sharedPieceGeometry, material);
+  bottom.userData.sharedGeometry = true;
+  bottom.castShadow = true;
+  bottom.receiveShadow = true;
+  group.add(bottom);
+  addFaceRings(group, MAN_HEIGHT, accent);
+
   if (king) {
-    const band = new THREE.Mesh(
-      new THREE.TorusGeometry(0.37, 0.014, 10, 48),
-      new THREE.MeshStandardMaterial({
-        color: KING_ACCENT,
-        roughness: 0.35,
-        metalness: 0.55,
-      }),
-    );
-    band.rotation.x = Math.PI / 2;
-    band.position.y = 0.15;
-    band.castShadow = true;
-    group.add(band);
+    // Crowning: a second man stacked on top of the first.
+    const top = new THREE.Mesh(sharedPieceGeometry, material.clone());
+    top.userData.sharedGeometry = true;
+    top.position.y = MAN_HEIGHT * 0.92;
+    top.castShadow = true;
+    top.receiveShadow = true;
+    group.add(top);
+    addFaceRings(group, MAN_HEIGHT * 0.92 + MAN_HEIGHT, accent);
   }
 
   group.userData.piece = piece;
@@ -441,11 +557,11 @@ function makePiece(piece: Piece): THREE.Group {
 function disposeObject(object: THREE.Object3D) {
   object.traverse((child) => {
     if (!(child instanceof THREE.Mesh)) return;
-    child.geometry.dispose();
+    if (!child.userData.sharedGeometry) child.geometry.dispose();
     const materials = Array.isArray(child.material)
       ? child.material
       : [child.material];
-    materials.forEach((material) => material.dispose());
+    each(materials, (material) => material.dispose());
   });
 }
 
@@ -484,14 +600,6 @@ function makeSpeedLines(pieceColor: number) {
   return group;
 }
 
-function disposeSpeedLines(group: THREE.Group) {
-  group.traverse((child) => {
-    if (!(child instanceof THREE.Mesh)) return;
-    child.geometry.dispose();
-    (child.material as THREE.Material).dispose();
-  });
-}
-
 function updateSpeedLines(
   lines: THREE.Group,
   from: THREE.Vector3,
@@ -520,7 +628,7 @@ function updateSpeedLines(
   );
   lines.rotation.y = Math.atan2(direction.x, direction.z);
   lines.scale.set(1, 1, 0.55 + speed * 0.85);
-  lines.children.forEach((child, index) => {
+  each(lines.children, (child, index) => {
     if (!(child instanceof THREE.Mesh)) return;
     const material = child.material as THREE.MeshBasicMaterial;
     material.opacity = 0.25 + speed * 0.5;
@@ -535,7 +643,7 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
     antialias: true,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
@@ -578,39 +686,43 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
   const pieces = new Map<number, THREE.Object3D>();
   let currentBoard = new Int8Array(BOARD_SIZE * BOARD_SIZE);
   const pieceAnimations: PieceAnimation[] = [];
-  let pieceMotionComplete: (() => void) | null = null;
+  const pieceMotion = new Emitter();
+
+  const notifyPieceMotionComplete = () => {
+    pieceMotion.emit("complete");
+  };
 
   const finishPieceAnimations = () => {
-    for (const animation of pieceAnimations) {
-      const end = animation.waypoints[animation.waypoints.length - 1];
+    if (pieceAnimations.length === 0) return;
+    each(pieceAnimations, (animation) => {
+      const end = last(animation.waypoints);
       animation.object.position.copy(end);
       animation.object.userData.animatingMove = false;
       scene.remove(animation.speedLines);
-      disposeSpeedLines(animation.speedLines);
-      for (const captured of animation.captures) {
+      disposeObject(animation.speedLines);
+      each(animation.captures, (captured) => {
         if (!animation.removedCaptures.has(captured)) {
           scene.remove(captured);
           disposeObject(captured);
         }
-      }
-    }
+      });
+    });
     pieceAnimations.length = 0;
+    notifyPieceMotionComplete();
   };
 
   const syncBoard = (board: Int8Array, move: Move | null = null) => {
-    const boardChanged =
-      currentBoard.length !== board.length ||
-      currentBoard.some((piece, cell) => piece !== board[cell]);
+    if (isEqual(currentBoard, board)) return;
+
     const fromCell = move ? darkPosToCell(move.origin) : -1;
     const toCell = move ? darkPosToCell(move.destination) : -1;
     const canAnimate =
-      boardChanged &&
       move &&
       currentBoard[fromCell] !== 0 &&
       board[fromCell] === 0 &&
       board[toCell] !== 0;
 
-    if (boardChanged && pieceAnimations.length > 0) finishPieceAnimations();
+    if (pieceAnimations.length > 0) finishPieceAnimations();
     currentBoard = new Int8Array(board);
 
     const animatedObjects = new Set<THREE.Object3D>();
@@ -618,33 +730,33 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
       const object = pieces.get(fromCell);
       if (object) {
         const captureObjects: THREE.Object3D[] = [];
-        for (const capturePos of move.captures) {
+        each(move.captures, (capturePos) => {
           const captureCell = darkPosToCell(capturePos);
           const captured = pieces.get(captureCell);
           if (captured) {
             pieces.delete(captureCell);
             captureObjects.push(captured);
           }
-        }
+        });
         pieces.delete(fromCell);
         object.userData.piece = board[toCell];
         object.userData.animatingMove = true;
         pieces.set(toCell, object);
 
         const path = movePath(move);
-        const waypoints = path.map((pos) => {
+        const waypoints = map(path, (pos) => {
           const cell = darkPosToCell(pos);
           const point = cellToWorld(rowOf(cell), columnOf(cell));
           return new THREE.Vector3(point.x, PIECE_BASE_Y, point.z);
         });
-        const hops = Math.max(1, waypoints.length - 1);
+        const hops = max(1, waypoints.length - 1);
         const pieceTone = board[toCell] > 0 ? WHITE_COLOR : BLACK_COLOR;
         const speedLines = makeSpeedLines(pieceTone);
         scene.add(speedLines);
         pieceAnimations.push({
           object,
           waypoints,
-          startedAt: performance.now(),
+          startedAt: perfNow(),
           segmentDuration: PIECE_MOVE_BASE_DURATION + 90 * hops,
           captures: captureObjects,
           removedCaptures: new Set(),
@@ -677,15 +789,19 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
     }
   };
 
-  const updatePieceMotion = (now: number) => {
+  const updatePieceMotion = (frameNow: number) => {
     if (pieceAnimations.length === 0) return false;
     const completed: PieceAnimation[] = [];
-    for (const animation of pieceAnimations) {
-      const hops = Math.max(1, animation.waypoints.length - 1);
+    each(pieceAnimations, (animation) => {
+      const hops = max(1, animation.waypoints.length - 1);
       const totalDuration = animation.segmentDuration * hops;
-      const progress = clamp((now - animation.startedAt) / totalDuration, 0, 1);
+      const progress = clamp(
+        (frameNow - animation.startedAt) / totalDuration,
+        0,
+        1,
+      );
       const scaled = progress * hops;
-      const segment = Math.min(Math.floor(scaled), hops - 1);
+      const segment = min(Math.floor(scaled), hops - 1);
       const local = scaled - segment;
       const eased = local * local * (3 - 2 * local);
       const start = animation.waypoints[segment];
@@ -701,7 +817,7 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
         eased,
       );
 
-      const captureIndex = Math.min(
+      const captureIndex = min(
         animation.captures.length - 1,
         Math.floor(progress * animation.captures.length + 0.01),
       );
@@ -720,37 +836,47 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
       }
 
       if (progress === 1) {
-        animation.object.position.copy(
-          animation.waypoints[animation.waypoints.length - 1],
-        );
+        animation.object.position.copy(last(animation.waypoints));
         animation.object.userData.animatingMove = false;
         scene.remove(animation.speedLines);
-        disposeSpeedLines(animation.speedLines);
-        for (const captured of animation.captures) {
+        disposeObject(animation.speedLines);
+        each(animation.captures, (captured) => {
           if (!animation.removedCaptures.has(captured)) {
             scene.remove(captured);
             disposeObject(captured);
             animation.removedCaptures.add(captured);
           }
-        }
+        });
         completed.push(animation);
       }
-    }
-    completed.forEach((animation) => {
+    });
+    each(completed, (animation) => {
       pieceAnimations.splice(pieceAnimations.indexOf(animation), 1);
     });
     if (completed.length > 0) {
-      const needsKingSync = completed.some((animation) => {
-        const cell = [...pieces.entries()].find(
+      each(completed, (animation) => {
+        const entry = find(
+          [...pieces.entries()],
           ([, object]) => object === animation.object,
-        )?.[0];
-        if (cell === undefined) return false;
-        return (
-          Boolean(animation.object.userData.king) !== isKing(currentBoard[cell])
         );
+        const cell = entry?.[0];
+        if (cell === undefined) return;
+        const piece = currentBoard[cell];
+        if (
+          !piece ||
+          Boolean(animation.object.userData.king) === isKing(piece)
+        ) {
+          return;
+        }
+        scene.remove(animation.object);
+        disposeObject(animation.object);
+        const replacement = makePiece(piece);
+        const point = cellToWorld(rowOf(cell), columnOf(cell));
+        replacement.position.set(point.x, PIECE_BASE_Y, point.z);
+        scene.add(replacement);
+        pieces.set(cell, replacement);
       });
-      if (needsKingSync) syncBoard(currentBoard);
-      if (pieceAnimations.length === 0) pieceMotionComplete?.();
+      if (pieceAnimations.length === 0) notifyPieceMotionComplete();
     }
     return pieceAnimations.length > 0;
   };
@@ -771,7 +897,7 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
     legalTargets: number[],
   ) => {
     moveMarker(selected, selectedCell);
-    legalTargets.forEach((cell, markerIndex) => {
+    each(legalTargets, (cell, markerIndex) => {
       const marker =
         targetMarkers[markerIndex] ??
         (() => {
@@ -782,9 +908,9 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
         })();
       moveMarker(marker, cell);
     });
-    targetMarkers
-      .slice(legalTargets.length)
-      .forEach((marker) => (marker.visible = false));
+    each(targetMarkers.slice(legalTargets.length), (marker) => {
+      marker.visible = false;
+    });
   };
 
   const raycaster = new THREE.Raycaster();
@@ -794,15 +920,19 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
   let orbitYaw = 0;
   let orbitPitch = 0.72;
   let orbitDistance = 14;
+  let topDownLocked = false;
   const orbitTarget = new THREE.Vector3(0, -0.2, 0);
   const applyCameraOrbit = () => {
-    const topDown = orbitPitch < 0.001;
-    const horizontal = Math.sin(orbitPitch) * orbitDistance;
+    if (orbitPitch <= 0.001) topDownLocked = true;
+    else if (orbitPitch > 0.1) topDownLocked = false;
+    const topDown = topDownLocked;
+    const pitch = topDown ? 0 : orbitPitch;
+    const horizontal = Math.sin(pitch) * orbitDistance;
     camera.up.set(0, topDown ? 0 : 1, topDown ? -1 : 0);
     camera.position.set(
       orbitTarget.x + Math.sin(orbitYaw) * horizontal,
       orbitTarget.y +
-        (topDown ? orbitDistance : Math.cos(orbitPitch) * orbitDistance),
+        (topDown ? orbitDistance : Math.cos(pitch) * orbitDistance),
       orbitTarget.z + Math.cos(orbitYaw) * horizontal,
     );
     camera.lookAt(orbitTarget);
@@ -811,6 +941,13 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
     orbitYaw -= deltaX * 0.008;
     orbitPitch = clamp(orbitPitch - deltaY * 0.006, 0, 1.22);
     applyCameraOrbit();
+  };
+  const settleView = () => {
+    if (orbitPitch < 0.12) {
+      orbitPitch = 0;
+      topDownLocked = true;
+      applyCameraOrbit();
+    }
   };
   const pan = (deltaX: number, deltaY: number) => {
     const right = new THREE.Vector3().setFromMatrixColumn(
@@ -834,7 +971,7 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
     renderer.setSize(width, height);
     camera.aspect = width / height;
     const fit = 5.2 / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
-    orbitDistance = fit * Math.max(1, 1 / (width / height)) * 1.08;
+    orbitDistance = fit * max(1, 1 / (width / height)) * 1.08;
     applyCameraOrbit();
     camera.updateProjectionMatrix();
   };
@@ -889,13 +1026,17 @@ export function createScene(onAssetLoad: () => void = () => {}): CheckersScene {
     updatePieceMotion,
     isPieceMoving: () => pieceAnimations.length > 0,
     onPieceMotionComplete: (callback) => {
-      pieceMotionComplete = callback;
+      pieceMotion.on("complete", callback);
+      return () => {
+        pieceMotion.off("complete", callback);
+      };
     },
     updateSelection,
     updateLastMove: (cell) => moveMarker(lastMark, cell),
     pickCell,
     orbit,
     pan,
+    settleView,
     resize,
   };
 }

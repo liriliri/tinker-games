@@ -3,6 +3,7 @@ import type { CheckersScene } from "./scene";
 import type { GameUi } from "../ui/view";
 import type { Mode, Phase } from "../game/state";
 import { COLUMNS } from "../game/rules";
+import each from "licia/each";
 
 const DIRECTIONS: Record<string, [number, number]> = {
   ArrowUp: [-1, 0],
@@ -18,7 +19,6 @@ const DIRECTIONS: Record<string, [number, number]> = {
 type InputActions = {
   getPhase: () => Phase;
   getCursor: () => number;
-  setCursor: (cell: number) => void;
   moveCursor: (rowDelta: number, columnDelta: number) => void;
   selectCell: (cell: number) => void;
   startMatch: () => void;
@@ -36,20 +36,22 @@ export function bindInput(
   ui: GameUi,
   actions: InputActions,
 ) {
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-mode]")
-    .forEach((button) => {
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-mode]"),
+    (button) => {
       button.addEventListener("click", () =>
         actions.setMode(button.dataset.mode as Mode),
       );
-    });
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-difficulty]")
-    .forEach((button) => {
+    },
+  );
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-difficulty]"),
+    (button) => {
       button.addEventListener("click", () =>
         actions.setDifficulty(button.dataset.difficulty as Difficulty),
       );
-    });
+    },
+  );
   ui.startButton.addEventListener("click", actions.startMatch);
   ui.againButton.addEventListener("click", actions.startMatch);
   ui.menuButton.addEventListener("click", actions.openMenu);
@@ -84,24 +86,25 @@ export function bindInput(
   let pointerId: number | null = null;
   let lastX = 0;
   let lastY = 0;
-  let dragged = false;
+  let originX = 0;
+  let originY = 0;
   let dragMode: "rotate" | "pan" | null = null;
+  const dragThreshold = 5;
+
   const endDrag = (event: PointerEvent) => {
     if (event.pointerId !== pointerId) return;
+    const wasClick = dragMode === null && event.button === 0;
     const cell = scene.pickCell(event.clientX, event.clientY);
-    if (
-      !dragged &&
-      event.button === 0 &&
-      cell &&
-      actions.getPhase() === "play"
-    ) {
+    if (wasClick && cell && actions.getPhase() === "play") {
       const index = cell.row * COLUMNS + cell.column;
-      actions.setCursor(index);
       actions.selectCell(index);
+    }
+    if (dragMode !== null) {
+      scene.settleView();
+      actions.requestRender();
     }
     pointerId = null;
     dragMode = null;
-    dragged = false;
     scene.renderer.domElement.style.cursor = "grab";
     try {
       scene.renderer.domElement.releasePointerCapture(event.pointerId);
@@ -115,20 +118,28 @@ export function bindInput(
     pointerId = event.pointerId;
     lastX = event.clientX;
     lastY = event.clientY;
-    dragged = false;
-    dragMode = event.button === 2 ? "pan" : "rotate";
+    originX = event.clientX;
+    originY = event.clientY;
+    dragMode = event.button === 2 ? "pan" : null;
     scene.renderer.domElement.style.cursor = "grabbing";
     scene.renderer.domElement.setPointerCapture(event.pointerId);
     event.preventDefault();
   });
   scene.renderer.domElement.addEventListener("pointermove", (event) => {
-    if (event.pointerId !== pointerId || !dragMode) return;
+    if (event.pointerId !== pointerId) return;
     const deltaX = event.clientX - lastX;
     const deltaY = event.clientY - lastY;
-    if (Math.abs(deltaX) + Math.abs(deltaY) > 4) dragged = true;
+    if (
+      dragMode === null &&
+      event.buttons === 1 &&
+      Math.hypot(event.clientX - originX, event.clientY - originY) >=
+        dragThreshold
+    ) {
+      dragMode = "rotate";
+    }
     if (dragMode === "pan") scene.pan(deltaX, deltaY);
-    else scene.orbit(deltaX, deltaY);
-    actions.requestRender();
+    else if (dragMode === "rotate") scene.orbit(deltaX, deltaY);
+    if (dragMode !== null) actions.requestRender();
     lastX = event.clientX;
     lastY = event.clientY;
     event.preventDefault();

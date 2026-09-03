@@ -1,3 +1,5 @@
+import startWith from "licia/startWith";
+
 export const copy = {
   en: {
     title: "CHECKERS",
@@ -73,5 +75,5 @@ export async function detectLocale(): Promise<Locale> {
       // Browser mode does not provide the optional Tinker bridge.
     }
   }
-  return navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en";
+  return startWith(navigator.language.toLowerCase(), "zh") ? "zh-CN" : "en";
 }

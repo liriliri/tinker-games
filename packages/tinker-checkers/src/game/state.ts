@@ -2,7 +2,7 @@ import type { Difficulty } from "./ai";
 import {
   DARK,
   LIGHT,
-  darkPosToCell,
+  DEFAULT_CURSOR_CELL,
   newGame,
   type CheckersGame,
   type EngineSnapshot,
@@ -20,7 +20,7 @@ export type GameState = {
   phase: Phase;
   cursor: number;
   selected: number | null;
-  legalTargets: number[];
+  selectedMoves: Move[];
   history: EngineSnapshot[];
   moves: Move[];
   sound: boolean;
@@ -35,9 +35,9 @@ export function createGameState(
     mode,
     difficulty,
     phase: "menu",
-    cursor: darkPosToCell(20),
+    cursor: DEFAULT_CURSOR_CELL,
     selected: null,
-    legalTargets: [],
+    selectedMoves: [],
     history: [],
     moves: [],
     sound: true,

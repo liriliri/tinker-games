@@ -1,10 +1,17 @@
 import "./ui/style.css";
 import clamp from "licia/clamp";
+import contain from "licia/contain";
+import filter from "licia/filter";
+import last from "licia/last";
+import map from "licia/map";
+import min from "licia/min";
+import sleep from "licia/sleep";
+import sortBy from "licia/sortBy";
 import { chooseMove } from "./game/ai";
 import {
   CELL_COUNT,
   COLUMNS,
-  applyMove,
+  DEFAULT_CURSOR_CELL,
   boardFromGame,
   cellToDarkPos,
   darkPosToCell,
@@ -46,19 +53,25 @@ checkersScene.onPieceMotionComplete(() => audio.play());
 const ui = getGameUi();
 const game = createGameState(loadMode(), loadDifficulty());
 let locale: Locale = "zh-CN";
-let computerMoveTimer: number | undefined;
-let resultTimer: number | undefined;
 let matchVersion = 0;
 let lastMove: Move | null = null;
-let selectedMoves: Move[] = [];
 
 const strings = () => copy[locale];
+
+function legalTargets() {
+  return map(game.selectedMoves, (move) => darkPosToCell(move.destination));
+}
+
+function clearSelection() {
+  game.selected = null;
+  game.selectedMoves = [];
+}
 
 function refresh() {
   const selectedCell = game.selected;
   const lastMoveCell = lastMove ? darkPosToCell(lastMove.destination) : null;
   checkersScene.syncBoard(boardFromGame(game.draughts), lastMove);
-  checkersScene.updateSelection(game.selected, game.legalTargets);
+  checkersScene.updateSelection(game.selected, legalTargets());
   checkersScene.updateLastMove(
     lastMoveCell !== selectedCell && lastMoveCell !== game.cursor
       ? lastMoveCell
@@ -77,15 +90,14 @@ function refresh() {
   requestRender();
 }
 
-function cancelComputerMove() {
-  if (computerMoveTimer !== undefined) {
-    window.clearTimeout(computerMoveTimer);
-    computerMoveTimer = undefined;
-  }
-  if (resultTimer !== undefined) {
-    window.clearTimeout(resultTimer);
-    resultTimer = undefined;
-  }
+function waitForPieceIdle(): Promise<void> {
+  if (!checkersScene.isPieceMoving()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsubscribe = checkersScene.onPieceMotionComplete(() => {
+      unsubscribe();
+      resolve();
+    });
+  });
 }
 
 function setCursor(cell: number) {
@@ -108,16 +120,13 @@ function moveCursor(rowDelta: number, columnDelta: number) {
 }
 
 function resetMatchState(phase: "menu" | "play") {
-  cancelComputerMove();
   matchVersion++;
   game.draughts = newGame();
   game.history.length = 0;
   game.moves.length = 0;
   game.phase = phase;
-  game.cursor = darkPosToCell(20);
-  game.selected = null;
-  game.legalTargets = [];
-  selectedMoves = [];
+  game.cursor = DEFAULT_CURSOR_CELL;
+  clearSelection();
   lastMove = null;
 }
 
@@ -136,53 +145,35 @@ function openMenu() {
 
 function finish(result: "dark" | "light" | "draw") {
   game.phase = "over";
-  game.selected = null;
-  game.legalTargets = [];
-  selectedMoves = [];
+  clearSelection();
   showResult(ui, result, strings());
   refresh();
 }
 
-function scheduleResult(result: "dark" | "light" | "draw") {
+async function scheduleResult(result: "dark" | "light" | "draw") {
   const currentMatch = matchVersion;
-  const showWhenReady = () => {
-    resultTimer = undefined;
-    if (currentMatch !== matchVersion) return;
-    if (checkersScene.isPieceMoving()) {
-      resultTimer = window.setTimeout(showWhenReady, 40);
-      return;
-    }
-    resultTimer = window.setTimeout(() => {
-      resultTimer = undefined;
-      if (currentMatch === matchVersion) finish(result);
-    }, 1600);
-  };
-  showWhenReady();
+  await waitForPieceIdle();
+  if (currentMatch !== matchVersion) return;
+  await sleep(1600);
+  if (currentMatch === matchVersion) finish(result);
 }
 
-function scheduleComputerMove() {
+async function scheduleComputerMove() {
   game.phase = "thinking";
   const currentMatch = matchVersion;
   refresh();
-  const runWhenReady = () => {
-    computerMoveTimer = undefined;
-    if (currentMatch !== matchVersion) return;
-    if (checkersScene.isPieceMoving()) {
-      computerMoveTimer = window.setTimeout(runWhenReady, 40);
-      return;
-    }
-    void runComputerMove(currentMatch);
-  };
-  computerMoveTimer = window.setTimeout(runWhenReady, 220);
+  await waitForPieceIdle();
+  if (currentMatch !== matchVersion) return;
+  await sleep(220);
+  if (currentMatch !== matchVersion) return;
+  void runComputerMove(currentMatch);
 }
 
 function commitMove(move: Move) {
   game.history.push(snapshotOf(game.draughts));
   game.moves.push(move);
-  applyMove(game.draughts, move);
-  game.selected = null;
-  game.legalTargets = [];
-  selectedMoves = [];
+  game.draughts.move(move);
+  clearSelection();
   lastMove = move;
   audio.unlock();
   refresh();
@@ -191,27 +182,31 @@ function commitMove(move: Move) {
   if (result !== "playing") {
     game.phase = "over";
     refresh();
-    scheduleResult(result);
+    void scheduleResult(result);
     return;
   }
   if (
     game.mode === "pve" &&
     playerToSide(game.draughts.player) === computerSide
   ) {
-    scheduleComputerMove();
+    void scheduleComputerMove();
   }
 }
 
 function selectCell(cell: number) {
   if (game.phase !== "play" || checkersScene.isPieceMoving()) return;
-  setCursor(cell);
-  if (game.selected !== null && game.legalTargets.includes(cell)) {
+  game.cursor = clamp(cell, 0, CELL_COUNT - 1);
+  const targets = legalTargets();
+  if (game.selected !== null && contain(targets, cell)) {
     const selectedPos = cellToDarkPos(game.selected);
     const targetPos = cellToDarkPos(cell);
-    const candidates = selectedMoves.filter(
-      (move) => move.origin === selectedPos && move.destination === targetPos,
+    const candidates = sortBy(
+      filter(
+        game.selectedMoves,
+        (move) => move.origin === selectedPos && move.destination === targetPos,
+      ),
+      (move) => -move.captures.length,
     );
-    candidates.sort((a, b) => b.captures.length - a.captures.length);
     if (candidates[0]) commitMove(candidates[0]);
     return;
   }
@@ -224,14 +219,9 @@ function selectCell(cell: number) {
     Math.sign(piece) === playerToSide(game.draughts.player)
   ) {
     game.selected = cell;
-    selectedMoves = movesFrom(game.draughts, darkPos);
-    game.legalTargets = selectedMoves.map((move) =>
-      darkPosToCell(move.destination),
-    );
+    game.selectedMoves = movesFrom(game.draughts, darkPos);
   } else {
-    game.selected = null;
-    game.legalTargets = [];
-    selectedMoves = [];
+    clearSelection();
   }
   refresh();
 }
@@ -259,9 +249,8 @@ function undo() {
   ) {
     return;
   }
-  cancelComputerMove();
-  const count = game.mode === "pve" ? Math.min(2, game.history.length) : 1;
-  let snapshot = game.history[game.history.length - 1]!;
+  const count = game.mode === "pve" ? min(2, game.history.length) : 1;
+  let snapshot = last(game.history)!;
   for (let step = 0; step < count; step++) {
     snapshot = game.history.pop()!;
     game.moves.pop();
@@ -269,20 +258,17 @@ function undo() {
   game.draughts = restoreGame(snapshot);
   matchVersion++;
   game.phase = "play";
-  game.selected = null;
-  game.legalTargets = [];
-  selectedMoves = [];
-  lastMove = game.moves[game.moves.length - 1] ?? null;
+  clearSelection();
+  lastMove = last(game.moves) ?? null;
   game.cursor = lastMove
     ? darkPosToCell(lastMove.destination)
-    : darkPosToCell(20);
+    : DEFAULT_CURSOR_CELL;
   refresh();
 }
 
 bindInput(checkersScene, ui, {
   getPhase: () => (checkersScene.isPieceMoving() ? "thinking" : game.phase),
   getCursor: () => game.cursor,
-  setCursor,
   moveCursor,
   selectCell,
   startMatch,
