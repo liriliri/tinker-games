@@ -1,9 +1,12 @@
 import * as THREE from 'three'
 import {
   BALL_RADIUS,
+  CAMERA_FOV,
+  CAMERA_LIGHT_HEIGHT,
   ENV_MAP_MOVE_THRESHOLD,
   ENV_MAP_UPDATE_INTERVAL,
   PLAY_LIGHT_INTENSITY,
+  getCameraDistance,
 } from './constants'
 import type { LevelLayout, MazeGrid } from './maze'
 
@@ -296,7 +299,7 @@ export function buildLevelScene(args: BuildLevelArgs) {
     scene.add(light)
   }
   light.intensity = PLAY_LIGHT_INTENSITY
-  light.position.set(startX, startY, 1.3)
+  light.position.set(startX, startY, CAMERA_LIGHT_HEIGHT)
 
   const ballMesh = new THREE.Mesh(
     new THREE.SphereGeometry(BALL_RADIUS, 48, 32),
@@ -309,14 +312,15 @@ export function buildLevelScene(args: BuildLevelArgs) {
   scene.add(ballMesh)
 
   const aspect = window.innerWidth / window.innerHeight
-  const camera = args.camera ?? new THREE.PerspectiveCamera(60, aspect, 1, 1000)
+  const camera =
+    args.camera ?? new THREE.PerspectiveCamera(CAMERA_FOV, aspect, 1, 1000)
   if (!args.camera) {
     scene.add(camera)
   } else {
     camera.aspect = aspect
     camera.updateProjectionMatrix()
   }
-  camera.position.set(startX, startY, 5)
+  camera.position.set(startX, startY, getCameraDistance(aspect))
 
   const { mazeMesh, wallContactMesh } = generateMazeMeshes(maze, wallMaterial)
   scene.add(mazeMesh)
@@ -448,8 +452,8 @@ export function setInitialSceneLighting(
   sideLightTarget: THREE.Object3D,
 ) {
   light.intensity = PLAY_LIGHT_INTENSITY
-  light.position.set(layout.startX, layout.startY, 1.3)
-  camera.position.set(layout.startX, layout.startY, 5)
+  light.position.set(layout.startX, layout.startY, CAMERA_LIGHT_HEIGHT)
+  camera.position.set(layout.startX, layout.startY, getCameraDistance())
   sideLight.position.set(layout.startX - 9, layout.startY + 6, 12)
   sideLightTarget.position.set(layout.startX, layout.startY, 0.5)
 }
@@ -461,13 +465,14 @@ export function updateFollowLighting(
   sideLight: THREE.DirectionalLight,
   sideLightTarget: THREE.Object3D,
 ) {
+  const targetZ = getCameraDistance()
   camera.position.x += (ballMesh.position.x - camera.position.x) * 0.1
   camera.position.y += (ballMesh.position.y - camera.position.y) * 0.1
-  camera.position.z += (5 - camera.position.z) * 0.1
+  camera.position.z += (targetZ - camera.position.z) * 0.1
 
   light.position.x = camera.position.x
   light.position.y = camera.position.y
-  light.position.z = camera.position.z - 3.7
+  light.position.z = CAMERA_LIGHT_HEIGHT
 
   sideLight.position.set(ballMesh.position.x - 9, ballMesh.position.y + 6, 12)
   sideLightTarget.position.set(ballMesh.position.x, ballMesh.position.y, 0.5)

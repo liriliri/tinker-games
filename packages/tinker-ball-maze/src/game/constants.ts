@@ -3,6 +3,20 @@ export type ScreenFlashPhase = 'fade-in' | 'hold' | 'fade-out'
 
 export const BALL_RADIUS = 0.25
 
+export const CAMERA_FOV = 60
+export const CAMERA_BASE_DISTANCE = 6.2
+export const CAMERA_LIGHT_HEIGHT = 1.3
+
+/** Zoom out on tall (portrait) viewports so horizontal coverage stays playable. */
+export function getCameraDistance(
+  aspect = window.innerWidth / window.innerHeight,
+) {
+  if (aspect >= 1) {
+    return CAMERA_BASE_DISTANCE
+  }
+  return CAMERA_BASE_DISTANCE / aspect
+}
+
 export const TONE_MAPPING_EXPOSURE = 1.42
 export const VICTORY_FLASH_PEAK_EXPOSURE = 4.2
 export const VICTORY_FLASH_FADE_IN_MS = 520

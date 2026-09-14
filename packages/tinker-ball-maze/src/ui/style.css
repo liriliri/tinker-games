@@ -4,13 +4,159 @@
   box-sizing: border-box;
 }
 
+html,
 body {
+  width: 100%;
+  height: 100%;
   background: #000;
   overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 canvas {
   display: block;
+  touch-action: none;
+}
+
+.touch-stick {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 128px;
+  height: 128px;
+  margin: -64px 0 0 -64px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 20;
+  transition: opacity 0.12s ease;
+  will-change: opacity;
+}
+
+.touch-stick.is-active {
+  opacity: 1;
+}
+
+.touch-stick-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.touch-stick-ring--outer {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(22, 17, 13, 0.28) 36%,
+    rgba(18, 14, 11, 0.72) 58%,
+    rgba(12, 10, 8, 0.88) 100%
+  );
+  border: 1.5px solid rgba(196, 152, 82, 0.42);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 246, 234, 0.14),
+    inset 0 -8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.touch-stick-ring--outer::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1px dashed rgba(196, 152, 82, 0.28);
+}
+
+.touch-stick-ring--inner {
+  inset: 22px;
+  border: 1px solid rgba(255, 246, 234, 0.1);
+  background: radial-gradient(
+    circle at 50% 42%,
+    rgba(40, 30, 22, 0.55) 0%,
+    rgba(8, 6, 5, 0.78) 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(196, 152, 82, 0.12),
+    inset 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.touch-stick-cross {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.touch-stick-cross::before,
+.touch-stick-cross::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(196, 152, 82, 0.18) 18%,
+    rgba(196, 152, 82, 0.45) 50%,
+    rgba(196, 152, 82, 0.18) 82%,
+    transparent 100%
+  );
+  transform: translate(-50%, -50%);
+}
+
+.touch-stick-cross::before {
+  width: 72%;
+  height: 1px;
+}
+
+.touch-stick-cross::after {
+  width: 1px;
+  height: 72%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(196, 152, 82, 0.18) 18%,
+    rgba(196, 152, 82, 0.45) 50%,
+    rgba(196, 152, 82, 0.18) 82%,
+    transparent 100%
+  );
+}
+
+.touch-stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(232, 196, 128, 0.55);
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(255, 246, 234, 0.72) 0%,
+    rgba(196, 152, 82, 0.95) 38%,
+    rgba(110, 74, 36, 0.98) 72%,
+    rgba(42, 28, 16, 1) 100%
+  );
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.45),
+    0 0 0 3px rgba(18, 14, 11, 0.35),
+    inset 0 1px 0 rgba(255, 246, 234, 0.45),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.35);
+  will-change: transform;
+}
+
+.touch-stick-knob span {
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 246, 234, 0.18);
+  background: radial-gradient(
+    circle at 40% 35%,
+    rgba(255, 246, 234, 0.22),
+    transparent 65%
+  );
+  box-shadow: inset 0 0 0 1px rgba(80, 52, 24, 0.35);
 }
 
 .hud-panel {
@@ -65,12 +211,45 @@ canvas {
 #minimap {
   right: 13px;
   padding: 4px;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  outline: none;
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.1),
+    box-shadow 0.18s ease;
+  transform-origin: top right;
+}
+
+#minimap.is-revealed {
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 246, 234, 0.12);
+  border-color: rgba(196, 152, 82, 0.42);
 }
 
 #minimap-canvas {
   display: block;
   width: 84px;
   height: 84px;
+  transition:
+    width 0.18s ease,
+    height 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  outline: none;
+  pointer-events: none;
+}
+
+#minimap.is-revealed #minimap-canvas {
+  width: 280px;
+  height: 280px;
 }
 
 #victory-flash {
@@ -80,4 +259,35 @@ canvas {
   opacity: 1;
   pointer-events: none;
   z-index: 100;
+}
+
+@media (max-aspect-ratio: 3/4) {
+  .hud-panel {
+    top: calc(10px + env(safe-area-inset-top, 0px));
+  }
+
+  #level {
+    left: calc(10px + env(safe-area-inset-left, 0px));
+    min-width: 56px;
+    padding: 6px 10px 5px 8px;
+  }
+
+  #level-number {
+    font-size: 17px;
+  }
+
+  #minimap {
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    padding: 3px;
+  }
+
+  #minimap-canvas {
+    width: 68px;
+    height: 68px;
+  }
+
+  #minimap.is-revealed #minimap-canvas {
+    width: min(280px, calc(100vw - 28px));
+    height: min(280px, calc(100vw - 28px));
+  }
 }

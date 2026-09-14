@@ -5,6 +5,7 @@ import clamp from 'licia/clamp'
 import {
   AMBIENT_LIGHT_INTENSITY,
   BALL_RADIUS,
+  CAMERA_LIGHT_HEIGHT,
   ENV_MAP_SIZE,
   HIT_SOUND_COOLDOWN_MS,
   HIT_SOUND_MAX_IMPULSE,
@@ -29,6 +30,7 @@ import {
   VICTORY_FLASH_FADE_OUT_MS,
   VICTORY_FLASH_MIN_HOLD_MS,
   VICTORY_FLASH_PEAK_EXPOSURE,
+  getCameraDistance,
 } from './constants'
 import { AxisInput } from '../lib/input'
 import { Minimap } from '../ui/Minimap'
@@ -218,8 +220,8 @@ export class Game {
     updateShadowCamera(this.sideLight, this.mazeDimension)
 
     const { startX, startY } = this.levelLayout
-    this.camera.position.set(startX, startY, 5)
-    this.light.position.set(startX, startY, 1.3)
+    this.camera.position.set(startX, startY, getCameraDistance())
+    this.light.position.set(startX, startY, CAMERA_LIGHT_HEIGHT)
     this.levelNumberEl.textContent = String(level)
     this.ballReflection.reset(startX, startY)
     this.shadowWarmUpFrames = 0
@@ -473,15 +475,11 @@ export class Game {
 
   private updateMinimap() {
     const ballMesh = this.levelMeshes?.ballMesh
-    if (!ballMesh) {
+    if (!ballMesh || !this.maze) {
       return
     }
 
-    this.minimap.draw(
-      this.mazeDimension,
-      ballMesh.position.x,
-      ballMesh.position.y,
-    )
+    this.minimap.draw(this.maze, ballMesh.position.x, ballMesh.position.y)
   }
 
   private updateBallReflection(force = false) {
@@ -541,6 +539,7 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight)
     if (this.camera) {
       this.camera.aspect = window.innerWidth / window.innerHeight
+      this.camera.position.z = getCameraDistance(this.camera.aspect)
       this.camera.updateProjectionMatrix()
     }
   }
