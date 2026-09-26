@@ -44,8 +44,9 @@ Report each hit as `[Category] path:line — …`.
 
 ### 6. Unused i18n keys
 - If `src/lib/i18n.ts` exists: collect keys from both `en` and `zh-CN` message maps (`Messages`, `copy`, or equivalent)
-- Grep all `.ts` for `t('…')` / `t("…")` / `messages.…` / `copy[locale].…` / `strings.…` usage
+- Grep all `.ts` / `.html` for `t('…')` / `t("…")` / `messages.…` / `copy[locale].…` / `strings.…` usage, and for HUD labels set from `t()`
 - A key is unused only if it is referenced nowhere in the game — then remove from **both** locales (and from the type / interface if present)
+- Do not treat package.json `tinker.locales` as in-game i18n keys
 
 ## Output
 

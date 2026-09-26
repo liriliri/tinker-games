@@ -31,9 +31,11 @@ Report each hit as `[Category] path:line — …`.
 - Never `utils/` / `helpers/` folders
 
 ### 3. Package
-- `tinker` field: `name`, `main` (`dist/index.html`), `icon`, `locales.zh-CN` (`name` + `description`)
+- Root `description`: short English blurb of what the game does — **the only English description**
+- Do **not** set `tinker.description` (Tinker falls back to root `description`)
+- `tinker` field: `name`, `main` (`dist/index.html`), `icon`, `category` (`entertainment` for games), `locales.zh-CN` (`name` + `description`)
 - Scripts: `dev`, `build`, `format` (Prettier on `src/**/*.ts` and root html/json/ts)
-- Shared libs (`phaser`, `three`, `licia`, `howler`, `vite`, …) live at monorepo root — do not re-add in the game package
+- Shared libs (`phaser`, `three`, `licia`, `howler`, `planck`, `vite`, …) live at monorepo root — do not re-add in the game package
 - Game-specific deps only in that package (prefer `devDependencies`)
 
 ### 4. Lib
@@ -48,10 +50,10 @@ Report each hit as `[Category] path:line — …`.
 - Import types from the definition site — never re-export-only
 
 ### 6. i18n
-- In-game UI strings via `src/lib/i18n.ts` (`t()` or a `copy` / messages map) — not scattered string literals
+- In-game UI strings via `src/lib/i18n.ts` (`t()` or a `copy` / messages map) — not scattered string literals in `.ts` **or** `index.html` HUD labels
 - Both `en` and `zh-CN` required when the game has UI text
 - Prefer reading locale from `tinker.getLanguage()` when available, with `navigator.language` fallback
-- Package display name/description already covered by `tinker.locales` (not this check)
+- Package listing copy: root `description` + `tinker.locales.zh-CN.description` (not this check’s in-game strings)
 
 ### 7. Comments
 - English only

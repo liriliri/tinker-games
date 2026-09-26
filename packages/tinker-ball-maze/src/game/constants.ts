@@ -4,7 +4,7 @@ export type ScreenFlashPhase = 'fade-in' | 'hold' | 'fade-out'
 export const BALL_RADIUS = 0.25
 
 export const CAMERA_FOV = 60
-export const CAMERA_BASE_DISTANCE = 6.2
+const CAMERA_BASE_DISTANCE = 6.2
 export const CAMERA_LIGHT_HEIGHT = 1.3
 
 /** Zoom out on tall (portrait) viewports so horizontal coverage stays playable. */
@@ -28,7 +28,7 @@ export const ENV_MAP_SIZE = 128
 export const ENV_MAP_UPDATE_INTERVAL = 3
 export const ENV_MAP_MOVE_THRESHOLD = 0.05
 
-export const POINT_LIGHT_INTENSITY = 2.0
+const POINT_LIGHT_INTENSITY = 2.0
 export const PLAY_LIGHT_INTENSITY = POINT_LIGHT_INTENSITY * 0.85
 export const AMBIENT_LIGHT_INTENSITY = 0.52
 export const SHADOW_INTENSITY = 1.15

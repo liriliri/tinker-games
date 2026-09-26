@@ -1,7 +1,7 @@
 {
   "name": "tinker-ball-maze",
-  "version": "0.2.0",
-  "description": "Ball Maze Game Plugin for TINKER",
+  "version": "0.2.1",
+  "description": "Roll the ball through the maze and find the exit!",
   "files": [
     "dist/",
     "icon.png"
@@ -12,9 +12,9 @@
   },
   "tinker": {
     "name": "Ball Maze",
-    "description": "Roll the ball through the maze and find the exit!",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "滚球迷宫",

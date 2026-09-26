@@ -22,7 +22,7 @@ packages/
 
 1. Create `packages/tinker-xxx/`.
 2. Copy structure from an existing game (tinker-2048 for Phaser 2D, tinker-ball-maze for Three.js 3D).
-3. Update `package.json`: name, description, tinker.name, tinker.locales.
+3. Update `package.json`: name, root `description`, `tinker.name`, `tinker.category`, `tinker.locales`.
 4. Replace `icon.png` (200x200 px).
 5. Implement game logic.
 6. Run `npm install` from root to link workspaces.
@@ -36,13 +36,21 @@ packages/
 Declare `tinker` field in each game's `package.json`:
 
 ```json
-"tinker": {
-  "name": "Game Name",
-  "main": "dist/index.html",
-  "icon": "icon.png",
-  "locales": { "zh-CN": { "name": "游戏名" } }
+{
+  "description": "Short English blurb of what the game does",
+  "tinker": {
+    "name": "Game Name",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "category": "entertainment",
+    "locales": {
+      "zh-CN": { "name": "游戏名", "description": "中文描述" }
+    }
+  }
 }
 ```
+
+Notes: English description lives only at root `description` — do not also set `tinker.description`. Games use `category: "entertainment"`.
 
 ## Build commands (per game)
 

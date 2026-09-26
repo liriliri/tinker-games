@@ -254,7 +254,7 @@ export class Game {
     const elapsed = performance.now() - this.screenFlashStartTime
 
     if (this.screenFlashPhase === 'fade-in') {
-      const flash = Math.min(elapsed / VICTORY_FLASH_FADE_IN_MS, 1)
+      const flash = clamp(elapsed / VICTORY_FLASH_FADE_IN_MS, 0, 1)
       this.setVictoryFlashVisuals(flash)
       this.updatePhysicsWorld()
       this.updateRenderWorld()
@@ -298,7 +298,7 @@ export class Game {
 
   private updateWhiteFadeOut() {
     const elapsed = performance.now() - this.screenFlashStartTime
-    const flash = 1 - Math.min(elapsed / VICTORY_FLASH_FADE_OUT_MS, 1)
+    const flash = 1 - clamp(elapsed / VICTORY_FLASH_FADE_OUT_MS, 0, 1)
     this.renderSceneUnderWhite(flash)
     return flash <= 0
   }
@@ -421,9 +421,10 @@ export class Game {
     }
     this.lastHitSoundTime = now
 
-    const t = Math.min(
+    const t = clamp(
       (impact - HIT_SOUND_MIN_IMPULSE) /
         (HIT_SOUND_MAX_IMPULSE - HIT_SOUND_MIN_IMPULSE),
+      0,
       1,
     )
     const volume =

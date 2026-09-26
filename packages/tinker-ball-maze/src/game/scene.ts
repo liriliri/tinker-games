@@ -10,7 +10,7 @@ import {
 } from './constants'
 import type { LevelLayout, MazeGrid } from './maze'
 
-export type GameTextures = {
+type GameTextures = {
   iron: THREE.Texture
   ironNormal: THREE.Texture
   plane: THREE.Texture

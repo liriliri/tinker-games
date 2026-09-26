@@ -1,3 +1,5 @@
+import min from 'licia/min'
+import random from 'licia/random'
 import randomItem from 'licia/randomItem'
 
 export type MazeGrid = boolean[][] & { dimension: number }
@@ -72,7 +74,7 @@ export function braidMaze(field: MazeGrid, braidChance: number) {
         continue
       }
 
-      if (isSeparatorWall(field, i, j) && Math.random() < braidChance) {
+      if (isSeparatorWall(field, i, j) && random(0, 1, true) < braidChance) {
         field[i][j] = false
       }
     }
@@ -108,15 +110,15 @@ function getOutwardDirection(
   const distWest = x
   const distNorth = dimension - 1 - y
   const distSouth = y
-  const min = Math.min(distEast, distWest, distNorth, distSouth)
+  const nearest = min(distEast, distWest, distNorth, distSouth)
 
-  if (min === distEast) {
+  if (nearest === distEast) {
     return [1, 0]
   }
-  if (min === distWest) {
+  if (nearest === distWest) {
     return [-1, 0]
   }
-  if (min === distNorth) {
+  if (nearest === distNorth) {
     return [0, 1]
   }
   return [0, -1]

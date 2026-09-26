@@ -189,7 +189,8 @@ canvas {
 }
 
 #level .level-label {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei',
+    Arial, sans-serif;
   font-size: 9px;
   font-weight: 600;
   line-height: 1;
@@ -199,7 +200,8 @@ canvas {
 }
 
 #level-number {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei',
+    Arial, sans-serif;
   font-size: 20px;
   font-weight: 700;
   line-height: 1;
