@@ -1,6 +1,6 @@
-import type { Difficulty } from "./ai";
 import { BLACK, newBoard, type Stone } from "./rules";
 
+export type Difficulty = "easy" | "normal" | "hard";
 export type Mode = "pvp" | "pve";
 export type Phase = "menu" | "play" | "animating" | "thinking" | "over";
 

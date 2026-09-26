@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import clamp from "licia/clamp";
+import each from "licia/each";
 import random from "licia/random";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
@@ -12,14 +13,14 @@ import {
   type Stone,
 } from "../game/rules";
 
-export const CELL_SPACING = 1.05;
-export const GRID_SPAN = CELL_SPACING * BOARD_SIZE;
-export const BOARD_TOP = 10.4;
+const CELL_SPACING = 1.05;
+const GRID_SPAN = CELL_SPACING * BOARD_SIZE;
+const BOARD_TOP = 10.4;
 const BOARD_Y = 0.72;
 const STONE_Y = BOARD_Y + 0.075;
 const DIAGONAL_FLIP_AXIS = new THREE.Vector3(1, 0, -1).normalize();
 
-export type Cell = { row: number; column: number };
+type Cell = { row: number; column: number };
 
 export type ReversiScene = {
   renderer: THREE.WebGLRenderer;
@@ -754,7 +755,7 @@ export function createScene(): ReversiScene {
   };
 
   const updateLegalMoves = (moves: Move[]) => {
-    legalMarkers.forEach((marker, i) => {
+    each(legalMarkers, (marker, i) => {
       const move = moves[i];
       marker.visible = Boolean(move);
       if (move) {

@@ -1,7 +1,12 @@
+import once from "licia/once";
+
 export class AudioKit {
   private enabled = true;
-  private loadStarted = false;
   private readonly placeAudio = new Audio("sound/place.mp3");
+  private readonly unlockAudio = once(() => {
+    // Keeping the audio element primed makes browser autoplay policies predictable.
+    this.placeAudio.load();
+  });
 
   constructor() {
     this.placeAudio.preload = "auto";
@@ -13,9 +18,7 @@ export class AudioKit {
   }
 
   unlock() {
-    if (this.loadStarted) return;
-    this.loadStarted = true;
-    this.placeAudio.load();
+    this.unlockAudio();
   }
 
   play() {

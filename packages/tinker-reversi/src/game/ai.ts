@@ -1,16 +1,17 @@
+import filter from "licia/filter";
+import max from "licia/max";
+import min from "licia/min";
+import randomItem from "licia/randomItem";
 import {
   BOARD_SIZE,
   EMPTY,
   getFlips,
-  getLegalMoves,
   countLegalMoves,
   opposite,
   type Move,
   type Stone,
 } from "./rules";
-import randomItem from "licia/randomItem";
-
-export type Difficulty = "easy" | "normal" | "hard";
+import type { Difficulty } from "./state";
 
 const POSITION_VALUES = [
   120, -25, 20, 5, 5, 20, -25, 120, -25, -45, 1, 1, 1, 1, -45, -25, 20, 1, 5, 2,
@@ -94,13 +95,13 @@ function search(
     for (const { move, flips } of moves) {
       board[move.cell] = turn;
       for (const flip of flips) board[flip] = turn;
-      best = Math.max(
+      best = max(
         best,
         search(board, me, opposite(turn), depth - 1, alpha, beta),
       );
       board[move.cell] = 0;
       for (const flip of flips) board[flip] = opposite(turn);
-      alpha = Math.max(alpha, best);
+      alpha = max(alpha, best);
       if (alpha >= beta) break;
     }
     return best;
@@ -110,13 +111,10 @@ function search(
   for (const { move, flips } of moves) {
     board[move.cell] = turn;
     for (const flip of flips) board[flip] = turn;
-    best = Math.min(
-      best,
-      search(board, me, opposite(turn), depth - 1, alpha, beta),
-    );
+    best = min(best, search(board, me, opposite(turn), depth - 1, alpha, beta));
     board[move.cell] = 0;
     for (const flip of flips) board[flip] = opposite(turn);
-    beta = Math.min(beta, best);
+    beta = min(beta, best);
     if (alpha >= beta) break;
   }
   return best;
@@ -131,7 +129,8 @@ export function chooseMove(
   if (moves.length === 0) return null;
 
   if (difficulty === "easy") {
-    const safeMoves = moves.filter(
+    const safeMoves = filter(
+      moves,
       ({ move }) => POSITION_VALUES[move.cell] >= 20,
     );
     const pool = safeMoves.length > 0 ? safeMoves : moves;

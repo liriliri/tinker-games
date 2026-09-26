@@ -1,5 +1,6 @@
 import "./ui/style.css";
 import clamp from "licia/clamp";
+import max from "licia/max";
 import { AudioKit } from "./lib/audio";
 import { chooseMove } from "./game/ai";
 import {
@@ -21,7 +22,12 @@ import {
   saveDifficulty,
   saveMode,
 } from "./lib/storage";
-import { copy, detectLocale, type Locale } from "./lib/i18n";
+import {
+  copy,
+  detectLocale,
+  detectLocaleFallback,
+  type Locale,
+} from "./lib/i18n";
 import {
   applyLocale as applyLocaleView,
   getGameUi,
@@ -36,7 +42,7 @@ const boardScene = createScene();
 const audio = new AudioKit();
 const ui = getGameUi();
 const game = createGameState(loadMode(), loadDifficulty());
-let locale: Locale = "en";
+let locale: Locale = detectLocaleFallback();
 const getCopy = () => copy[locale];
 let computerMoveTimer: number | undefined;
 let passTimer: number | undefined;
@@ -198,7 +204,7 @@ function placeStone(row: number, column: number) {
   game.turn = stone;
   updateTurn();
   const currentMatch = matchVersion;
-  const animationDuration = 620 + Math.max(0, flips.length - 1) * 40;
+  const animationDuration = 620 + max(0, flips.length - 1) * 40;
   animationTimer = window.setTimeout(() => {
     animationTimer = undefined;
     if (game.phase !== "animating" || matchVersion !== currentMatch) return;
@@ -269,13 +275,16 @@ window.addEventListener("resize", () => {
   requestRender();
 });
 
-detectLocale().then((detectedLocale) => {
-  locale = detectedLocale;
-  applyLocale();
-});
 setMenuVisible(true);
 setModeSelection(ui, game.mode);
 setDifficultySelection(game.difficulty);
 updateScore(ui, game.board);
+applyLocale();
 boardScene.cursor.visible = false;
 requestRender();
+
+detectLocale().then((detectedLocale) => {
+  if (detectedLocale === locale) return;
+  locale = detectedLocale;
+  applyLocale();
+});

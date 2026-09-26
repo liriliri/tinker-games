@@ -2,10 +2,10 @@ export const BOARD_SIZE = 8;
 export const CELL_COUNT = BOARD_SIZE * BOARD_SIZE;
 export const EMPTY = 0;
 export const BLACK = 1;
-export const WHITE = 2;
+const WHITE = 2;
 export type Stone = typeof BLACK | typeof WHITE;
 
-export const DIRECTIONS = [
+const DIRECTIONS = [
   [-1, -1],
   [-1, 0],
   [-1, 1],
@@ -26,7 +26,7 @@ export function index(row: number, column: number) {
   return row * BOARD_SIZE + column;
 }
 
-export function inBounds(row: number, column: number) {
+function inBounds(row: number, column: number) {
   return row >= 0 && row < BOARD_SIZE && column >= 0 && column < BOARD_SIZE;
 }
 
@@ -90,14 +90,7 @@ export function getLegalMoves(board: Uint8Array, stone: Stone): Move[] {
 }
 
 export function countLegalMoves(board: Uint8Array, stone: Stone) {
-  let count = 0;
-  for (let cell = 0; cell < CELL_COUNT; cell++) {
-    if (board[cell] !== EMPTY) continue;
-    const row = Math.floor(cell / BOARD_SIZE);
-    const column = cell % BOARD_SIZE;
-    if (getFlips(board, row, column, stone).length > 0) count++;
-  }
-  return count;
+  return getLegalMoves(board, stone).length;
 }
 
 export function countStones(board: Uint8Array) {
@@ -108,8 +101,4 @@ export function countStones(board: Uint8Array) {
     if (cell === WHITE) white++;
   }
   return { black, white };
-}
-
-export function isFull(board: Uint8Array) {
-  return !board.includes(EMPTY);
 }

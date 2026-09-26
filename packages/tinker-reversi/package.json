@@ -1,7 +1,7 @@
 {
   "name": "tinker-reversi",
-  "version": "0.1.0",
-  "description": "Reversi Game Plugin for TINKER",
+  "version": "0.1.1",
+  "description": "Capture territory in the classic game of Reversi.",
   "files": [
     "dist/",
     "icon.png"
@@ -16,9 +16,9 @@
   ],
   "tinker": {
     "name": "Reversi",
-    "description": "Capture territory in the classic game of Reversi.",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "黑白棋",

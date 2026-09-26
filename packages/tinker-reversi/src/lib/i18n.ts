@@ -1,3 +1,5 @@
+import startWith from "licia/startWith";
+
 export const copy = {
   en: {
     mode: "MODE",
@@ -52,6 +54,14 @@ export const copy = {
 export type Locale = keyof typeof copy;
 export type Copy = (typeof copy)[Locale];
 
+function localeFromNavigator(): Locale {
+  return startWith(navigator.language.toLowerCase(), "zh") ? "zh-CN" : "en";
+}
+
+export function detectLocaleFallback(): Locale {
+  return localeFromNavigator();
+}
+
 export async function detectLocale(): Promise<Locale> {
   if (typeof tinker !== "undefined") {
     try {
@@ -61,5 +71,5 @@ export async function detectLocale(): Promise<Locale> {
       // Use the browser language when Tinker is unavailable.
     }
   }
-  return navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en";
+  return localeFromNavigator();
 }
