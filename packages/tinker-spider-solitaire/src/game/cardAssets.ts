@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 
-export const CARD_TEXTURE_NAMES = [
+const CARD_TEXTURE_NAMES = [
   'spades2',
   'spades3',
   'spades4',

@@ -19,35 +19,30 @@ export const CARD_OVERLAP = 20
 export const CARD_CLOSED_OVERLAP = 7
 export const COLUMN_SPACING = 86
 
-export const SLOT_X = 16
+const SLOT_X = 16
 export const SLOT_Y = 9
 export const SLOT_WIDTH = 70
 export const SLOT_HEIGHT = 96
 
-/** Vertical center of stock / foundation cards on the top row. */
-export const TOP_ROW_CENTER_Y = SLOT_Y + CARD_HEIGHT / 2
-
-/** Gap between the top row and tableau slots. */
-export const TABLEAU_TOP_GAP = 12
+const TOP_ROW_CENTER_Y = SLOT_Y + CARD_HEIGHT / 2
+const TABLEAU_TOP_GAP = 12
 export const TABLEAU_SLOT_Y = SLOT_Y + CARD_HEIGHT + TABLEAU_TOP_GAP
 
-/** Base Y passed to tableauCardY (row 0 center = TABLEAU_SLOT_Y + CARD_HEIGHT / 2). */
+/** Base Y for tableauCardY so row 0 aligns with the tableau slot. */
 export const TABLEAU_Y = TABLEAU_SLOT_Y
 
-export const TABLEAU_X = 52
+const TABLEAU_X = 52
 
 export const STATUS_BAR_HEIGHT = 42
 export const STATUS_BAR_WIDTH = 440
 export const STATUS_BAR_RADIUS = 10
 export const STATUS_BAR_BOTTOM_INSET = 6
 
-/** Stock pile — top-left, column 0 (reference spider stock x=0 y=0). */
 export const STOCK_X = TABLEAU_X
 export const STOCK_Y = TOP_ROW_CENTER_Y
 export const STOCK_X_DELTA = 3
 export const STOCK_Y_DELTA = 2
 
-/** Foundation piles — top row columns 2–9 (reference x=2..9 y=0). */
 export const FOUNDATION_Y = TOP_ROW_CENTER_Y
 
 export const COMPLETION_CARD_DURATION = 180

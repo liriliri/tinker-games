@@ -1,4 +1,8 @@
 import Phaser from 'phaser'
+import each from 'licia/each'
+import filter from 'licia/filter'
+import map from 'licia/map'
+import min from 'licia/min'
 import type {
   Card,
   CompletedStackInfo,
@@ -8,6 +12,7 @@ import type { SpiderBoard } from '../game/SpiderBoard'
 import { getCardTextureKey } from '../game/cardAssets'
 import {
   CARD_OVERLAP,
+  CARDS_PER_SUIT,
   COLUMN_SPACING,
   COMPLETION_CARD_DURATION,
   COMPLETION_CARD_STAGGER,
@@ -32,7 +37,7 @@ import {
 } from './spriteScale'
 import { CardView } from './CardView'
 
-export interface DragState {
+interface DragState {
   sourceCol: number
   startRow: number
   cardIds: number[]
@@ -135,13 +140,13 @@ export class TableLayer {
       }
 
       const stack = column.slice(row)
-      const cardIds = stack.map((c) => c.id)
+      const cardIds = map(stack, (c) => c.id)
 
       this.dragState = {
         sourceCol: col,
         startRow: row,
         cardIds,
-        columnSnapshot: column.map((c) => ({ ...c })),
+        columnSnapshot: map(column, (c) => ({ ...c })),
         offsetX: pointer.x - view.x,
         offsetY: pointer.y - view.y,
       }
@@ -168,7 +173,7 @@ export class TableLayer {
     const baseX = pointer.x - offsetX
     const baseY = pointer.y - offsetY
 
-    cardIds.forEach((id, index) => {
+    each(cardIds, (id, index) => {
       const view = this.cardViews.get(id)
       if (!view) return
       view.setPosition(baseX, baseY + index * s(CARD_OVERLAP))
@@ -209,7 +214,7 @@ export class TableLayer {
 
   private returnStack(drag: DragState) {
     const { sourceCol, startRow, cardIds, columnSnapshot } = drag
-    cardIds.forEach((id, index) => {
+    each(cardIds, (id, index) => {
       const view = this.cardViews.get(id)
       if (!view) return
       this.dragLayer.remove(view)
@@ -262,7 +267,7 @@ export class TableLayer {
   private drawStock(count: number) {
     if (count <= 0) return
 
-    const layers = Math.min(5, Math.ceil(count / 10))
+    const layers = min(5, Math.ceil(count / 10))
     for (let i = 0; i < layers; i++) {
       const img = sizeCardSprite(
         this.scene.add
@@ -316,7 +321,7 @@ export class TableLayer {
     let finished = 0
     const total = dealt.length
 
-    dealt.forEach(({ card, col }, index) => {
+    each(dealt, ({ card, col }, index) => {
       const column = board.tableau[col]
       const row = column.length
       const target = this.tableauPosition([...column, card], col, row)
@@ -399,11 +404,12 @@ export class TableLayer {
   ) {
     const cards = board.tableau[info.col].slice(
       info.startIndex,
-      info.startIndex + 13,
+      info.startIndex + CARDS_PER_SUIT,
     )
-    const views = cards
-      .map((card) => this.cardViews.get(card.id))
-      .filter((view): view is CardView => view !== undefined)
+    const views = filter(
+      map(cards, (card) => this.cardViews.get(card.id)),
+      (view) => view != null,
+    ) as CardView[]
 
     if (views.length === 0) {
       onComplete()
@@ -417,32 +423,29 @@ export class TableLayer {
     let finished = 0
     const total = views.length
 
-    views
-      .slice()
-      .reverse()
-      .forEach((view, index) => {
-        this.container.remove(view)
-        this.dragLayer.add(view)
-        view.disableInteractive()
-        view.setDepth(3000 + index)
+    each(views.slice().reverse(), (view, index) => {
+      this.container.remove(view)
+      this.dragLayer.add(view)
+      view.disableInteractive()
+      view.setDepth(3000 + index)
 
-        const tween = this.scene.tweens.add({
-          targets: view,
-          x: targetX,
-          y: targetY - index * s(2),
-          scale: 0.92,
-          duration: COMPLETION_CARD_DURATION,
-          delay: index * COMPLETION_CARD_STAGGER,
-          ease: 'Cubic.easeInOut',
-          onComplete: () => {
-            view.destroy(true)
-            this.cardViews.delete(view.cardId)
-            finished++
-            if (finished === total) onComplete()
-          },
-        })
-        this.activeTweens.push(tween)
+      const tween = this.scene.tweens.add({
+        targets: view,
+        x: targetX,
+        y: targetY - index * s(2),
+        scale: 0.92,
+        duration: COMPLETION_CARD_DURATION,
+        delay: index * COMPLETION_CARD_STAGGER,
+        ease: 'Cubic.easeInOut',
+        onComplete: () => {
+          view.destroy(true)
+          this.cardViews.delete(view.cardId)
+          finished++
+          if (finished === total) onComplete()
+        },
       })
+      this.activeTweens.push(tween)
+    })
   }
 
   private syncStockZone(stockCount: number) {

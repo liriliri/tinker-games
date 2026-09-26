@@ -1,3 +1,8 @@
+import every from 'licia/every'
+import map from 'licia/map'
+import max from 'licia/max'
+import range from 'licia/range'
+import shuffle from 'licia/shuffle'
 import {
   CARDS_PER_SUIT,
   NUM_COLUMNS,
@@ -41,18 +46,9 @@ export interface CompletedStackInfo {
   foundationSlot: number
 }
 
-export type MoveResult =
+type MoveResult =
   | { ok: true; completions: CompletedStackInfo[] }
   | { ok: false; reason: 'invalid' }
-
-function shuffle<T>(array: T[]): T[] {
-  const result = [...array]
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[result[i], result[j]] = [result[j], result[i]]
-  }
-  return result
-}
 
 function isCardIdxFollowing(
   lowerRank: number,
@@ -99,18 +95,18 @@ export class SpiderBoard {
 
   constructor(difficulty: Difficulty = 1) {
     this.difficulty = difficulty
-    this.tableau = Array.from({ length: NUM_COLUMNS }, () => [])
+    this.tableau = map(range(NUM_COLUMNS), () => [])
     this.stock = []
-    this.foundations = Array.from({ length: NUM_FOUNDATIONS }, () => null)
+    this.foundations = map(range(NUM_FOUNDATIONS), () => null)
     this.dealNewGame()
   }
 
   dealNewGame() {
     this.foundationCount = 0
-    this.foundations = Array.from({ length: NUM_FOUNDATIONS }, () => null)
+    this.foundations = map(range(NUM_FOUNDATIONS), () => null)
     this.score = 500
     this.moves = 0
-    this.tableau = Array.from({ length: NUM_COLUMNS }, () => [])
+    this.tableau = map(range(NUM_COLUMNS), () => [])
     this.stock = []
 
     const cards = this.createDeck()
@@ -151,7 +147,7 @@ export class SpiderBoard {
 
   canDealFromStock() {
     if (this.stock.length === 0) return false
-    return this.tableau.every((col) => col.length > 0)
+    return every(this.tableau, (col) => col.length > 0)
   }
 
   dealFromStock(): DealCardInfo[] | null {
@@ -165,8 +161,7 @@ export class SpiderBoard {
       dealt.push({ card, col })
     }
 
-    this.score = Math.max(0, this.score - 1)
-    this.moves++
+    this.spendMove()
     return dealt
   }
 
@@ -278,9 +273,13 @@ export class SpiderBoard {
       if (!top.faceUp) top.faceUp = true
     }
 
-    this.score = Math.max(0, this.score - 1)
-    this.moves++
+    this.spendMove()
     return { ok: true, completions: this.detectCompletedStacks() }
+  }
+
+  private spendMove() {
+    this.score = max(0, this.score - 1)
+    this.moves++
   }
 
   private findCompletedStack(col: number): { startIndex: number } | null {
@@ -288,7 +287,7 @@ export class SpiderBoard {
     for (let i = 0; i <= column.length - CARDS_PER_SUIT; i++) {
       const slice = column.slice(i, i + CARDS_PER_SUIT)
       if (slice.length !== CARDS_PER_SUIT) continue
-      if (!slice.every((c) => c.faceUp)) continue
+      if (!every(slice, (c) => c.faceUp)) continue
       if (slice[0].rank !== RANK_K) continue
       if (!isSameSuitDescending(slice)) continue
       if (slice[12].rank !== RANK_A) continue

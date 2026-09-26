@@ -1,7 +1,7 @@
 {
   "name": "tinker-spider-solitaire",
-  "version": "0.1.2",
-  "description": "Spider Solitaire Game Plugin for TINKER",
+  "version": "0.1.3",
+  "description": "Build complete suits from King to Ace in this classic card game.",
   "files": [
     "dist/",
     "icon.png"
@@ -16,9 +16,9 @@
   ],
   "tinker": {
     "name": "Spider Solitaire",
-    "description": "Build complete suits from King to Ace in this classic card game.",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "蜘蛛纸牌",

@@ -20,7 +20,7 @@ function statusBarOrigin() {
   }
 }
 
-export interface StatusBarCallbacks {
+interface StatusBarCallbacks {
   onNewGame: () => void
   onDifficultyClick: () => void
 }

@@ -1,8 +1,8 @@
 import startWith from 'licia/startWith'
 
-export type Locale = 'en' | 'zh-CN'
+type Locale = 'en' | 'zh-CN'
 
-export interface Messages {
+interface Messages {
   score: string
   moves: string
   newGame: string

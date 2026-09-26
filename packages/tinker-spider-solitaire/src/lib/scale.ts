@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import clamp from 'licia/clamp'
+import min from 'licia/min'
 import { FIELD_WIDTH, getReferenceGameHeight } from './layout'
 
 const MIN_FIT_SCALE = 0.5
@@ -20,7 +21,7 @@ function getFitScale(scale: Phaser.Scale.ScaleManager): number {
     parentHeight = window.innerHeight
   }
 
-  const fitScale = Math.min(
+  const fitScale = min(
     parentWidth / FIELD_WIDTH,
     parentHeight / getReferenceGameHeight(),
   )
