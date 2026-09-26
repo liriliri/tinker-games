@@ -9,6 +9,7 @@ import { GameScene } from '../scenes/GameScene'
 import { s } from '../lib/scale'
 import { createActionButton } from '../ui/createActionButton'
 import { sharpTextStyle } from '../ui/sharpText'
+import max from 'licia/max'
 
 export class HeaderBar extends Phaser.GameObjects.Container {
   declare scene: GameScene
@@ -39,11 +40,11 @@ export class HeaderBar extends Phaser.GameObjects.Container {
     this.undoButton = undo.container
 
     const sideReserve =
-      Math.max(
+      max(
         s(HEADER_PADDING_X) + reset.width / 2,
         s(HEADER_PADDING_X) + undo.width / 2,
       ) + s(8)
-    const statusWidth = Math.max(s(80), this.barWidth - sideReserve * 2)
+    const statusWidth = max(s(80), this.barWidth - sideReserve * 2)
 
     this.statusText = scene.add
       .text(

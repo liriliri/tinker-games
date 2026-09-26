@@ -1,7 +1,7 @@
 {
   "name": "tinker-trap-the-cat",
-  "version": "0.1.2",
-  "description": "Trap The Cat Game Plugin for TINKER",
+  "version": "0.1.3",
+  "description": "Click dots to trap the cat before it escapes!",
   "files": [
     "dist/",
     "icon.png"
@@ -16,9 +16,9 @@
   ],
   "tinker": {
     "name": "Trap the Cat",
-    "description": "Click dots to trap the cat before it escapes!",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "圈小猫",

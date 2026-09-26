@@ -9,12 +9,6 @@ import { getCatBestDirection, isCatTrapped } from '../game/boardAnalysis'
 import { getNeighbours } from '../game/grid'
 import { GameScene } from '../scenes/GameScene'
 
-export type CatSolver = (
-  blocksIsWall: boolean[][],
-  i: number,
-  j: number,
-) => number
-
 export class Cat extends Phaser.GameObjects.Sprite {
   declare scene: GameScene
   private escaped = false
@@ -25,7 +19,6 @@ export class Cat extends Phaser.GameObjects.Sprite {
     this.on('animationrepeat', () => {
       this.moveForward()
     })
-    this.solver = getCatBestDirection
     this.direction = CAT_DEFAULT_DIRECTION
     this.reset()
   }
@@ -56,14 +49,6 @@ export class Cat extends Phaser.GameObjects.Sprite {
     this.resetOriginAndScale()
   }
 
-  get solver(): CatSolver {
-    return this.getData('solver')
-  }
-
-  set solver(value: CatSolver) {
-    this.setData('solver', value)
-  }
-
   get isMoving(): boolean {
     return this._isMoving
   }
@@ -91,7 +76,7 @@ export class Cat extends Phaser.GameObjects.Sprite {
   }
 
   step(): boolean {
-    const direction = this.solver(this.scene.blocksData, this.i, this.j)
+    const direction = getCatBestDirection(this.scene.blocksData, this.i, this.j)
     if (direction < 0 || direction > 5) {
       this.caught()
       return false

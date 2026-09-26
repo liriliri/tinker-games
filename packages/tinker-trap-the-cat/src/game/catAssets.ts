@@ -1,8 +1,10 @@
 import Phaser from 'phaser'
+import each from 'licia/each'
+import keys from 'licia/keys'
 import { CELL_R } from './constants'
 import { s } from '../lib/scale'
 
-export const CAT_TEXTURES = {
+const CAT_TEXTURES = {
   bottom_left_1: 'images/bottom_left/1.svg',
   bottom_left_2: 'images/bottom_left/2.svg',
   bottom_left_3: 'images/bottom_left/3.svg',
@@ -98,7 +100,7 @@ export const CAT_DIRECTIONS = [
 ] as const
 
 export const CAT_DEFAULT_DIRECTION = 5
-export const CAT_STEP_LENGTH = 20
+const CAT_STEP_LENGTH = 20
 export const CAT_FRAME_RATE = 15
 
 export function getCatTextureScale() {
@@ -106,7 +108,17 @@ export function getCatTextureScale() {
 }
 
 export function queueCatTextures(scene: Phaser.Scene, textureScale: number) {
-  for (const [key, path] of Object.entries(CAT_TEXTURES)) {
-    scene.load.svg(key, path, { scale: textureScale })
-  }
+  each(keys(CAT_TEXTURES), (key) => {
+    scene.load.svg(key, CAT_TEXTURES[key as keyof typeof CAT_TEXTURES], {
+      scale: textureScale,
+    })
+  })
+}
+
+export function clearCatTextures(scene: Phaser.Scene) {
+  each(keys(CAT_TEXTURES), (key) => {
+    if (scene.textures.exists(key)) {
+      scene.textures.remove(key)
+    }
+  })
 }

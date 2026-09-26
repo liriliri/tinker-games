@@ -7,9 +7,9 @@ import { GRID_H, GRID_W } from './constants'
 import { getNeighbours } from './grid'
 import cloneDeep from 'licia/cloneDeep'
 
-export const MIN_CAT_ESCAPE_DISTANCE = 4
+const MIN_CAT_ESCAPE_DISTANCE = 4
 export const MAX_RANDOM_WALL_ATTEMPTS = 64
-export const GREEDY_SIMULATION_ROUNDS = 12
+const GREEDY_SIMULATION_ROUNDS = 12
 
 export function isFairRandomStart(
   blocksIsWall: boolean[][],

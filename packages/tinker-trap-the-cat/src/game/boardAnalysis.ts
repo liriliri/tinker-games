@@ -1,7 +1,9 @@
-import { getNeighbours } from './grid'
+import each from 'licia/each'
 import map from 'licia/map'
+import some from 'licia/some'
+import { getNeighbours } from './grid'
 
-export class BoardAnalysis {
+class BoardAnalysis {
   readonly w: number
   readonly h: number
   private blocks: AnalysisBlock[][]
@@ -27,8 +29,8 @@ export class BoardAnalysis {
   calcAllDistances() {
     const queue: AnalysisBlock[] = []
     const queued = new Set<AnalysisBlock>()
-    this.blocks.forEach((col) => {
-      col.forEach((block) => {
+    each(this.blocks, (col) => {
+      each(col, (block) => {
         if (block.isEdge && !block.isWall) {
           block.distance = 0
           queue.push(block)
@@ -40,7 +42,7 @@ export class BoardAnalysis {
     while (queue.length > 0) {
       const block = queue.shift()!
       queued.delete(block)
-      block.neighbours.forEach((neighbour) => {
+      each(block.neighbours, (neighbour) => {
         if (neighbour !== null && !neighbour.isEdge && !neighbour.isWall) {
           if (neighbour.distance > block.distance + 1) {
             neighbour.distance = block.distance + 1
@@ -83,7 +85,7 @@ class AnalysisBlock {
         this._routesCount = 1
       } else {
         let routesCount = 0
-        this.neighbours.forEach((neighbour) => {
+        each(this.neighbours, (neighbour) => {
           if (neighbour !== null && !neighbour.isWall) {
             if (neighbour.distance < this.distance) {
               routesCount += neighbour.routesCount
@@ -98,7 +100,7 @@ class AnalysisBlock {
 
   get neighbours(): (AnalysisBlock | null)[] {
     if (this._neighbours === undefined) {
-      this._neighbours = getNeighbours(this.i, this.j).map((neighbour) =>
+      this._neighbours = map(getNeighbours(this.i, this.j), (neighbour) =>
         this.parent.getBlock(neighbour.i, neighbour.j),
       )
     }
@@ -107,7 +109,7 @@ class AnalysisBlock {
 
   get directions(): number[] {
     const result: number[] = []
-    this.neighbours.forEach((neighbour, direction) => {
+    each(this.neighbours, (neighbour, direction) => {
       if (neighbour !== null && !neighbour.isWall) {
         if (neighbour.distance < this.distance) {
           result.push(direction)
@@ -120,7 +122,7 @@ class AnalysisBlock {
   get bestDirection(): number {
     let maxRoutesCount = 0
     let result = -1
-    this.directions.forEach((direction) => {
+    each(this.directions, (direction) => {
       const neighbour = this.neighbours[direction]
       if (neighbour && neighbour.routesCount > maxRoutesCount) {
         maxRoutesCount = neighbour.routesCount
@@ -138,7 +140,7 @@ export function isCatTrapped(
   w: number,
   h: number,
 ): boolean {
-  return !getNeighbours(i, j).some(({ i: ni, j: nj }) => {
+  return !some(getNeighbours(i, j), ({ i: ni, j: nj }) => {
     if (ni < 0 || ni >= w || nj < 0 || nj >= h) {
       return false
     }
@@ -146,14 +148,18 @@ export function isCatTrapped(
   })
 }
 
+function analyzeBoard(blocksIsWall: boolean[][]): BoardAnalysis {
+  const board = new BoardAnalysis(blocksIsWall)
+  board.calcAllDistances()
+  return board
+}
+
 export function getCatEscapeDistance(
   blocksIsWall: boolean[][],
   i: number,
   j: number,
 ): number {
-  const board = new BoardAnalysis(blocksIsWall)
-  board.calcAllDistances()
-  return board.getBlock(i, j)?.distance ?? Infinity
+  return analyzeBoard(blocksIsWall).getBlock(i, j)?.distance ?? Infinity
 }
 
 export function getCatBestDirection(
@@ -161,7 +167,5 @@ export function getCatBestDirection(
   i: number,
   j: number,
 ): number {
-  const board = new BoardAnalysis(blocksIsWall)
-  board.calcAllDistances()
-  return board.getBlock(i, j)?.bestDirection ?? -1
+  return analyzeBoard(blocksIsWall).getBlock(i, j)?.bestDirection ?? -1
 }

@@ -1,7 +1,7 @@
 import {
   CAT_ANIMATIONS,
   CAT_FRAME_RATE,
-  CAT_TEXTURES,
+  clearCatTextures,
   getCatTextureScale,
   queueCatTextures,
 } from '../game/catAssets'
@@ -28,6 +28,7 @@ import { Block } from '../gameObjects/Block'
 import { Cat } from '../gameObjects/Cat'
 import { HeaderBar } from '../gameObjects/HeaderBar'
 import { applyRenderScale, RELAYOUT_EVENT, s } from '../lib/scale'
+import each from 'licia/each'
 import filter from 'licia/filter'
 import map from 'licia/map'
 import range from 'licia/range'
@@ -236,11 +237,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (needsTextures) {
-      for (const key of Object.keys(CAT_TEXTURES)) {
-        if (this.textures.exists(key)) {
-          this.textures.remove(key)
-        }
-      }
+      clearCatTextures(this)
     }
 
     return new Promise((resolve) => {
@@ -304,7 +301,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createAnimations(): void {
-    CAT_ANIMATIONS.forEach((animation) => {
+    each(CAT_ANIMATIONS, (animation) => {
       if (this.anims.exists(animation.name)) {
         this.anims.remove(animation.name)
       }
@@ -327,9 +324,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private destroyView() {
-    this.blocks?.forEach((column) => {
-      column.forEach((block) => block.destroy())
-    })
+    if (this.blocks) {
+      each(this.blocks, (column) => {
+        each(column, (block) => block.destroy())
+      })
+    }
     this.cat?.destroy()
     this.header?.destroy()
   }
@@ -372,8 +371,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private resetBlocks() {
-    this.blocks.forEach((column) => {
-      column.forEach((block) => {
+    each(this.blocks, (column) => {
+      each(column, (block) => {
         block.isWall = false
       })
     })

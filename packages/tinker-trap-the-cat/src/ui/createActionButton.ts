@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import max from 'licia/max'
 import {
   ACTION_BUTTON_HEIGHT,
   ACTION_BUTTON_MIN_WIDTH,
@@ -59,7 +60,7 @@ export function createActionButton(
     )
     .setOrigin(0.5)
 
-  const width = Math.max(s(ACTION_BUTTON_MIN_WIDTH), text.width + s(28))
+  const width = max(s(ACTION_BUTTON_MIN_WIDTH), text.width + s(28))
   const height = s(ACTION_BUTTON_HEIGHT)
   const bg = scene.add.graphics()
   drawButtonBg(bg, width, height, COLORS.buttonBg)

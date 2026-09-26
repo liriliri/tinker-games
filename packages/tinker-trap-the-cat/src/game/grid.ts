@@ -1,4 +1,4 @@
-export type GridNeighbour = {
+type GridNeighbour = {
   i: number
   j: number
 }
