@@ -1,5 +1,10 @@
 import "./ui/style.css";
 import clamp from "licia/clamp";
+import contain from "licia/contain";
+import filter from "licia/filter";
+import last from "licia/last";
+import map from "licia/map";
+import min from "licia/min";
 import { AudioKit } from "./lib/audio";
 import { chooseEngineMove, initGodogpawEngine } from "./lib/godogpaw";
 import {
@@ -23,7 +28,12 @@ import {
   saveDifficulty,
   saveMode,
 } from "./lib/storage";
-import { copy, detectLocale, type Locale } from "./lib/i18n";
+import {
+  copy,
+  detectLocale,
+  detectLocaleFallback,
+  type Locale,
+} from "./lib/i18n";
 import {
   applyLocale as applyLocaleView,
   getGameUi,
@@ -38,7 +48,7 @@ const chessScene = createScene();
 const audio = new AudioKit();
 const ui = getGameUi();
 const game = createGameState(loadMode(), loadDifficulty());
-let locale: Locale = "zh-CN";
+let locale: Locale = detectLocaleFallback();
 let computerMoveTimer: number | undefined;
 let matchVersion = 0;
 let lastMove: Move | null = null;
@@ -162,7 +172,7 @@ function commitMove(move: Move) {
 function selectCell(row: number, column: number) {
   if (game.phase !== "play") return;
   const cell = index(row, column);
-  if (game.selected !== null && game.legalTargets.includes(cell)) {
+  if (game.selected !== null && contain(game.legalTargets, cell)) {
     const move = selectedMoves.find(
       (candidate) => candidate.from === game.selected && candidate.to === cell,
     );
@@ -171,10 +181,11 @@ function selectCell(row: number, column: number) {
   }
   if (game.board[cell] !== 0 && Math.sign(game.board[cell]) === game.turn) {
     game.selected = cell;
-    selectedMoves = generateLegalMoves(game.board, game.turn).filter(
+    selectedMoves = filter(
+      generateLegalMoves(game.board, game.turn),
       (move) => move.from === cell,
     );
-    game.legalTargets = selectedMoves.map((move) => move.to);
+    game.legalTargets = map(selectedMoves, (move) => move.to);
   } else {
     game.selected = null;
     game.legalTargets = [];
@@ -218,7 +229,7 @@ function undo() {
   )
     return;
   cancelComputerMove();
-  const count = game.mode === "pve" ? Math.min(2, game.history.length) : 1;
+  const count = game.mode === "pve" ? min(2, game.history.length) : 1;
   for (let i = 0; i < count; i++) {
     const move = game.history.pop()!;
     game.board[move.from] = move.piece;
@@ -230,7 +241,7 @@ function undo() {
   game.selected = null;
   game.legalTargets = [];
   selectedMoves = [];
-  lastMove = game.history[game.history.length - 1] ?? null;
+  lastMove = last(game.history) ?? null;
   chessScene.cursor.visible = true;
   refreshBoard();
   refreshTurn();
@@ -285,14 +296,15 @@ window.addEventListener("resize", () => {
   chessScene.resize();
   requestRender();
 });
-detectLocale().then((detectedLocale) => {
-  locale = detectedLocale;
-  applyLocale();
-});
 initGodogpawEngine();
 setModeSelection(ui, game.mode);
 setDifficultySelection(game.difficulty);
 setMenuVisible(ui, true);
+applyLocale();
 refreshBoard();
 refreshTurn();
 requestRender();
+detectLocale().then((detectedLocale) => {
+  locale = detectedLocale;
+  applyLocale();
+});

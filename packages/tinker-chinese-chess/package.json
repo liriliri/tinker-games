@@ -1,7 +1,7 @@
 {
   "name": "tinker-chinese-chess",
-  "version": "0.2.2",
-  "description": "A 3D Chinese chess game with a thoughtful computer opponent.",
+  "version": "0.2.3",
+  "description": "Play Chinese chess against a friend or a thoughtful computer opponent.",
   "files": [
     "dist/",
     "icon.png"
@@ -12,9 +12,9 @@
   },
   "tinker": {
     "name": "Chinese Chess",
-    "description": "Play Chinese chess against a friend or a thoughtful computer opponent.",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "中国象棋",

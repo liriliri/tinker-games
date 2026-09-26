@@ -1,20 +1,20 @@
 export const ROWS = 10;
 export const COLUMNS = 9;
-export const CELL_COUNT = ROWS * COLUMNS;
+const CELL_COUNT = ROWS * COLUMNS;
 
-export const EMPTY = 0;
+const EMPTY = 0;
 export const RED = 1;
 export const BLACK = -1;
 export type Side = typeof RED | typeof BLACK;
 
-export const KING = 1;
-export const ADVISOR = 2;
-export const ELEPHANT = 3;
-export const HORSE = 4;
-export const ROOK = 5;
-export const CANNON = 6;
-export const PAWN = 7;
-export type PieceType =
+const KING = 1;
+const ADVISOR = 2;
+const ELEPHANT = 3;
+const HORSE = 4;
+const ROOK = 5;
+const CANNON = 6;
+const PAWN = 7;
+type PieceType =
   | typeof KING
   | typeof ADVISOR
   | typeof ELEPHANT
@@ -31,7 +31,7 @@ export type Move = {
   captured: Piece;
 };
 
-export type GameResult = "playing" | "red" | "black" | "draw";
+type GameResult = "playing" | "red" | "black" | "draw";
 
 export const PIECE_LABELS: Record<number, { red: string; black: string }> = {
   [KING]: { red: "帥", black: "將" },
@@ -84,7 +84,7 @@ export function columnOf(cell: number) {
   return cell % COLUMNS;
 }
 
-export function inBounds(row: number, column: number) {
+function inBounds(row: number, column: number) {
   return row >= 0 && row < ROWS && column >= 0 && column < COLUMNS;
 }
 
@@ -96,7 +96,7 @@ export function pieceSide(piece: Piece): Side {
   return piece > 0 ? RED : BLACK;
 }
 
-export function opposite(side: Side): Side {
+function opposite(side: Side): Side {
   return side === RED ? BLACK : RED;
 }
 
@@ -190,7 +190,7 @@ function rayMoves(
   }
 }
 
-export function generatePseudoMoves(board: Int8Array, side: Side) {
+function generatePseudoMoves(board: Int8Array, side: Side) {
   const moves: Move[] = [];
   for (let from = 0; from < CELL_COUNT; from++) {
     const piece = board[from];
@@ -276,7 +276,7 @@ export function applyMove(board: Int8Array, move: Move) {
   board[move.from] = EMPTY;
 }
 
-export function findKing(board: Int8Array, side: Side) {
+function findKing(board: Int8Array, side: Side) {
   for (let cell = 0; cell < CELL_COUNT; cell++) {
     if (board[cell] === side * KING) return cell;
   }

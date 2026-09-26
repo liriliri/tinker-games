@@ -145,7 +145,7 @@ function uciToCell(uci: string) {
   return index(ROWS - 1 - rank, column);
 }
 
-export function syncEngine(history: Move[]) {
+function syncEngine(history: Move[]) {
   engineNewGame("");
   for (const move of history) {
     if (

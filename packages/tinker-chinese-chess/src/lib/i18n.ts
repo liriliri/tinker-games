@@ -1,10 +1,7 @@
+import startWith from "licia/startWith";
+
 export const copy = {
   en: {
-    title: "Chinese Chess",
-    subtitle: "THE NINE LINES",
-    eyebrow: "THE NINE LINES",
-    intro:
-      "One board, half a book of strategy. Read the river before you move.",
     mode: "MATCH",
     local: "LOCAL 2P",
     computer: "VS CPU",
@@ -27,15 +24,8 @@ export const copy = {
     blackWins: "Black wins",
     draw: "A quiet draw",
     check: "Check — answer the threat",
-    hint: "Select a piece to see legal moves",
-    rulesNote: "Red moves first · Check must be answered",
-    gameOver: "THE LAST MOVE",
   },
   "zh-CN": {
-    title: "中国象棋",
-    subtitle: "楚河 · 汉界",
-    eyebrow: "九路纵横",
-    intro: "一局棋，半卷兵法。落子之前，先看楚河汉界。",
     mode: "对弈模式",
     local: "本地双人",
     computer: "挑战电脑",
@@ -58,14 +48,19 @@ export const copy = {
     blackWins: "黑方胜",
     draw: "和棋",
     check: "将军 · 请应将",
-    hint: "选择棋子查看可走位置",
-    rulesNote: "红方先行 · 将军时必须应将",
-    gameOver: "终局",
   },
 } as const;
 
 export type Locale = keyof typeof copy;
 export type Copy = (typeof copy)[Locale];
+
+function localeFromNavigator(): Locale {
+  return startWith(navigator.language.toLowerCase(), "zh") ? "zh-CN" : "en";
+}
+
+export function detectLocaleFallback(): Locale {
+  return localeFromNavigator();
+}
 
 export async function detectLocale(): Promise<Locale> {
   if (typeof tinker !== "undefined") {
@@ -76,5 +71,5 @@ export async function detectLocale(): Promise<Locale> {
       // Tinker is optional when running the game in a browser.
     }
   }
-  return navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en";
+  return localeFromNavigator();
 }

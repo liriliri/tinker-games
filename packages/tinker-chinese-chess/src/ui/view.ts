@@ -1,7 +1,7 @@
 import { isInCheck, RED } from "../game/rules";
-import type { GameState, Mode } from "../game/state";
-import type { Difficulty } from "../game/state";
+import type { Difficulty, GameState, Mode } from "../game/state";
 import { copy, type Copy, type Locale } from "../lib/i18n";
+import each from "licia/each";
 
 export type GameUi = {
   menu: HTMLElement;
@@ -44,23 +44,25 @@ export function setMenuVisible(ui: GameUi, visible: boolean) {
 }
 
 export function setModeSelection(ui: GameUi, mode: Mode) {
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-mode]")
-    .forEach((button) => {
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-mode]"),
+    (button) => {
       button.classList.toggle("selected", button.dataset.mode === mode);
-    });
+    },
+  );
   ui.difficultySetting.classList.toggle("disabled", mode !== "pve");
 }
 
 export function setDifficultySelection(difficulty: Difficulty) {
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-difficulty]")
-    .forEach((button) => {
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-difficulty]"),
+    (button) => {
       button.classList.toggle(
         "selected",
         button.dataset.difficulty === difficulty,
       );
-    });
+    },
+  );
 }
 
 export function updateTurn(ui: GameUi, state: GameState, strings: Copy) {
@@ -93,9 +95,9 @@ export function applyLocale(
 ) {
   const strings = copy[locale];
   document.documentElement.lang = locale;
-  document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element) => {
+  each(document.querySelectorAll<HTMLElement>("[data-i18n]"), (element) => {
     const key = element.dataset.i18n as keyof Copy;
-    if (strings[key]) element.textContent = strings[key];
+    element.textContent = strings[key];
   });
   ui.soundButton.setAttribute(
     "aria-label",

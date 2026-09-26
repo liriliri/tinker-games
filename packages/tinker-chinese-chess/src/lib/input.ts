@@ -1,8 +1,8 @@
+import each from "licia/each";
 import throttle from "licia/throttle";
-import type { Difficulty } from "../game/state";
 import type { ChessScene } from "./scene";
 import type { GameUi } from "../ui/view";
-import type { Mode, Phase } from "../game/state";
+import type { Difficulty, Mode, Phase } from "../game/state";
 
 type Cursor = { row: number; column: number };
 
@@ -38,20 +38,22 @@ export function bindInput(
   ui: GameUi,
   actions: InputActions,
 ) {
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-mode]")
-    .forEach((button) => {
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-mode]"),
+    (button) => {
       button.addEventListener("click", () =>
         actions.setMode(button.dataset.mode as Mode),
       );
-    });
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-difficulty]")
-    .forEach((button) => {
+    },
+  );
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-difficulty]"),
+    (button) => {
       button.addEventListener("click", () =>
         actions.setDifficulty(button.dataset.difficulty as Difficulty),
       );
-    });
+    },
+  );
 
   ui.startButton.addEventListener("click", actions.startMatch);
   ui.againButton.addEventListener("click", actions.startMatch);
@@ -60,9 +62,9 @@ export function bindInput(
   ui.undoButton.addEventListener("click", actions.undo);
   ui.soundButton.addEventListener("click", actions.toggleSound);
 
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-direction]")
-    .forEach((button) => {
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-direction]"),
+    (button) => {
       button.addEventListener("click", () => {
         const direction = button.dataset.direction;
         if (direction === "up") actions.moveCursor(-1, 0);
@@ -70,7 +72,8 @@ export function bindInput(
         if (direction === "left") actions.moveCursor(0, -1);
         if (direction === "right") actions.moveCursor(0, 1);
       });
-    });
+    },
+  );
   document
     .querySelector<HTMLButtonElement>('[data-action="place"]')!
     .addEventListener("click", () => {
