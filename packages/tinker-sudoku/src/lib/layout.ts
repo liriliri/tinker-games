@@ -8,7 +8,7 @@ import {
 } from '../game/constants'
 import { computeGridPixelSize } from '../gameObjects/gridMetrics'
 
-export const CONTROLS_GAP = 8
+const CONTROLS_GAP = 8
 
 export const STATUS_BAR_CENTER_Y = STATUS_BAR_HEIGHT / 2
 
@@ -16,9 +16,9 @@ export const GAME_CONTAINER_Y = STATUS_BAR_HEIGHT + GAME_CONTAINER_MARGIN_TOP
 
 const GRID_BLOCK_HEIGHT = GRID_PADDING * 2 + computeGridPixelSize()
 
-export const DIGIT_PAD_TOP = GAME_CONTAINER_Y + GRID_BLOCK_HEIGHT + CONTROLS_GAP
+const DIGIT_PAD_TOP = GAME_CONTAINER_Y + GRID_BLOCK_HEIGHT + CONTROLS_GAP
 
-export const DIGIT_PAD_AREA_HEIGHT =
+const DIGIT_PAD_AREA_HEIGHT =
   DIGIT_PAD_CONTENT_HEIGHT + GAME_CONTAINER_MARGIN_BOTTOM
 
 export const DIGIT_PAD_CENTER_Y = DIGIT_PAD_TOP + DIGIT_PAD_AREA_HEIGHT / 2

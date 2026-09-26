@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import clamp from 'licia/clamp'
+import map from 'licia/map'
 import randomItem from 'licia/randomItem'
 import {
   DEFAULT_LEVEL_ID,
@@ -19,8 +20,9 @@ import {
   type Grid,
 } from './SudokuEngine'
 import type { GameStorage } from '../lib/storage'
+import { GRID_SIZE } from './constants'
 
-export type CellKind = 'given' | 'user'
+type CellKind = 'given' | 'user'
 
 export interface CellState {
   value: number
@@ -45,16 +47,18 @@ export interface Actuator {
   updateStatus(metadata: GameMetadata): void
 }
 
+function kindsFromPuzzle(puzzle: Grid): CellKind[][] {
+  return map(puzzle, (row) =>
+    map(row, (value) => (value === 0 ? 'user' : 'given')),
+  )
+}
+
 export class GameManager {
   private puzzle: Grid = createEmptyGrid()
   private solution: Grid = createEmptyGrid()
   private grid: Grid = createEmptyGrid()
-  private editable: boolean[][] = createEmptyGrid().map((row) =>
-    row.map(() => false),
-  )
-  private cellKinds: CellKind[][] = createEmptyGrid().map((row) =>
-    row.map(() => 'given' as CellKind),
-  )
+  private editable: boolean[][] = buildEditableMask(createEmptyGrid())
+  private cellKinds: CellKind[][] = kindsFromPuzzle(createEmptyGrid())
   private selected: CellPos | null = null
   private completed = false
   private elapsedSeconds = 0
@@ -136,9 +140,7 @@ export class GameManager {
     if (!this.hasUserEntries() && !this.completed) return
 
     this.grid = cloneGrid(this.puzzle)
-    this.cellKinds = this.puzzle.map((row) =>
-      row.map((value) => (value === 0 ? 'user' : 'given')),
-    )
+    this.cellKinds = kindsFromPuzzle(this.puzzle)
     this.completed = false
     this.startTimer()
     this.refresh()
@@ -200,9 +202,9 @@ export class GameManager {
     let row = startRow
     let col = startCol
 
-    for (let step = 0; step < 81; step++) {
-      row = (row + deltaRow + 9) % 9
-      col = (col + deltaCol + 9) % 9
+    for (let step = 0; step < GRID_SIZE * GRID_SIZE; step++) {
+      row = (row + deltaRow + GRID_SIZE) % GRID_SIZE
+      col = (col + deltaCol + GRID_SIZE) % GRID_SIZE
       if (this.editable[row][col]) {
         this.selected = { row, col }
         this.refresh()
@@ -218,8 +220,8 @@ export class GameManager {
   }
 
   private hasUserEntries() {
-    for (let row = 0; row < 9; row++) {
-      for (let col = 0; col < 9; col++) {
+    for (let row = 0; row < GRID_SIZE; row++) {
+      for (let col = 0; col < GRID_SIZE; col++) {
         if (
           this.editable[row][col] &&
           this.grid[row][col] !== this.puzzle[row][col]
@@ -235,8 +237,8 @@ export class GameManager {
     const empty: CellPos[] = []
     const wrong: CellPos[] = []
 
-    for (let row = 0; row < 9; row++) {
-      for (let col = 0; col < 9; col++) {
+    for (let row = 0; row < GRID_SIZE; row++) {
+      for (let col = 0; col < GRID_SIZE; col++) {
         if (!this.editable[row][col]) continue
 
         const value = this.grid[row][col]
@@ -263,8 +265,8 @@ export class GameManager {
   }
 
   private buildCellStates(): CellState[][] {
-    return this.grid.map((row, rowIndex) =>
-      row.map((value, colIndex) => ({
+    return map(this.grid, (row, rowIndex) =>
+      map(row, (value, colIndex) => ({
         value,
         kind: this.cellKinds[rowIndex][colIndex],
       })),
@@ -283,9 +285,7 @@ export class GameManager {
     this.solution = solution
     this.grid = cloneGrid(puzzle)
     this.editable = buildEditableMask(puzzle)
-    this.cellKinds = puzzle.map((row) =>
-      row.map((value) => (value === 0 ? 'user' : 'given')),
-    )
+    this.cellKinds = kindsFromPuzzle(puzzle)
     this.startTimer()
     this.refresh()
   }

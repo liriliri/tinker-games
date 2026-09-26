@@ -1,3 +1,6 @@
+import contain from 'licia/contain'
+import keys from 'licia/keys'
+
 export type LevelId = 'easy' | 'medium' | 'hard' | 'insane'
 
 export interface LevelConfig {
@@ -25,5 +28,5 @@ export function getCurrentLevel() {
 }
 
 export function isLevelId(value: unknown): value is LevelId {
-  return typeof value === 'string' && value in LEVELS
+  return contain(keys(LEVELS), value)
 }

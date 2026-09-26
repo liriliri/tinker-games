@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import lpad from 'licia/lpad'
+import max from 'licia/max'
 import { COLORS } from '../game/constants'
 import type { LevelId } from '../game/levels'
 import { FIELD_WIDTH, STATUS_BAR_CENTER_Y } from '../lib/layout'
@@ -8,13 +9,13 @@ import { s } from '../lib/scale'
 import { createButton } from '../ui/createButton'
 import { addSharpText } from '../ui/sharpText'
 
-export function formatElapsed(seconds: number) {
+function formatElapsed(seconds: number) {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins}:${lpad(String(secs), 2, '0')}`
 }
 
-export interface StatusBarCallbacks {
+interface StatusBarCallbacks {
   onLevelClick: () => void
   onHint: () => void
   onReset: () => void
@@ -127,7 +128,7 @@ export class StatusBar {
     this.levelLabel.setText(t(`level_${levelId}`))
     this.timerLabel.setText(formatElapsed(elapsedSeconds))
 
-    const labelWidth = Math.max(this.levelLabel.width, s(48))
+    const labelWidth = max(this.levelLabel.width, s(48))
     this.levelHit.setSize(labelWidth + s(12), s(28))
 
     this.setButtonEnabled(this.hintBtn, canHint)

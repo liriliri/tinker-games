@@ -1,14 +1,13 @@
 import Phaser from 'phaser'
-import { getDigitFontFamily, getFontFamily } from '../lib/i18n'
+import { getFontFamily } from '../lib/i18n'
 import { s } from '../lib/scale'
 
 export function sharpTextStyle(
   designPx: number,
   style: Phaser.Types.GameObjects.Text.TextStyle = {},
-  digit = false,
 ): Phaser.Types.GameObjects.Text.TextStyle {
   return {
-    fontFamily: digit ? getDigitFontFamily() : getFontFamily(),
+    fontFamily: getFontFamily(),
     fontSize: `${s(designPx)}px`,
     ...style,
   }
@@ -18,15 +17,11 @@ export function digitTextStyle(
   designPx: number,
   style: Phaser.Types.GameObjects.Text.TextStyle = {},
 ): Phaser.Types.GameObjects.Text.TextStyle {
-  return sharpTextStyle(
-    designPx,
-    {
-      fontStyle: 'bold',
-      align: 'center',
-      ...style,
-    },
-    true,
-  )
+  return sharpTextStyle(designPx, {
+    fontStyle: 'bold',
+    align: 'center',
+    ...style,
+  })
 }
 
 export function addSharpText(
@@ -36,9 +31,8 @@ export function addSharpText(
   content: string,
   designPx: number,
   style: Phaser.Types.GameObjects.Text.TextStyle = {},
-  digit = false,
 ) {
-  return scene.add.text(x, y, content, sharpTextStyle(designPx, style, digit))
+  return scene.add.text(x, y, content, sharpTextStyle(designPx, style))
 }
 
 export function addCenteredDigitText(

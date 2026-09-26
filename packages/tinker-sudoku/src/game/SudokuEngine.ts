@@ -1,14 +1,17 @@
+import map from 'licia/map'
+import range from 'licia/range'
 import shuffle from 'licia/shuffle'
+import { GRID_SIZE } from './constants'
 
 export type Grid = number[][]
 export type CellPos = { row: number; col: number }
 
 export function createEmptyGrid(): Grid {
-  return Array.from({ length: 9 }, () => new Array(9).fill(0))
+  return map(range(GRID_SIZE), () => new Array(GRID_SIZE).fill(0))
 }
 
 export function cloneGrid(grid: Grid): Grid {
-  return grid.map((row) => [...row])
+  return map(grid, (row) => [...row])
 }
 
 function allowed(grid: Grid, row: number, col: number): number[] {
@@ -183,5 +186,5 @@ export function isGridComplete(grid: Grid, solution: Grid): boolean {
 }
 
 export function buildEditableMask(puzzle: Grid): boolean[][] {
-  return puzzle.map((row) => row.map((value) => value === 0))
+  return map(puzzle, (row) => map(row, (value) => value === 0))
 }

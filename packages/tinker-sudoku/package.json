@@ -1,7 +1,7 @@
 {
   "name": "tinker-sudoku",
-  "version": "0.1.0",
-  "description": "Sudoku Game Plugin for TINKER",
+  "version": "0.1.1",
+  "description": "Fill the grid so every row, column, and box contains 1–9.",
   "files": [
     "dist/",
     "icon.png"
@@ -16,9 +16,9 @@
   ],
   "tinker": {
     "name": "Sudoku",
-    "description": "Fill the grid so every row, column, and box contains 1–9.",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "数独",

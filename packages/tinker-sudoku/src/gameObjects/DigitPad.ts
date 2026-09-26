@@ -3,7 +3,7 @@ import { DIGIT_PAD_BUTTON_GAP, DIGIT_PAD_ROW_HEIGHT } from '../game/constants'
 import { DIGIT_PAD_CENTER_Y, FIELD_WIDTH } from '../lib/layout'
 import { createButton } from '../ui/createButton'
 
-export interface DigitPadCallbacks {
+interface DigitPadCallbacks {
   onDigit: (digit: number) => void
 }
 

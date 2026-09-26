@@ -1,8 +1,8 @@
 import startWith from 'licia/startWith'
 
-export type Locale = 'en' | 'zh-CN'
+type Locale = 'en' | 'zh-CN'
 
-export interface Messages {
+interface Messages {
   youWin: string
   selectLevel: string
   level_easy: string
@@ -52,10 +52,6 @@ export function setLocale(loc: string) {
 
 export function t(key: keyof Messages): string {
   return messages[locale][key]
-}
-
-export function getDigitFontFamily(): string {
-  return getFontFamily()
 }
 
 export function getFontFamily(): string {

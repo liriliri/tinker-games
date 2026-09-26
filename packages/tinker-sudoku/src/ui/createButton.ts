@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import max from 'licia/max'
 import { COLORS } from '../game/constants'
 import { s } from '../lib/scale'
 import { fillSmoothRoundedRect } from './drawRoundedRect'
@@ -55,7 +56,7 @@ export function createButton(
     .setOrigin(0.5, 0.5)
     .setPadding(0, 0, 0, 0)
 
-  const width = digit ? s(minWidth) : Math.max(s(minWidth), text.width + s(24))
+  const width = digit ? s(minWidth) : max(s(minWidth), text.width + s(24))
   const scaledHeight = s(height)
   const radius = s(10)
   const baseColor = accent ? COLORS.accent : COLORS.button

@@ -14,7 +14,7 @@ export function fillSmoothRoundedRect(
   gfx.fillRoundedRect(x + 0.5, y + 0.5, width - 1, height - 1, radius)
 }
 
-export function strokeSmoothRoundedRect(
+function strokeSmoothRoundedRect(
   gfx: Phaser.GameObjects.Graphics,
   x: number,
   y: number,

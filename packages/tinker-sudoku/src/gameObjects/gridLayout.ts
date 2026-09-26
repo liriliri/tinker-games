@@ -7,7 +7,7 @@ export function computeCellSize() {
   return (s(FIELD_WIDTH) - s(GRID_PADDING) * 2) / GRID_SIZE
 }
 
-export function gridOrigin(cellSize: number) {
+function gridOrigin(cellSize: number) {
   return {
     x: s(GRID_PADDING),
     y: s(GAME_CONTAINER_Y + GRID_PADDING),
@@ -27,8 +27,8 @@ export function boardBounds(cellSize: number) {
   return new Phaser.Geom.Rectangle(
     origin.x,
     origin.y,
-    cellSize * 9,
-    cellSize * 9,
+    cellSize * GRID_SIZE,
+    cellSize * GRID_SIZE,
   )
 }
 
@@ -53,7 +53,7 @@ export function positionFromPoint(
   const col = Math.floor((x - origin.x) / cellSize)
   const row = Math.floor((y - origin.y) / cellSize)
 
-  if (row < 0 || row >= 9 || col < 0 || col >= 9) {
+  if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) {
     return null
   }
 
