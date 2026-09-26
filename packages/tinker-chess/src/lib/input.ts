@@ -2,6 +2,8 @@ import type { Difficulty } from "../game/ai";
 import type { ChessScene } from "./scene";
 import type { GameUi } from "../ui/view";
 import type { Mode, Phase } from "../game/state";
+import { COLUMNS } from "../game/rules";
+import each from "licia/each";
 
 const DIRECTIONS: Record<string, [number, number]> = {
   ArrowUp: [-1, 0],
@@ -35,20 +37,22 @@ export function bindInput(
   ui: GameUi,
   actions: InputActions,
 ) {
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-mode]")
-    .forEach((button) => {
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-mode]"),
+    (button) => {
       button.addEventListener("click", () =>
         actions.setMode(button.dataset.mode as Mode),
       );
-    });
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-difficulty]")
-    .forEach((button) => {
+    },
+  );
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-difficulty]"),
+    (button) => {
       button.addEventListener("click", () =>
         actions.setDifficulty(button.dataset.difficulty as Difficulty),
       );
-    });
+    },
+  );
   ui.startButton.addEventListener("click", actions.startMatch);
   ui.againButton.addEventListener("click", actions.startMatch);
   ui.menuButton.addEventListener("click", actions.openMenu);
@@ -94,8 +98,9 @@ export function bindInput(
       cell &&
       actions.getPhase() === "play"
     ) {
-      actions.setCursor(cell.row * 8 + cell.column);
-      actions.selectCell(cell.row * 8 + cell.column);
+      const index = cell.row * COLUMNS + cell.column;
+      actions.setCursor(index);
+      actions.selectCell(index);
     }
     pointerId = null;
     dragMode = null;

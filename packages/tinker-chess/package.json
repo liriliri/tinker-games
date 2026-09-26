@@ -1,7 +1,7 @@
 {
   "name": "tinker-chess",
-  "version": "0.1.4",
-  "description": "A focused international chess game with a thoughtful computer opponent.",
+  "version": "0.1.5",
+  "description": "Play international chess against a friend or a thoughtful computer opponent.",
   "files": [
     "dist/",
     "icon.png"
@@ -12,9 +12,9 @@
   },
   "tinker": {
     "name": "Chess",
-    "description": "Play international chess against a friend or a thoughtful computer opponent.",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "国际象棋",

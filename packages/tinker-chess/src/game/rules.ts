@@ -2,7 +2,7 @@ export const ROWS = 8;
 export const COLUMNS = 8;
 export const CELL_COUNT = 64;
 
-export const EMPTY = 0;
+const EMPTY = 0;
 export const WHITE = 1;
 export const BLACK = -1;
 export type Side = typeof WHITE | typeof BLACK;
@@ -22,10 +22,10 @@ export type PieceType =
   | typeof KING;
 export type Piece = number;
 
-export const WHITE_KINGSIDE = 1;
-export const WHITE_QUEENSIDE = 2;
-export const BLACK_KINGSIDE = 4;
-export const BLACK_QUEENSIDE = 8;
+const WHITE_KINGSIDE = 1;
+const WHITE_QUEENSIDE = 2;
+const BLACK_KINGSIDE = 4;
+const BLACK_QUEENSIDE = 8;
 
 export type Move = {
   from: number;
@@ -46,7 +46,7 @@ export type Position = {
   fullmove: number;
 };
 
-export type GameResult = "playing" | "white" | "black" | "draw";
+type GameResult = "playing" | "white" | "black" | "draw";
 
 export const PIECE_GLYPHS: Record<number, { white: string; black: string }> = {
   [PAWN]: { white: "♙", black: "♟" },
@@ -69,7 +69,7 @@ export function columnOf(cell: number) {
   return cell % COLUMNS;
 }
 
-export function inBounds(row: number, column: number) {
+function inBounds(row: number, column: number) {
   return row >= 0 && row < ROWS && column >= 0 && column < COLUMNS;
 }
 
@@ -81,7 +81,7 @@ export function pieceSide(piece: Piece): Side {
   return piece > 0 ? WHITE : BLACK;
 }
 
-export function opposite(side: Side): Side {
+function opposite(side: Side): Side {
   return side === WHITE ? BLACK : WHITE;
 }
 
@@ -199,10 +199,7 @@ const knightSteps = [
   [2, 1],
 ] as const;
 
-export function generatePseudoMoves(
-  position: Position,
-  side: Side = position.turn,
-) {
+function generatePseudoMoves(position: Position, side: Side = position.turn) {
   const moves: Move[] = [];
   const board = position.board;
   for (let from = 0; from < CELL_COUNT; from++) {
@@ -363,18 +360,14 @@ export function makeMove(position: Position, move: Move): Position {
   return next;
 }
 
-export function findKing(position: Position, side: Side) {
+function findKing(position: Position, side: Side) {
   for (let cell = 0; cell < CELL_COUNT; cell++) {
     if (position.board[cell] === side * KING) return cell;
   }
   return -1;
 }
 
-export function isSquareAttacked(
-  position: Position,
-  target: number,
-  bySide: Side,
-) {
+function isSquareAttacked(position: Position, target: number, bySide: Side) {
   const board = position.board;
   const row = rowOf(target);
   const column = columnOf(target);

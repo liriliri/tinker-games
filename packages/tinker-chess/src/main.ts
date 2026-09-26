@@ -1,13 +1,18 @@
 import "./ui/style.css";
 import clamp from "licia/clamp";
+import contain from "licia/contain";
+import filter from "licia/filter";
+import last from "licia/last";
+import map from "licia/map";
+import min from "licia/min";
 import { chooseMove } from "./game/ai";
 import {
   CELL_COUNT,
   COLUMNS,
-  clonePosition,
   generateLegalMoves,
   index,
   makeMove,
+  newPosition,
   positionKey,
   resultFor,
   ROWS,
@@ -16,7 +21,12 @@ import {
 import { computerSide, createGameState, savePosition } from "./game/state";
 import { bindInput } from "./lib/input";
 import { AudioKit } from "./lib/audio";
-import { detectLocale, copy, type Locale } from "./lib/i18n";
+import {
+  detectLocale,
+  detectLocaleFallback,
+  copy,
+  type Locale,
+} from "./lib/i18n";
 import { cellToWorld, createScene, updateSceneMotion } from "./lib/scene";
 import {
   applyLocale as applyLocaleView,
@@ -41,7 +51,7 @@ const audio = new AudioKit();
 chessScene.onPieceMotionComplete(() => audio.play());
 const ui = getGameUi();
 const game = createGameState(loadMode(), loadDifficulty());
-let locale: Locale = "zh-CN";
+let locale: Locale = detectLocaleFallback();
 let computerMoveTimer: number | undefined;
 let resultTimer: number | undefined;
 let matchVersion = 0;
@@ -105,7 +115,8 @@ function moveCursor(rowDelta: number, columnDelta: number) {
 
 function repetitionCount() {
   const key = positionKey(game.position);
-  return [...game.history, game.position].filter(
+  return filter(
+    [...game.history, game.position],
     (position) => positionKey(position) === key,
   ).length;
 }
@@ -113,7 +124,7 @@ function repetitionCount() {
 function resetMatchState(phase: "menu" | "play") {
   cancelComputerMove();
   matchVersion++;
-  game.position = clonePosition(createGameState().position);
+  game.position = newPosition();
   game.history.length = 0;
   game.moves.length = 0;
   game.phase = phase;
@@ -205,8 +216,9 @@ function commitMove(move: Move) {
 function selectCell(cell: number) {
   if (game.phase !== "play" || chessScene.isPieceMoving()) return;
   setCursor(cell);
-  if (game.selected !== null && game.legalTargets.includes(cell)) {
-    const candidates = selectedMoves.filter(
+  if (game.selected !== null && contain(game.legalTargets, cell)) {
+    const candidates = filter(
+      selectedMoves,
       (move) => move.from === game.selected && move.to === cell,
     );
     if (candidates.length > 1) {
@@ -219,10 +231,11 @@ function selectCell(cell: number) {
   const piece = game.position.board[cell];
   if (piece !== 0 && Math.sign(piece) === game.position.turn) {
     game.selected = cell;
-    selectedMoves = generateLegalMoves(game.position).filter(
+    selectedMoves = filter(
+      generateLegalMoves(game.position),
       (move) => move.from === cell,
     );
-    game.legalTargets = selectedMoves.map((move) => move.to);
+    game.legalTargets = map(selectedMoves, (move) => move.to);
   } else {
     game.selected = null;
     game.legalTargets = [];
@@ -255,7 +268,7 @@ function undo() {
     return;
   }
   cancelComputerMove();
-  const count = game.mode === "pve" ? Math.min(2, game.history.length) : 1;
+  const count = game.mode === "pve" ? min(2, game.history.length) : 1;
   for (let step = 0; step < count; step++) {
     game.position = game.history.pop()!;
     game.moves.pop();
@@ -265,7 +278,7 @@ function undo() {
   game.selected = null;
   game.legalTargets = [];
   selectedMoves = [];
-  lastMove = game.moves[game.moves.length - 1] ?? null;
+  lastMove = last(game.moves) ?? null;
   game.cursor = lastMove?.to ?? 52;
   refresh();
 }
@@ -306,6 +319,7 @@ function applyLocale() {
 setModeSelection(ui, game.mode);
 setDifficultySelection(game.difficulty);
 setMenuVisible(ui, true);
+applyLocale();
 refresh();
 detectLocale().then((detectedLocale) => {
   locale = detectedLocale;

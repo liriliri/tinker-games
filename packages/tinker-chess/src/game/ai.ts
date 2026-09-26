@@ -1,3 +1,6 @@
+import max from "licia/max";
+import min from "licia/min";
+import random from "licia/random";
 import {
   BISHOP,
   generateLegalMoves,
@@ -72,7 +75,7 @@ function positionalBonus(piece: number, cell: number) {
   if (type === BISHOP) return center * 7 + rank * 2;
   if (type === ROOK) return (rank === 6 ? 18 : 0) + center * 3;
   if (type === QUEEN) return center * 3;
-  if (type === KING) return rank < 2 ? 18 : -Math.max(0, rank - 2) * 4;
+  if (type === KING) return rank < 2 ? 18 : -max(0, rank - 2) * 4;
   return 0;
 }
 
@@ -175,8 +178,8 @@ function search(
   const cached = context.table.get(key);
   if (cached && cached.depth >= depth) {
     if (cached.bound === "exact") return cached.value;
-    if (cached.bound === "lower") alpha = Math.max(alpha, cached.value);
-    if (cached.bound === "upper") beta = Math.min(beta, cached.value);
+    if (cached.bound === "lower") alpha = max(alpha, cached.value);
+    if (cached.bound === "upper") beta = min(beta, cached.value);
     if (alpha >= beta) return cached.value;
   }
   let best = -Infinity;
@@ -200,7 +203,7 @@ function search(
       best = value;
       bestMove = move;
     }
-    alpha = Math.max(alpha, value);
+    alpha = max(alpha, value);
     if (alpha >= beta) {
       if (!move.captured) {
         const current = context.killers.get(ply) ?? [];
@@ -257,7 +260,7 @@ function searchRoot(
       bestValue = value;
       bestMove = move;
     }
-    alpha = Math.max(alpha, value);
+    alpha = max(alpha, value);
   }
   return { move: bestMove, value: bestValue };
 }
@@ -285,7 +288,7 @@ export function chooseMove(
     best = result.move;
     previousMove = moveKey(best);
   }
-  if (config.randomness && Math.random() < config.randomness) {
+  if (config.randomness && random(0, 1, true) < config.randomness) {
     const alternatives = orderedMoves(position, legal, context, 0).filter(
       (move) => moveKey(move) !== moveKey(best),
     );
