@@ -4,6 +4,8 @@ import filter from "licia/filter";
 import compact from "licia/compact";
 import sortBy from "licia/sortBy";
 import clamp from "licia/clamp";
+import max from "licia/max";
+import min from "licia/min";
 import toInt from "licia/toInt";
 import gambitText from "./gambit.txt?raw";
 import Board, { Cache } from "./board";
@@ -75,7 +77,7 @@ const QUIESCENCE_THREE_LIMIT = 2;
 const QUIESCENCE_THREE_TIED_LIMIT = 3;
 const SEARCH_TIMEOUT = Symbol("search-timeout");
 
-export const TT_FLAG = {
+const TT_FLAG = {
   EXACT: "exact",
   LOWER: "lower",
   UPPER: "upper",
@@ -147,8 +149,7 @@ export const clearSearchCache = (board?: Board) => {
   else boardTables = new WeakMap();
 };
 
-const modeKey = (onlyThree: boolean, onlyFour: boolean) =>
-  `${onlyThree ? 1 : 0}:${onlyFour ? 1 : 0}`;
+const modeKey = (onlyThree: boolean) => (onlyThree ? "1" : "0");
 
 const classifyFlag = (score: number, alpha: number, beta: number): TtFlag => {
   if (score <= alpha) return TT_FLAG.UPPER;
@@ -292,8 +293,8 @@ const quiescence = (
     } finally {
       board.undo();
     }
-    bestScore = Math.max(bestScore, -childScore);
-    alpha = Math.max(alpha, bestScore);
+    bestScore = max(bestScore, -childScore);
+    alpha = max(alpha, bestScore);
     if (alpha >= beta || alpha >= FIVE) break;
   }
 
@@ -301,8 +302,8 @@ const quiescence = (
   return { score, flag: classifyFlag(score, originalAlpha, originalBeta) };
 };
 
-const factory = (onlyThree = false, onlyFour = false) => {
-  const enableQuiescence = !onlyThree && !onlyFour;
+const factory = (onlyThree = false) => {
+  const enableQuiescence = !onlyThree;
 
   const search = (
     board: Board,
@@ -345,7 +346,7 @@ const factory = (onlyThree = false, onlyFour = false) => {
     const originalAlpha = alpha;
     const originalBeta = beta;
     const remainingDepth = depth - ply;
-    const mode = modeKey(onlyThree, onlyFour);
+    const mode = modeKey(onlyThree);
     const previous = table.get(key);
 
     if (
@@ -365,10 +366,10 @@ const factory = (onlyThree = false, onlyFour = false) => {
         };
       }
       if (!context.exactTtOnly && previous.flag === TT_FLAG.LOWER) {
-        alpha = Math.max(alpha, previous.score);
+        alpha = max(alpha, previous.score);
       }
       if (!context.exactTtOnly && previous.flag === TT_FLAG.UPPER) {
-        beta = Math.min(beta, previous.score);
+        beta = min(beta, previous.score);
       }
       if (alpha >= beta) {
         return {
@@ -385,7 +386,7 @@ const factory = (onlyThree = false, onlyFour = false) => {
         role,
         ply,
         onlyThree || ply > onlyThreeThreshold,
-        onlyFour,
+        false,
       ),
     ];
     if (!points.length) {
@@ -472,7 +473,7 @@ const factory = (onlyThree = false, onlyFour = false) => {
         bestMove = point;
         bestPv = [point, ...child.pv];
       }
-      alpha = Math.max(alpha, bestScore);
+      alpha = max(alpha, bestScore);
       if (alpha >= beta || alpha >= FIVE) {
         recordCutoffMove(context, ply, remainingDepth, point, board.size);
         break;
@@ -515,7 +516,6 @@ const factory = (onlyThree = false, onlyFour = false) => {
     const fixedDepthPvs = !options.timeLimitMs && !options.deadline;
     const usePvs =
       !onlyThree &&
-      !onlyFour &&
       options.experimentalPvs !== false &&
       options.disablePvs !== true &&
       (fixedDepthPvs || options.experimentalPvs === true);
@@ -528,7 +528,7 @@ const factory = (onlyThree = false, onlyFour = false) => {
           : "killer");
 
     const bookMoves =
-      !onlyThree && !onlyFour && options.disableOpeningBook !== true
+      !onlyThree && options.disableOpeningBook !== true
         ? getGambitMoves(board)
         : [];
     const openingBookRanks = bookMoves.length
@@ -577,7 +577,7 @@ const factory = (onlyThree = false, onlyFour = false) => {
 
     if (!completed) {
       const fallback =
-        board.getValuableMoves(role, 0, onlyThree, onlyFour)[0] ?? null;
+        board.getValuableMoves(role, 0, onlyThree, false)[0] ?? null;
       return [board.evaluate(role), fallback, fallback ? [fallback] : [], 0];
     }
 
@@ -591,8 +591,7 @@ const factory = (onlyThree = false, onlyFour = false) => {
 };
 
 const normal = factory();
-export const candidateVct = factory(true);
-export const candidateVcf = factory(false, true);
+const candidateVct = factory(true);
 
 export const candidateMinmax = (
   board: Board,

@@ -1,19 +1,11 @@
 import each from "licia/each";
-import { BOARD_SIZE } from "../rules";
-import type { Stone } from "../rules";
+import { BOARD_SIZE, type Stone } from "../rules";
+import type { Difficulty, MoveRecord } from "../state";
 import Board from "./board";
 import { stoneToRole } from "./eval";
 import { clearSearchCache, candidateMinmax } from "./search";
 
-export type Difficulty = "easy" | "normal" | "hard";
-
-export type GameMove = {
-  row: number;
-  column: number;
-  stone: Stone;
-};
-
-export type AiMove = {
+type AiMove = {
   row: number;
   column: number;
 };
@@ -28,7 +20,7 @@ const TIME_LIMIT_MS: Partial<Record<Difficulty, number>> = {
   hard: 3000,
 };
 
-function buildBoard(history: readonly GameMove[]) {
+function buildBoard(history: readonly MoveRecord[]) {
   const firstRole = history.length > 0 ? stoneToRole(history[0]!.stone) : 1;
   const board = new Board(BOARD_SIZE, firstRole);
   each(history, ({ row, column, stone }) => {
@@ -38,7 +30,7 @@ function buildBoard(history: readonly GameMove[]) {
 }
 
 export function chooseMove(
-  history: readonly GameMove[],
+  history: readonly MoveRecord[],
   me: Stone,
   difficulty: Difficulty,
 ): AiMove | null {

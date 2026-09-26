@@ -23,7 +23,12 @@ import {
   saveDifficulty,
   saveMode,
 } from "./lib/storage";
-import { copy, detectLocale, type Locale } from "./lib/i18n";
+import {
+  copy,
+  detectLocale,
+  detectLocaleFallback,
+  type Locale,
+} from "./lib/i18n";
 import {
   applyLocale as applyLocaleView,
   getGameUi,
@@ -37,7 +42,7 @@ const boardScene = createScene();
 const audio = new AudioKit();
 const ui = getGameUi();
 const game = createGameState(loadMode(), loadDifficulty());
-let locale: Locale = "en";
+let locale: Locale = detectLocaleFallback();
 const getCopy = () => copy[locale];
 let computerMoveTimer: number | undefined;
 let resultTimer: number | undefined;
@@ -213,13 +218,15 @@ function renderFrame(now: number) {
 
 window.addEventListener("resize", boardScene.resize);
 
-detectLocale().then((detectedLocale) => {
-  locale = detectedLocale;
-  setModeSelection(ui, game.mode);
-  applyLocale();
-});
 setMenuVisible(true);
 setModeSelection(ui, game.mode);
 setDifficultySelection(game.difficulty);
+applyLocale();
 boardScene.cursor.visible = false;
 requestAnimationFrame(renderFrame);
+
+detectLocale().then((detectedLocale) => {
+  if (detectedLocale === locale) return;
+  locale = detectedLocale;
+  applyLocale();
+});

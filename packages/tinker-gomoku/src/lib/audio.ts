@@ -1,7 +1,12 @@
+import once from "licia/once";
+
 export class AudioKit {
   private enabled = true;
-  private loadStarted = false;
   private readonly turnAudio = new Audio("sound/turn.mp3");
+  private readonly unlockAudio = once(() => {
+    // Keeping the audio element primed makes browser autoplay policies predictable.
+    this.turnAudio.load();
+  });
 
   constructor() {
     this.turnAudio.preload = "auto";
@@ -13,9 +18,7 @@ export class AudioKit {
   }
 
   unlock() {
-    if (this.loadStarted) return;
-    this.loadStarted = true;
-    this.turnAudio.load();
+    this.unlockAudio();
   }
 
   play() {

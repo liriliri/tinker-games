@@ -1,9 +1,20 @@
-import type { Difficulty } from "../game/ai";
+import each from "licia/each";
+import type { Difficulty, Mode, Phase } from "../game/state";
 import type { GomokuScene } from "./scene";
-import type { Mode, Phase } from "../game/state";
 import type { GameUi } from "../ui/view";
 
 type Cursor = { row: number; column: number };
+
+const KEY_DIRECTIONS: Record<string, [number, number]> = {
+  ArrowUp: [-1, 0],
+  w: [-1, 0],
+  ArrowDown: [1, 0],
+  s: [1, 0],
+  ArrowLeft: [0, -1],
+  a: [0, -1],
+  ArrowRight: [0, 1],
+  d: [0, 1],
+};
 
 type InputActions = {
   getPhase: () => Phase;
@@ -24,21 +35,23 @@ export function bindInput(
   ui: GameUi,
   actions: InputActions,
 ) {
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-mode]")
-    .forEach((button) => {
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-mode]"),
+    (button) => {
       button.addEventListener("click", () => {
         actions.setMode(button.dataset.mode as Mode);
       });
-    });
+    },
+  );
 
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-difficulty]")
-    .forEach((button) => {
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-difficulty]"),
+    (button) => {
       button.addEventListener("click", () => {
         actions.setDifficulty(button.dataset.difficulty as Difficulty);
       });
-    });
+    },
+  );
 
   ui.startButton.addEventListener("click", actions.startMatch);
   ui.againButton.addEventListener("click", actions.startMatch);
@@ -46,9 +59,9 @@ export function bindInput(
   ui.resultMenuButton.addEventListener("click", actions.openMenu);
   ui.soundButton.addEventListener("click", actions.toggleSound);
 
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-direction]")
-    .forEach((button) => {
+  each(
+    document.querySelectorAll<HTMLButtonElement>("[data-direction]"),
+    (button) => {
       button.addEventListener("click", () => {
         const direction = button.dataset.direction;
         if (direction === "up") actions.moveCursor(-1, 0);
@@ -56,7 +69,8 @@ export function bindInput(
         if (direction === "left") actions.moveCursor(0, -1);
         if (direction === "right") actions.moveCursor(0, 1);
       });
-    });
+    },
+  );
 
   document
     .querySelector<HTMLButtonElement>('[data-action="place"]')!
@@ -78,17 +92,7 @@ export function bindInput(
       return;
     }
 
-    const directions: Record<string, [number, number]> = {
-      ArrowUp: [-1, 0],
-      w: [-1, 0],
-      ArrowDown: [1, 0],
-      s: [1, 0],
-      ArrowLeft: [0, -1],
-      a: [0, -1],
-      ArrowRight: [0, 1],
-      d: [0, 1],
-    };
-    const direction = directions[event.key];
+    const direction = KEY_DIRECTIONS[event.key];
     if (direction) {
       event.preventDefault();
       actions.moveCursor(direction[0], direction[1]);

@@ -1,7 +1,7 @@
 {
   "name": "tinker-gomoku",
-  "version": "0.2.0",
-  "description": "Gomoku Game Plugin for TINKER",
+  "version": "0.2.1",
+  "description": "Play five in a row against a friend or the computer.",
   "files": [
     "dist/",
     "icon.png"
@@ -12,9 +12,9 @@
   },
   "tinker": {
     "name": "Gomoku",
-    "description": "Play five in a row against a friend or the computer.",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "五子棋",

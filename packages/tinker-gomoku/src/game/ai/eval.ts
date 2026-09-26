@@ -1,6 +1,7 @@
 import some from "licia/some";
 import sortBy from "licia/sortBy";
 import filter from "licia/filter";
+import max from "licia/max";
 import { BLACK, type Stone } from "../rules";
 
 export type AiRole = 1 | -1;
@@ -9,7 +10,7 @@ export function stoneToRole(stone: Stone): AiRole {
   return stone === BLACK ? 1 : -1;
 }
 
-export const config = {
+const config = {
   enableCache: true,
   pointsLimit: 20,
   rootPointsLimit: 32,
@@ -23,7 +24,7 @@ function position2Coordinate(position: number, size: number) {
   return [Math.floor(position / size), position % size] as const;
 }
 
-export function coordinate2Position(x: number, y: number, size: number) {
+function coordinate2Position(x: number, y: number, size: number) {
   return x * size + y;
 }
 
@@ -42,7 +43,7 @@ function hasInLine(p: number, arr: number[], size: number) {
   return some(arr, (point) => isLine(p, point, size));
 }
 
-export const shapes = {
+const shapes = {
   FIVE: 5,
   BLOCK_FIVE: 50,
   FOUR: 4,
@@ -57,7 +58,7 @@ export const shapes = {
   NONE: 0,
 } as const;
 
-export type Shape = (typeof shapes)[keyof typeof shapes];
+type Shape = (typeof shapes)[keyof typeof shapes];
 
 type PaddedBoard = number[][];
 
@@ -140,7 +141,7 @@ const getShapeFast = (
   const totalLength = left.totalLength + right.totalLength + 1;
   const noEmptySelfCount = left.noEmptySelfCount + right.noEmptySelfCount + 1;
   const oneEmptySelfCount =
-    Math.max(
+    max(
       left.oneEmptySelfCount + right.noEmptySelfCount,
       left.noEmptySelfCount + right.oneEmptySelfCount,
     ) + 1;
@@ -214,19 +215,19 @@ const getAllShapesOfPoint = (
 };
 
 export const FIVE = 10_000_000;
-export const BLOCK_FIVE = FIVE;
-export const FOUR = 100_000;
-export const FOUR_FOUR = FOUR;
-export const FOUR_THREE = FOUR;
-export const THREE_THREE = FOUR / 2;
+const BLOCK_FIVE = FIVE;
+const FOUR = 100_000;
+const FOUR_FOUR = FOUR;
+const FOUR_THREE = FOUR;
+const THREE_THREE = FOUR / 2;
 export const BLOCK_FOUR = 1500;
 export const THREE = 1000;
-export const BLOCK_THREE = 150;
-export const TWO_TWO = 200;
-export const TWO = 100;
-export const BLOCK_TWO = 15;
-export const ONE = 10;
-export const BLOCK_ONE = 1;
+const BLOCK_THREE = 150;
+const TWO_TWO = 200;
+const TWO = 100;
+const BLOCK_TWO = 15;
+const ONE = 10;
+const BLOCK_ONE = 1;
 
 const allDirections = [
   [0, 1],
@@ -706,7 +707,7 @@ export default class Evaluate {
   }
 }
 
-export const getRealShapeScore = (shape: Shape) => {
+const getRealShapeScore = (shape: Shape) => {
   switch (shape) {
     case shapes.FIVE:
       return FOUR;

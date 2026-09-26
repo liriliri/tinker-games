@@ -2,14 +2,14 @@ import * as THREE from "three";
 import clamp from "licia/clamp";
 import { BOARD_SIZE, BLACK, type Stone } from "../game/rules";
 
-export const GRID_SPAN = BOARD_SIZE - 1;
-export const BOARD_TOP = 16.25;
+const GRID_SPAN = BOARD_SIZE - 1;
+const BOARD_TOP = 16.25;
 const BOARD_Y = 0.72;
 const STONE_SCALE_Y = 0.42;
 const STONE_Y = BOARD_Y + 0.41 * STONE_SCALE_Y;
 const WIN_LINE_Y = STONE_Y + 0.25;
 
-export type Cell = { row: number; column: number };
+type Cell = { row: number; column: number };
 
 export type GomokuScene = {
   renderer: THREE.WebGLRenderer;
