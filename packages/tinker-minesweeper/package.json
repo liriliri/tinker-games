@@ -1,7 +1,7 @@
 {
   "name": "tinker-minesweeper",
-  "version": "0.1.3",
-  "description": "Minesweeper Game Plugin for TINKER",
+  "version": "0.1.4",
+  "description": "Clear the minefield without detonating a bomb!",
   "files": [
     "dist/",
     "icon.png"
@@ -10,11 +10,15 @@
     "type": "git",
     "url": "git+https://github.com/liriliri/tinker-games.git"
   },
+  "keywords": [
+    "tinker",
+    "game"
+  ],
   "tinker": {
     "name": "Minesweeper",
-    "description": "Clear the minefield without detonating a bomb!",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "扫雷",

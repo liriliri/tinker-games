@@ -1,4 +1,7 @@
 import Phaser from 'phaser'
+import map from 'licia/map'
+import min from 'licia/min'
+import range from 'licia/range'
 
 /** Segment geometry from tinker-clock DigitalClock (viewBox ~24×40 per digit). */
 const SEGMENT_POINTS = {
@@ -83,9 +86,9 @@ const SEGMENT_ON_BY_DIGIT = {
 
 const LIT_SEGMENTS: Record<string, readonly boolean[]> = {
   ...Object.fromEntries(
-    Array.from({ length: 10 }, (_, digit) => [
+    map(range(10), (digit) => [
       String(digit),
-      SEGMENT_ORDER.map((key) => SEGMENT_ON_BY_DIGIT[key][digit] === 1),
+      map(SEGMENT_ORDER, (key) => SEGMENT_ON_BY_DIGIT[key][digit] === 1),
     ]),
   ),
   '-': [false, true, false, false, false, false, false],
@@ -150,7 +153,7 @@ export class SevenSegmentDisplay {
     const chars = [...text]
     const innerWidth = this.width - this.padding * 2
     const innerHeight = this.height - this.padding * 2
-    const scale = Math.min(
+    const scale = min(
       innerWidth / (chars.length * DIGIT_WIDTH),
       innerHeight / DIGIT_HEIGHT,
     )

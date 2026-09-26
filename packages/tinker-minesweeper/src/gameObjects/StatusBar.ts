@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import contain from 'licia/contain'
 import lpad from 'licia/lpad'
+import min from 'licia/min'
 import { COLORS, FRAME_BEVEL_SIZE, STATUS_BAR_HEIGHT } from '../game/constants'
 import type { GameMetadata } from '../game/GameManager'
 import type { LevelId } from '../game/levels'
@@ -30,7 +31,7 @@ const FACE_TEXTURES = {
   lose: 'facelose',
 } as const
 
-export interface StatusBarCallbacks {
+interface StatusBarCallbacks {
   onReset: () => void
   onLevelClick: () => void
 }
@@ -189,7 +190,7 @@ export class StatusBar {
   update(metadata: GameMetadata) {
     this.minesDisplay.setText(this.formatCounter(metadata.minesRemaining))
     this.timerDisplay.setText(
-      lpad(String(Math.min(9999, metadata.elapsedSeconds)), 4, '0'),
+      lpad(String(min(9999, metadata.elapsedSeconds)), 4, '0'),
     )
     this.updateFace(metadata.face)
     this.updateLevelButton(metadata.levelId)
@@ -197,10 +198,10 @@ export class StatusBar {
 
   private formatCounter(value: number) {
     if (value < 0) {
-      const abs = Math.abs(value) % 100
-      return `-${lpad(String(abs), 2, '0')}`
+      const digits = Math.abs(value) % 100
+      return `-${lpad(String(digits), 2, '0')}`
     }
-    return lpad(String(Math.min(9999, value)), 4, '0')
+    return lpad(String(min(9999, value)), 4, '0')
   }
 
   private updateLevelButton(levelId: LevelId) {

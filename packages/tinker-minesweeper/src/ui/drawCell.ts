@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import max from 'licia/max'
 
 function fillTriangle(
   gfx: Phaser.GameObjects.Graphics,
@@ -40,7 +41,7 @@ export function drawBevelBorder(
   raised: boolean,
   drawFill = true,
 ) {
-  const b = Math.max(1, Math.round(bevel))
+  const b = max(1, Math.round(bevel))
   const x2 = x + width
   const y2 = y + height
   const hi = raised ? lightColor : darkColor
@@ -107,7 +108,7 @@ export function drawOpenCell(
   border: number,
   edges: { top?: boolean; left?: boolean } = {},
 ) {
-  const b = Math.max(1, Math.round(border))
+  const b = max(1, Math.round(border))
   const half = b / 2
 
   gfx.fillStyle(fillColor, 1)

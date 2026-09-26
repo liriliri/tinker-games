@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import values from 'licia/values'
 import { COLORS, FRAME_BEVEL_SIZE } from '../game/constants'
 import { LEVELS, type LevelConfig, type LevelId } from '../game/levels'
 import { t } from '../lib/i18n'
@@ -72,7 +73,7 @@ export class LevelDialog {
   private buildPanel() {
     this.panel.removeAll(true)
 
-    const options = Object.values(LEVELS)
+    const options = values(LEVELS)
     const panelWidth = s(PANEL_WIDTH)
     const contentWidth = panelWidth - s(PANEL_PADDING) * 2
     const buttonWidth = contentWidth - s(BEVEL) * 2 - s(CONTENT_PADDING) * 2

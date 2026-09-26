@@ -14,22 +14,17 @@ export const TRANSITION_SPEED = 100
 export const COLORS = {
   text: '#1a1a1a',
   brightText: '#ffffff',
-  pageBackground: '#bdbdbd',
   gameContainer: 0x9e9e9e,
   statusBar: 0xbdbdbd,
   hiddenCell: 0xc0c0c0,
   revealedCell: 0xbdbdbd,
   borderLight: 0xffffff,
   borderDark: 0x7b7b7b,
-  button: 0x9e9e9e,
-  buttonHover: 0xaaaaaa,
-  buttonActive: 0x888888,
-  buttonText: '#1a1a1a',
   winOverlay: 0x66bb6a,
   gameOverOverlay: 0xef5350,
 }
 
-export const NUMBER_COLORS: Record<number, string> = {
+const NUMBER_COLORS: Record<number, string> = {
   1: '#1565c0',
   2: '#2e7d32',
   3: '#c62828',

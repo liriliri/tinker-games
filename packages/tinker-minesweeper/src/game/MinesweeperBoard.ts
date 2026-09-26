@@ -1,10 +1,11 @@
 import contain from 'licia/contain'
 import filter from 'licia/filter'
+import find from 'licia/find'
 import flatten from 'licia/flatten'
 import map from 'licia/map'
 import range from 'licia/range'
 import shuffle from 'licia/shuffle'
-export type GameStatus = 'new' | 'started' | 'died' | 'won'
+type GameStatus = 'new' | 'started' | 'died' | 'won'
 
 export type CellState =
   | 'cover'
@@ -170,7 +171,8 @@ export class MinesweeperBoard {
       return 'continue'
     }
 
-    const minePos = neighbors.find(
+    const minePos = find(
+      neighbors,
       (pos) =>
         this.cells[pos.row][pos.col].minesAround < 0 &&
         this.cells[pos.row][pos.col].state !== 'flag',

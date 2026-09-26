@@ -33,6 +33,7 @@ Report each hit as `[Category] path:line — …`.
 ### 3. Package
 - Root `description`: short English blurb of what the game does — **the only English description**
 - Do **not** set `tinker.description` (Tinker falls back to root `description`)
+- `keywords`: always `["tinker", "game"]`
 - `tinker` field: `name`, `main` (`dist/index.html`), `icon`, `category` (`entertainment` for games), `locales.zh-CN` (`name` + `description`)
 - Scripts: `dev`, `build`, `format` (Prettier on `src/**/*.ts` and root html/json/ts)
 - Shared libs (`phaser`, `three`, `licia`, `howler`, `planck`, `vite`, …) live at monorepo root — do not re-add in the game package

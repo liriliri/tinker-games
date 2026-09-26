@@ -1,5 +1,7 @@
 import Phaser from 'phaser'
 import contain from 'licia/contain'
+import max from 'licia/max'
+import min from 'licia/min'
 import range from 'licia/range'
 import { COLORS, getNumberColor } from '../game/constants'
 import {
@@ -51,7 +53,7 @@ export class CellLayer {
     this.coverBorder = scaledCellCoverBorder(cellSize)
     this.openBorder = scaledCellOpenBorder(cellSize)
     this.fontSize = scaledCellFontSize()
-    this.iconScale = Math.min(0.82, Math.max(0.62, (cellSize / s(54)) * 0.82))
+    this.iconScale = min(0.82, max(0.62, (cellSize / s(54)) * 0.82))
     this.iconOffsetY = -s(1)
     this.labelOffsetY = scaledLabelOffsetY(cellSize)
 
@@ -184,7 +186,7 @@ export class CellLayer {
         visual.flag.setVisible(true)
         visual.label.setText('×')
         visual.label.setStyle(
-          sharpTextStyle(Math.max(8, this.fontSize - 1), { color: '#d32f2f' }),
+          sharpTextStyle(max(8, this.fontSize - 1), { color: '#d32f2f' }),
         )
         visual.label.setPosition(
           visual.flag.x + this.fontSize * 0.35,

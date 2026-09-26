@@ -10,6 +10,10 @@
     "type": "git",
     "url": "git+https://github.com/liriliri/tinker-games.git"
   },
+  "keywords": [
+    "tinker",
+    "game"
+  ],
   "tinker": {
     "name": "Ball Maze",
     "main": "dist/index.html",

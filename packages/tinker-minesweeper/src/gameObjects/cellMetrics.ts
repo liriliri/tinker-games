@@ -1,4 +1,5 @@
 import clamp from 'licia/clamp'
+import max from 'licia/max'
 import { s } from '../lib/scale'
 import {
   CELL_COVER_BORDER,
@@ -10,12 +11,12 @@ const REF_CELL_SIZE = designCellSize(9)
 
 export function scaledCellCoverBorder(cellSize: number) {
   const ref = s(REF_CELL_SIZE)
-  return Math.max(1, Math.round((cellSize / ref) * s(CELL_COVER_BORDER)))
+  return max(1, Math.round((cellSize / ref) * s(CELL_COVER_BORDER)))
 }
 
 export function scaledCellOpenBorder(cellSize: number) {
   const ref = s(REF_CELL_SIZE)
-  return Math.max(1, Math.round((cellSize / ref) * s(CELL_OPEN_BORDER)))
+  return max(1, Math.round((cellSize / ref) * s(CELL_OPEN_BORDER)))
 }
 
 export function scaledCellFontSize() {
@@ -27,7 +28,7 @@ export function scaledCellFontSize() {
 
 export function scaledLabelOffsetY(cellSize: number) {
   const size = designCellSize()
-  if (size < 20) return Math.max(1, Math.round(cellSize * 0.06))
+  if (size < 20) return max(1, Math.round(cellSize * 0.06))
   if (size < 35) return 0
   return -s(1)
 }
