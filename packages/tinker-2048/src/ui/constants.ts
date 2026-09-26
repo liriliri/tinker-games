@@ -14,14 +14,14 @@ export const COLORS = {
   gameOverOverlay: 0xeee4da,
 }
 
-export interface TileStyle {
+interface TileStyle {
   bg: number
   text: string
   fontSize: number
   glow?: number
 }
 
-export const TILE_STYLES: Record<number, TileStyle> = {
+const TILE_STYLES: Record<number, TileStyle> = {
   2: { bg: 0xeee4da, text: '#776e65', fontSize: 55 },
   4: { bg: 0xede0c8, text: '#776e65', fontSize: 55 },
   8: { bg: 0xf2b179, text: '#f9f6f2', fontSize: 55 },
@@ -35,7 +35,7 @@ export const TILE_STYLES: Record<number, TileStyle> = {
   2048: { bg: 0xedc22e, text: '#f9f6f2', fontSize: 35, glow: 0.56 },
 }
 
-export const SUPER_TILE_STYLE: TileStyle = {
+const SUPER_TILE_STYLE: TileStyle = {
   bg: 0x3c3a32,
   text: '#f9f6f2',
   fontSize: 30,

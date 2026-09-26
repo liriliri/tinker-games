@@ -1,7 +1,7 @@
 {
   "name": "tinker-2048",
-  "version": "0.1.4",
-  "description": "2048 Game Plugin for TINKER",
+  "version": "0.1.5",
+  "description": "Join the numbers and get to the 2048 tile!",
   "files": [
     "dist/",
     "icon.png"
@@ -12,9 +12,9 @@
   },
   "tinker": {
     "name": "2048",
-    "description": "Join the numbers and get to the 2048 tile!",
     "main": "dist/index.html",
     "icon": "icon.png",
+    "category": "entertainment",
     "locales": {
       "zh-CN": {
         "name": "2048",

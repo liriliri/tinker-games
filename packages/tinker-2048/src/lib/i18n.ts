@@ -1,6 +1,6 @@
-export type Locale = 'en' | 'zh-CN'
+type Locale = 'en' | 'zh-CN'
 
-export interface Messages {
+interface Messages {
   score: string
   best: string
   introPrefix: string

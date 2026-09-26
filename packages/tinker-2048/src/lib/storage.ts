@@ -12,7 +12,7 @@ const STORAGE_KEYS = {
   soundEnabled: 'soundEnabled',
 } as const
 
-export interface SerializedGameState {
+interface SerializedGameState {
   grid: SerializedGrid
   score: number
   over: boolean

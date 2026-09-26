@@ -41,7 +41,7 @@ async function initLanguage() {
       const lang = await tinker.getLanguage()
       setLocale(lang)
     } catch {
-      // Fall back to navigator.language (already the default)
+      /* keep navigator.language fallback */
     }
   }
 }

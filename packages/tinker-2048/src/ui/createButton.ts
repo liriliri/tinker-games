@@ -3,6 +3,7 @@ import { COLORS } from './constants'
 import { s } from '../lib/scale'
 import { fillSmoothRoundedRect } from './drawRoundedRect'
 import { sharpTextStyle } from './sharpText'
+import { tweenScale } from './tweenScale'
 
 function drawButtonBg(
   bg: Phaser.GameObjects.Graphics,
@@ -51,27 +52,16 @@ export function createButton(
 
   let hovered = false
 
-  const tweenScale = (scale: number, duration = 100) => {
-    scene.tweens.killTweensOf(container)
-    scene.tweens.add({
-      targets: container,
-      scaleX: scale,
-      scaleY: scale,
-      duration,
-      ease: 'Cubic.easeOut',
-    })
-  }
-
   container.on('pointerover', () => {
     hovered = true
     drawButtonBg(bg, width, scaledHeight, COLORS.buttonHover)
-    tweenScale(1.04)
+    tweenScale(scene, container, 1.04)
   })
 
   container.on('pointerout', () => {
     hovered = false
     drawButtonBg(bg, width, scaledHeight, COLORS.button)
-    tweenScale(1)
+    tweenScale(scene, container, 1)
   })
 
   container.on('pointerdown', () => {
@@ -83,10 +73,10 @@ export function createButton(
   container.on('pointerup', () => {
     if (hovered) {
       drawButtonBg(bg, width, scaledHeight, COLORS.buttonHover)
-      tweenScale(1.04)
+      tweenScale(scene, container, 1.04)
     } else {
       drawButtonBg(bg, width, scaledHeight, COLORS.button)
-      tweenScale(1)
+      tweenScale(scene, container, 1)
     }
   })
 

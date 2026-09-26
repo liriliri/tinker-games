@@ -1,3 +1,4 @@
+import randomItem from 'licia/randomItem'
 import { Tile, type Position, type SerializedTile } from './Tile'
 
 export interface SerializedGrid {
@@ -42,7 +43,7 @@ export class Grid {
   randomAvailableCell(): Position | undefined {
     const cells = this.availableCells()
     if (cells.length) {
-      return cells[Math.floor(Math.random() * cells.length)]
+      return randomItem(cells)
     }
   }
 

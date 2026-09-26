@@ -1,5 +1,7 @@
 import Phaser from 'phaser'
+import random from 'licia/random'
 import randomItem from 'licia/randomItem'
+import type { Direction } from '../game/GameManager'
 import { getTileStyle } from '../ui/constants'
 import { FIELD_WIDTH, GAME_HEIGHT, TILE_BORDER_RADIUS } from '../lib/layout'
 import { s, sf } from '../lib/scale'
@@ -11,8 +13,6 @@ const MIN_TILES = 9
 const MAX_VALUE = 128
 const TILE_DESIGN_SIZE = 36
 const SPEEDS = [42, 52, 62, 72]
-
-type Direction = 0 | 1 | 2 | 3 // up, right, down, left
 
 interface BackgroundTile {
   container: Phaser.GameObjects.Container
@@ -45,7 +45,7 @@ export class MenuBackground {
   }
 
   private randomDirection(): Direction {
-    return Phaser.Math.Between(0, 3) as Direction
+    return random(0, 3) as Direction
   }
 
   private velocity(direction: Direction, speed: number) {
@@ -134,8 +134,8 @@ export class MenuBackground {
     const size = s(TILE_DESIGN_SIZE)
     const half = size / 2
     const margin = half + s(4)
-    const spawnX = x ?? Phaser.Math.Between(margin, this.width - margin)
-    const spawnY = y ?? Phaser.Math.Between(margin, this.height - margin)
+    const spawnX = x ?? random(margin, this.width - margin)
+    const spawnY = y ?? random(margin, this.height - margin)
     const direction = this.randomDirection()
     const speed = sf(randomItem(SPEEDS))
 

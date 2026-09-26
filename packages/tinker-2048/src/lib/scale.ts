@@ -1,5 +1,7 @@
 import Phaser from 'phaser'
 import clamp from 'licia/clamp'
+import debounce from 'licia/debounce'
+import min from 'licia/min'
 import { FIELD_WIDTH, GAME_HEIGHT } from './layout'
 
 const MIN_FIT_SCALE = 0.5
@@ -10,7 +12,6 @@ const RESIZE_DEBOUNCE_MS = 150
 export const RELAYOUT_EVENT = 'relayout'
 
 let layoutScale = 1
-let resizeTimer: ReturnType<typeof setTimeout> | null = null
 
 function getFitScale(scale: Phaser.Scale.ScaleManager): number {
   let parentWidth = scale.parentSize.width
@@ -20,12 +21,9 @@ function getFitScale(scale: Phaser.Scale.ScaleManager): number {
     parentHeight = window.innerHeight
   }
 
-  const fitScale = Math.min(
-    parentWidth / FIELD_WIDTH,
-    parentHeight / GAME_HEIGHT,
-  )
+  const fitScale = min(parentWidth / FIELD_WIDTH, parentHeight / GAME_HEIGHT)
 
-  return Phaser.Math.Clamp(fitScale, MIN_FIT_SCALE, MAX_FIT_SCALE)
+  return clamp(fitScale, MIN_FIT_SCALE, MAX_FIT_SCALE)
 }
 
 function computeLayoutScale(fitScale: number) {
@@ -57,17 +55,15 @@ export function applyRenderScale(game: Phaser.Game): boolean {
 export function bindRenderScale(game: Phaser.Game) {
   applyRenderScale(game)
 
-  game.scale.on(Phaser.Scale.Events.RESIZE, () => {
-    if (resizeTimer) clearTimeout(resizeTimer)
-    resizeTimer = setTimeout(() => {
-      resizeTimer = null
-      if (!applyRenderScale(game)) return
+  const onResize = debounce(() => {
+    if (!applyRenderScale(game)) return
 
-      for (const scene of game.scene.getScenes(true)) {
-        scene.events.emit(RELAYOUT_EVENT)
-      }
-    }, RESIZE_DEBOUNCE_MS)
-  })
+    for (const scene of game.scene.getScenes(true)) {
+      scene.events.emit(RELAYOUT_EVENT)
+    }
+  }, RESIZE_DEBOUNCE_MS)
+
+  game.scale.on(Phaser.Scale.Events.RESIZE, onResize)
 }
 
 export function s(value: number) {
