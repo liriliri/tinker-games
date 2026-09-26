@@ -28,7 +28,12 @@ import {
 import { computerSide, createGameState } from "./game/state";
 import { bindInput } from "./lib/input";
 import { AudioKit } from "./lib/audio";
-import { detectLocale, copy, type Locale } from "./lib/i18n";
+import {
+  detectLocale,
+  detectLocaleFallback,
+  copy,
+  type Locale,
+} from "./lib/i18n";
 import { cellToWorld, createScene, updateSceneMotion } from "./lib/scene";
 import {
   applyLocale as applyLocaleView,
@@ -52,7 +57,7 @@ const audio = new AudioKit();
 checkersScene.onPieceMotionComplete(() => audio.play());
 const ui = getGameUi();
 const game = createGameState(loadMode(), loadDifficulty());
-let locale: Locale = "zh-CN";
+let locale: Locale = detectLocaleFallback();
 let matchVersion = 0;
 let lastMove: Move | null = null;
 
@@ -301,6 +306,7 @@ function applyLocale() {
 setModeSelection(ui, game.mode);
 setDifficultySelection(game.difficulty);
 setMenuVisible(ui, true);
+applyLocale();
 refresh();
 detectLocale().then((detectedLocale) => {
   locale = detectedLocale;

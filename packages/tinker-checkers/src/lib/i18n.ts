@@ -2,10 +2,6 @@ import startWith from "licia/startWith";
 
 export const copy = {
   en: {
-    title: "CHECKERS",
-    subtitle: "ENGLISH DRAUGHTS",
-    eyebrow: "THE DARK SQUARES",
-    intro: "Jump, crown, and clear the board.",
     mode: "MATCH",
     local: "LOCAL 2P",
     computer: "VS CPU",
@@ -32,10 +28,6 @@ export const copy = {
     gameOver: "THE LAST MOVE",
   },
   "zh-CN": {
-    title: "英式跳棋",
-    subtitle: "六十四格",
-    eyebrow: "深色方格",
-    intro: "跳跃、升王、清空棋盘。",
     mode: "对弈模式",
     local: "本地双人",
     computer: "挑战电脑",
@@ -66,6 +58,14 @@ export const copy = {
 export type Locale = keyof typeof copy;
 export type Copy = (typeof copy)[Locale];
 
+function localeFromNavigator(): Locale {
+  return startWith(navigator.language.toLowerCase(), "zh") ? "zh-CN" : "en";
+}
+
+export function detectLocaleFallback(): Locale {
+  return localeFromNavigator();
+}
+
 export async function detectLocale(): Promise<Locale> {
   if (typeof tinker !== "undefined") {
     try {
@@ -75,5 +75,5 @@ export async function detectLocale(): Promise<Locale> {
       // Browser mode does not provide the optional Tinker bridge.
     }
   }
-  return startWith(navigator.language.toLowerCase(), "zh") ? "zh-CN" : "en";
+  return localeFromNavigator();
 }

@@ -40,7 +40,7 @@ export function columnOf(cell: number) {
 }
 
 /** Playable dark squares are those with (row + column) odd. */
-export function isDarkSquare(row: number, column: number) {
+function isDarkSquare(row: number, column: number) {
   return (row + column) % 2 === 1;
 }
 
@@ -65,7 +65,7 @@ export function newGame(): CheckersGame {
   return EnglishDraughts.setup();
 }
 
-export function cloneSnapshot(data: EngineSnapshot): EngineSnapshot {
+function cloneSnapshot(data: EngineSnapshot): EngineSnapshot {
   return {
     player: data.player,
     board: { ...data.board },
@@ -190,5 +190,3 @@ export function movePath(move: Move): number[] {
 
   return [move.origin, move.destination];
 }
-
-export { DraughtsPlayer, DraughtsStatus };
