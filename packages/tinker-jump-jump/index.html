@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title></title>
+  </head>
+  <body>
+    <div id="hud">
+      <div id="score-panel" class="hud-panel">
+        <span id="score-label" class="hud-label"></span>
+        <span id="score">0</span>
+      </div>
+      <div id="best-panel" class="hud-panel">
+        <span id="best-label" class="hud-label"></span>
+        <span id="best">0</span>
+      </div>
+    </div>
+
+    <div id="hint" class="hint"></div>
+
+    <div id="overlay" class="overlay hidden" aria-hidden="true">
+      <div class="overlay-card">
+        <p id="game-over-title" class="overlay-kicker"></p>
+        <div class="overlay-score">
+          <span id="final-score-label" class="overlay-score-label"></span>
+          <span id="final-score" class="overlay-score-value">0</span>
+        </div>
+        <p id="overlay-record" class="overlay-record hidden"></p>
+        <button id="restart-btn" type="button"></button>
+      </div>
+    </div>
+
+    <div id="float-score" class="float-score" aria-hidden="true"></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

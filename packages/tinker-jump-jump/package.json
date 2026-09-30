@@ -1,0 +1,34 @@
+{
+  "name": "tinker-jump-jump",
+  "version": "0.1.0",
+  "description": "Hold to charge, release to jump — land on the next platform!",
+  "files": [
+    "dist/",
+    "icon.png"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
+  "keywords": [
+    "tinker",
+    "game"
+  ],
+  "tinker": {
+    "name": "Jump Jump",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "category": "entertainment",
+    "locales": {
+      "zh-CN": {
+        "name": "跳一跳",
+        "description": "长按蓄力，松手起跳，落上下一个台子！"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  }
+}

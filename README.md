@@ -48,5 +48,13 @@ All games in the list can be installed to TINKER by running `npm i -g tinker-xxx
       <th><img src="./packages/tinker-reversi/screenshot.png"/></th>
       <th><img src="./packages/tinker-chess/screenshot.png"/></th>
     </tr>
+    <tr>
+      <th width="50%"><a href="./packages/tinker-checkers/">tinker-checkers</a></th>
+      <th><a href="./packages/tinker-jump-jump/">tinker-jump-jump</a></th>
+    </tr>
+    <tr>
+      <th><img src="./packages/tinker-checkers/screenshot.png"/></th>
+      <th><img src="./packages/tinker-jump-jump/screenshot.png"/></th>
+    </tr>
   </tbody>
 </table>
