@@ -40,14 +40,20 @@ const messages: Record<Locale, Messages> = {
 }
 
 function detectLocaleFallback(): Locale {
-  const lang = navigator.language.toLowerCase()
-  return lang === 'zh-cn' || startWith(lang, 'zh') ? 'zh-CN' : 'en'
+  const locale = Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase()
+  return startWith(locale, 'zh') ? 'zh-CN' : 'en'
 }
 
 let locale: Locale = detectLocaleFallback()
 
-export function setLocale(loc: string) {
-  locale = loc === 'zh-CN' ? 'zh-CN' : 'en'
+export async function initLanguage(): Promise<void> {
+  if (typeof tinker === 'undefined') return
+  try {
+    const language = await tinker.getLanguage()
+    locale = language === 'zh-CN' ? 'zh-CN' : 'en'
+  } catch {
+    // Keep Intl locale fallback already applied at module load.
+  }
 }
 
 export function t(key: keyof Messages): string {

@@ -2,18 +2,7 @@ import Phaser from 'phaser'
 import { GameScene } from './scenes/GameScene'
 import { bindRenderScale } from './lib/scale'
 import { FIELD_WIDTH, GAME_HEIGHT } from './lib/layout'
-import { setLocale } from './lib/i18n'
-
-async function initLanguage() {
-  if (typeof tinker !== 'undefined') {
-    try {
-      const lang = await tinker.getLanguage()
-      setLocale(lang)
-    } catch {
-      // Fall back to navigator.language (already the default)
-    }
-  }
-}
+import { initLanguage } from './lib/i18n'
 
 async function init() {
   await initLanguage()

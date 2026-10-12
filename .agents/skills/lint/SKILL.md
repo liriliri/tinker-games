@@ -53,7 +53,8 @@ Report each hit as `[Category] path:line — …`.
 ### 6. i18n
 - In-game UI strings via `src/lib/i18n.ts` (`t()` or a `copy` / messages map) — not scattered string literals in `.ts` **or** `index.html` HUD labels
 - Both `en` and `zh-CN` required when the game has UI text
-- Prefer reading locale from `tinker.getLanguage()` when available, with `navigator.language` fallback
+- Locale detection lives in `src/lib/i18n.ts` (`initLanguage()` or `detectLocale()`), not duplicated in `main.ts`
+- Prefer `tinker.getLanguage()` when available, with `Intl.DateTimeFormat().resolvedOptions().locale` fallback (`zh-*` → `zh-CN`)
 - Package listing copy: root `description` + `tinker.locales.zh-CN.description` (not this check’s in-game strings)
 
 ### 7. Comments

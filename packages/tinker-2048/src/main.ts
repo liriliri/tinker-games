@@ -4,7 +4,7 @@ import { MenuScene } from './scenes/MenuScene'
 import { GameScene } from './scenes/GameScene'
 import { bindRenderScale } from './lib/scale'
 import { FIELD_WIDTH, GAME_HEIGHT } from './lib/layout'
-import { setLocale } from './lib/i18n'
+import { initLanguage } from './lib/i18n'
 
 // Patch Phaser GamepadPlugin.stopListeners to safely handle null gamepad entries.
 // Phaser 3.90.0 bug: stopListeners iterates this.gamepads[i].removeAllListeners()
@@ -33,17 +33,6 @@ if (GamepadPluginProto?.prototype?.stopListeners) {
       }
     }
   } as unknown as () => void
-}
-
-async function initLanguage() {
-  if (typeof tinker !== 'undefined') {
-    try {
-      const lang = await tinker.getLanguage()
-      setLocale(lang)
-    } catch {
-      /* keep navigator.language fallback */
-    }
-  }
 }
 
 async function init() {

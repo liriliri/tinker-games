@@ -54,12 +54,9 @@ export const copy = {
 export type Locale = keyof typeof copy;
 export type Copy = (typeof copy)[Locale];
 
-function localeFromNavigator(): Locale {
-  return startWith(navigator.language.toLowerCase(), "zh") ? "zh-CN" : "en";
-}
-
 export function detectLocaleFallback(): Locale {
-  return localeFromNavigator();
+  const locale = Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase();
+  return startWith(locale, "zh") ? "zh-CN" : "en";
 }
 
 export async function detectLocale(): Promise<Locale> {
@@ -71,5 +68,5 @@ export async function detectLocale(): Promise<Locale> {
       // Tinker is optional when running the game in a browser.
     }
   }
-  return localeFromNavigator();
+  return detectLocaleFallback();
 }
