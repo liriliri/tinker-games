@@ -1,99 +1,10 @@
-import * as Tone from 'tone'
 import { Howl, Howler } from 'howler'
 import randomItem from 'licia/randomItem'
 
-/** One-shot SFX trigger — Tone.js synths, same call sites as the old jsfxr buffers. */
 type Sfx = () => void
 
-let ready = false
-let bus: Tone.ToneAudioNode | null = null
-
-function ensureGraph() {
-  if (ready) return
-  const volume = new Tone.Volume(-10).toDestination()
-  const comp = new Tone.Compressor({
-    threshold: -18,
-    ratio: 4,
-    attack: 0.003,
-    release: 0.15,
-  })
-  comp.connect(volume)
-  bus = comp
-  ready = true
-}
-
-async function boot() {
-  ensureGraph()
-  await Tone.start()
-}
-
-function disposeLater(nodes: Tone.ToneAudioNode[], seconds: number) {
-  Tone.getContext().setTimeout(() => {
-    for (const n of nodes) {
-      try {
-        n.dispose()
-      } catch {
-        // already disposed
-      }
-    }
-  }, seconds)
-}
-
-function now() {
-  return Tone.now()
-}
-
-function noiseBurst(
-  type: Tone.NoiseType,
-  decay: number,
-  filterFreq: number,
-  volume = -8,
-): Sfx {
-  return () => {
-    ensureGraph()
-    if (!bus) return
-    const t = now()
-    const noise = new Tone.Noise(type)
-    const filter = new Tone.Filter(filterFreq, 'lowpass')
-    const env = new Tone.AmplitudeEnvelope({
-      attack: 0.001,
-      decay,
-      sustain: 0,
-      release: 0.02,
-    })
-    const vol = new Tone.Volume(volume)
-    noise.connect(filter)
-    filter.connect(env)
-    env.connect(vol)
-    vol.connect(bus)
-    noise.start(t)
-    env.triggerAttackRelease(decay + 0.02, t)
-    noise.stop(t + decay + 0.05)
-    disposeLater([noise, filter, env, vol], decay + 0.3)
-  }
-}
-
-function chord(freqs: number[], dur: number, volume = -14): Sfx {
-  return () => {
-    ensureGraph()
-    if (!bus) return
-    const t = now()
-    const nodes: Tone.ToneAudioNode[] = []
-    for (const f of freqs) {
-      const synth = new Tone.Synth({
-        oscillator: { type: 'triangle' },
-        envelope: { attack: 0.01, decay: dur, sustain: 0.05, release: 0.15 },
-        volume,
-      }).connect(bus)
-      synth.triggerAttackRelease(f, dur, t)
-      nodes.push(synth)
-    }
-    disposeLater(nodes, dur + 0.4)
-  }
-}
-
 export function play(sfx: Sfx) {
-  void boot().then(sfx)
+  sfx()
 }
 
 export function playRandom(list: Sfx[]) {
@@ -102,7 +13,9 @@ export function playRandom(list: Sfx[]) {
 }
 
 export function unlockAudio() {
-  void boot()
+  if (Howler.ctx?.state === 'suspended') {
+    void Howler.ctx.resume()
+  }
 }
 
 /** Looping in-game BGM from public/sound/bgm.mp3 */
@@ -144,7 +57,7 @@ export function stopGameMusic(fadeSec = 0.5) {
   }
 }
 
-// Howler and Tone each own a context. BGM pauses at once; Howler stays up until pause.mp3 ends.
+// BGM pauses at once. Howler stays up until pause.mp3 ends.
 let wantAudioPaused = false
 let audioPauseChain: Promise<void> = Promise.resolve()
 let bgmHeldForPause = false
@@ -222,7 +135,6 @@ async function syncAudioPause() {
   const paused = wantAudioPaused
   if (paused) {
     holdBgm()
-    await syncAudioContext(Tone.getContext().rawContext as AudioContext, true)
     await playPauseHowl()
     if (wantAudioPaused !== paused) {
       await syncAudioPause()
@@ -232,7 +144,6 @@ async function syncAudioPause() {
   } else {
     stopPauseHowl()
     await syncAudioContext(Howler.ctx, false)
-    await syncAudioContext(Tone.getContext().rawContext as AudioContext, false)
     releaseBgm()
   }
   if (wantAudioPaused !== paused) await syncAudioPause()
@@ -243,8 +154,6 @@ async function syncAudioContext(ctx: AudioContext | null, paused: boolean) {
   if (paused && ctx.state === 'running') await ctx.suspend()
   if (!paused && ctx.state === 'suspended') await ctx.resume()
 }
-
-export const gameStarts = chord([196, 247, 311, 392], 0.35, -12)
 
 const FIRE_VOLUME = 0.22
 let fireHowl: Howl | null = null
@@ -268,22 +177,10 @@ export const fireSounds: Sfx[] = [
   },
 ]
 
-// OpenGW: one SOUNDID_ENEMYHIT track (restart, never stacked). Allow 2 for a bit of body.
-let enemyDieVoices = 0
-
-/** Same noise as a shared enemy death, louder or quieter per kind. */
-export function playEnemyBoom(volume: number) {
-  play(() => {
-    if (enemyDieVoices >= 2) return
-    enemyDieVoices++
-    noiseBurst('pink', 0.32, 3200, volume)()
-    Tone.getContext().setTimeout(() => {
-      enemyDieVoices = Math.max(0, enemyDieVoices - 1)
-    }, 0.35)
-  })
-}
-
 const HIT_VOLUME = 0.5
+/** Uncapped overlaps of the same hit clip the output. */
+const HIT_VOICES = 5
+let hitVoices = 0
 let hitHowl: Howl | null = null
 
 function ensureHit() {
@@ -296,14 +193,31 @@ function ensureHit() {
   return hitHowl
 }
 
-export const hitSounds: Sfx[] = [
-  () => {
-    if (Howler.ctx?.state === 'suspended') {
-      void Howler.ctx.resume()
-    }
-    ensureHit().play()
-  },
-]
+function playHit() {
+  if (Howler.ctx?.state === 'suspended') {
+    void Howler.ctx.resume()
+  }
+  if (hitVoices >= HIT_VOICES) return
+  hitVoices++
+  const howl = ensureHit()
+  const id = howl.play()
+  let released = false
+  const release = () => {
+    if (released) return
+    released = true
+    hitVoices = Math.max(0, hitVoices - 1)
+  }
+  if (typeof id !== 'number') {
+    release()
+    return
+  }
+  howl.once('end', release, id)
+  // duration(id) reads the sprite table, which is empty until the file loads.
+  const dur = howl.state() === 'loaded' ? howl.duration() : 0
+  setTimeout(release, (dur > 0 ? dur : 0.8) * 1000)
+}
+
+export const hitSounds: Sfx[] = [playHit]
 
 const BOMB_VOLUME = 0.8
 let bombHowl: Howl | null = null
@@ -341,6 +255,7 @@ function howlSfx(src: string, volume: number): Sfx {
 export const extraLifeSound = howlSfx('sound/extralife.mp3', 1)
 export const extraBombSound = howlSfx('sound/extrabomb.mp3', 1)
 export const powerupSound = howlSfx('sound/powerup.mp3', 1)
+export const itemSound = howlSfx('sound/item.mp3', 1)
 export const heroDie = howlSfx('sound/explode.mp3', 0.8)
 export const cruiserDie = howlSfx('sound/explode.mp3', 1)
 export const cruiserSpawnSound = howlSfx('sound/cruiserspawn.mp3', 1)

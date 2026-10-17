@@ -13,22 +13,19 @@ export type EnemyKind =
   | 'proton'
   | 'cruiser'
 
-/** Death sparks and noise loudness (dB). Cruiser plays explode.mp3 instead. */
-export const EXPLOSION: Record<
-  EnemyKind,
-  { n: number; scale: number; volume: number }
-> = {
-  proton: { n: 5, scale: 0.5, volume: -10 },
-  mayfly: { n: 6, scale: 0.7, volume: -6 },
-  tinySpinner: { n: 7, scale: 0.85, volume: -2 },
-  snake: { n: 9, scale: 1.05, volume: 2 },
-  wanderer: { n: 10, scale: 1.2, volume: 4 },
-  weaver: { n: 12, scale: 1.4, volume: 6 },
-  grunt: { n: 13, scale: 1.55, volume: 8 },
-  spinner: { n: 16, scale: 1.8, volume: 10 },
-  repulsor: { n: 18, scale: 2.1, volume: 13 },
-  blackHole: { n: 24, scale: 2.5, volume: 16 },
-  cruiser: { n: 40, scale: 3.6, volume: 8 },
+/** Death spark count and size. Cruiser also plays explode.mp3. */
+export const EXPLOSION: Record<EnemyKind, { n: number; scale: number }> = {
+  proton: { n: 5, scale: 0.5 },
+  mayfly: { n: 6, scale: 0.7 },
+  tinySpinner: { n: 7, scale: 0.85 },
+  snake: { n: 9, scale: 1.05 },
+  wanderer: { n: 10, scale: 1.2 },
+  weaver: { n: 12, scale: 1.4 },
+  grunt: { n: 13, scale: 1.55 },
+  spinner: { n: 16, scale: 1.8 },
+  repulsor: { n: 18, scale: 2.1 },
+  blackHole: { n: 24, scale: 2.5 },
+  cruiser: { n: 40, scale: 3.6 },
 }
 
 export const POOL: Record<EnemyKind, number> = {

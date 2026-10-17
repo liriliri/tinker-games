@@ -35,6 +35,18 @@ export const SPAWN_INDEX_RATE = 0.0005
 export const PLAYER_LIVES = 5
 export const PLAYER_BOMBS = 5
 export const PLAYER_SHIELD_FRAMES = 250
+/** ~60fps. Picking up the shield item grants this long an invincibility. */
+export const SHIELD_PICKUP_FRAMES = 10 * 60
+/** ~60fps. Enemy slow item. Long enough to slip a crowd, short of a full shield. */
+export const SLOW_FRAMES = 6 * 60
+/** Enemies and their shots move at this fraction of normal speed while slowed. */
+export const ENEMY_SLOW_SCALE = 0.35
+/** ~60fps. The item stays put, long enough to fly over and take it. */
+export const SHIELD_PICKUP_LIFE = 8 * 60
+/** ~60fps. A field item every 30–90s; the ceiling falls to 60s at max difficulty. */
+export const FIELD_ITEM_INTERVAL_MIN = 30 * 60
+export const FIELD_ITEM_INTERVAL_MAX = 90 * 60
+export const FIELD_ITEM_INTERVAL_MAX_LATE = 60 * 60
 export const RESPAWN_FRAMES = 50
 
 /** Kills needed to reach the next multiplier: x2, x3, x4, x5. */
@@ -52,6 +64,8 @@ export const WEAPON_PICKUP_LIFE = 8 * 60
 export const CRUISER_INTERVAL_MIN = 80 * 60
 export const CRUISER_INTERVAL_MAX = 100 * 60
 export const CRUISER_HP = 40
+/** Hull at level 40. */
+export const CRUISER_HP_MAX = 60
 /** Frames the cruiser spends warping in before it can act. */
 export const CRUISER_SPAWN_FRAMES = 75
 /** ~60fps. Rapid nose burst, then a pause. */

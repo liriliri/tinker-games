@@ -11,6 +11,7 @@ import {
   CRUISER_FIRE_GAP,
   CRUISER_FIRE_PAUSE,
   CRUISER_HP,
+  CRUISER_HP_MAX,
   CRUISER_INTERVAL_MAX,
   CRUISER_INTERVAL_MIN,
   CRUISER_SPAWN_FRAMES,
@@ -31,6 +32,13 @@ import {
   PLAYER_BOMBS,
   PLAYER_LIVES,
   PLAYER_SHIELD_FRAMES,
+  SHIELD_PICKUP_FRAMES,
+  SHIELD_PICKUP_LIFE,
+  FIELD_ITEM_INTERVAL_MIN,
+  FIELD_ITEM_INTERVAL_MAX,
+  FIELD_ITEM_INTERVAL_MAX_LATE,
+  SLOW_FRAMES,
+  ENEMY_SLOW_SCALE,
   PLAYER_SPEED,
   RESPAWN_FRAMES,
   SPAWN_CLEAR_RADIUS,
@@ -44,7 +52,7 @@ import {
 } from './constants'
 import { drawLine, getAngle, path } from './draw'
 import { DEFS, EXPLOSION, POOL, type Enemy, type EnemyKind } from './enemyTypes'
-import { displayWord } from './font'
+import { displaySegmentWord, displayWord } from './font'
 import {
   bombSound,
   cruiserDie,
@@ -52,12 +60,11 @@ import {
   extraBombSound,
   extraLifeSound,
   fireSounds,
-  gameStarts,
   heroDie,
   hitSounds,
+  itemSound,
   pauseGameAudio,
   play,
-  playEnemyBoom,
   playRandom,
   powerupSound,
   resumeGameAudio,
@@ -122,6 +129,15 @@ interface WeaponPickup {
   phase: number
 }
 
+interface FieldItem {
+  kind: 'shield' | 'bomb' | 'slow'
+  x: number
+  y: number
+  ttl: number
+}
+
+const FIELD_ITEM_KINDS: FieldItem['kind'][] = ['shield', 'bomb', 'slow']
+
 /** OpenGW spreads: 1 → parallel pair → triple → five-way. */
 const WEAPON_PATTERNS: {
   off: number
@@ -149,6 +165,10 @@ const WEAPON_PATTERNS: {
   ],
 ]
 const WEAPON_SHOTS = [1, 2, 3, 5]
+/** Nose is −Y. Bright mass sits aft of the logic origin, so the sprite shifts forward. */
+const HERO_ART_FORWARD = 0.34
+/** Screen pixels, not grid units. */
+const SHIELD_PICKUP_HALF = 17
 
 /** Geometry Wars–style loop driven by OpenGW spawner logic. */
 export class Game {
@@ -184,6 +204,7 @@ export class Game {
   private lives = PLAYER_LIVES
   private bombs = PLAYER_BOMBS
   private shield = 0
+  private slowLeft = 0
   private deadTimer = 0
   private heroAlive = true
   private score = 0
@@ -237,6 +258,8 @@ export class Game {
   private weapon = 0
   private weaponPickups: WeaponPickup[] = []
   private bombPickups: WeaponPickup[] = []
+  private fieldItems: FieldItem[] = []
+  private fieldItemTimer = 0
   private weaponPickupTimer = this.rollWeaponPickupDelay()
   /** Central fuselage (nose −Y), flat stern. */
   private heroHull: [number, number][] = [
@@ -417,6 +440,7 @@ export class Game {
     this.lives = PLAYER_LIVES
     this.bombs = PLAYER_BOMBS
     this.shield = PLAYER_SHIELD_FRAMES
+    this.slowLeft = 0
     this.deadTimer = 0
     this.heroAlive = true
     this.heroX = MAP_W / 2
@@ -438,12 +462,13 @@ export class Game {
     this.weapon = 0
     this.weaponPickups = []
     this.bombPickups = []
+    this.fieldItems = []
+    this.fieldItemTimer = this.rollFieldItemDelay()
     this.weaponPickupTimer = this.rollWeaponPickupDelay()
     this.nextGenId = 1
     this.newRecord = false
     this.record = getBestScore()
     this.spawner.init()
-    play(gameStarts)
     startGameMusic()
   }
 
@@ -519,6 +544,7 @@ export class Game {
     this.updateBullets()
     this.updateEnemyBullets()
     this.updateEnemies()
+    if (this.slowLeft > 0) this.slowLeft--
     this.updateCruiserSpawn()
     this.updateBombs()
     this.updateParticles()
@@ -526,6 +552,7 @@ export class Game {
     this.updateFloatMsgs()
     this.updateWeaponPickup()
     this.updateBombPickups()
+    this.updateFieldItems()
 
     this.spawner.run({
       playerAlive: this.heroAlive && this.deadTimer <= 0,
@@ -648,26 +675,34 @@ export class Game {
     }
   }
 
-  private rollWeaponPickupDelay() {
+  private rollDifficultyDelay(min: number, max: number, maxLate: number) {
     const t = clamp(this.spawner.getSpawnIndex() / MAX_SPAWN_INDEX, 0, 1)
-    const max = Math.round(
-      WEAPON_PICKUP_INTERVAL_MAX +
-        (WEAPON_PICKUP_INTERVAL_MAX_LATE - WEAPON_PICKUP_INTERVAL_MAX) * t,
+    const ceiling = Math.round(max + (maxLate - max) * t)
+    return min + random(0, ceiling - min)
+  }
+
+  private rollWeaponPickupDelay() {
+    return this.rollDifficultyDelay(
+      WEAPON_PICKUP_INTERVAL_MIN,
+      WEAPON_PICKUP_INTERVAL_MAX,
+      WEAPON_PICKUP_INTERVAL_MAX_LATE,
     )
-    return (
-      WEAPON_PICKUP_INTERVAL_MIN +
-      Math.floor(Math.random() * (max - WEAPON_PICKUP_INTERVAL_MIN + 1))
-    )
+  }
+
+  private visibleSpawnRect(pad: number) {
+    const viewLeft = -this.viewPort[0]
+    const viewTop = -this.viewPort[1]
+    return {
+      left: Math.max(pad, viewLeft + pad),
+      top: Math.max(pad, viewTop + pad),
+      right: Math.min(MAP_W - pad, viewLeft + this.screenW - pad),
+      bottom: Math.min(MAP_H - pad, viewTop + this.screenH - pad),
+    }
   }
 
   private makeFloatingPickup(): WeaponPickup {
     const pad = 48
-    const viewLeft = -this.viewPort[0]
-    const viewTop = -this.viewPort[1]
-    const left = Math.max(pad, viewLeft + pad)
-    const top = Math.max(pad, viewTop + pad)
-    const right = Math.min(MAP_W - pad, viewLeft + this.screenW - pad)
-    const bottom = Math.min(MAP_H - pad, viewTop + this.screenH - pad)
+    const { left, top, right, bottom } = this.visibleSpawnRect(pad)
     const speed = 0.35 + Math.random() * 0.45
     const ang = Math.random() * Math.PI * 2
     return {
@@ -769,6 +804,152 @@ export class Game {
         ttl: 50,
       })
     }
+  }
+
+  private rollFieldItemDelay() {
+    return this.rollDifficultyDelay(
+      FIELD_ITEM_INTERVAL_MIN,
+      FIELD_ITEM_INTERVAL_MAX,
+      FIELD_ITEM_INTERVAL_MAX_LATE,
+    )
+  }
+
+  private spawnRandomFieldItem() {
+    const pad = 56
+    const { left, top, right, bottom } = this.visibleSpawnRect(pad)
+    if (right <= left || bottom <= top) return
+    for (let n = 0; n < 8; n++) {
+      const x = left + Math.random() * (right - left)
+      const y = top + Math.random() * (bottom - top)
+      if (Math.hypot(x - this.heroX, y - this.heroY) < 90) continue
+      const kind = FIELD_ITEM_KINDS[random(0, FIELD_ITEM_KINDS.length - 1)]
+      this.spawnFieldItem(kind, x, y)
+      return
+    }
+  }
+
+  private spawnFieldItem(kind: FieldItem['kind'], x: number, y: number) {
+    this.fieldItems.push({ kind, x, y, ttl: SHIELD_PICKUP_LIFE })
+  }
+
+  private updateFieldItems() {
+    if (this.heroAlive && this.deadTimer <= 0) {
+      this.fieldItemTimer--
+      if (this.fieldItemTimer <= 0) {
+        this.fieldItemTimer = this.rollFieldItemDelay()
+        if (this.fieldItems.length === 0) this.spawnRandomFieldItem()
+      }
+    }
+    for (let i = this.fieldItems.length - 1; i >= 0; i--) {
+      const p = this.fieldItems[i]
+      p.ttl--
+      if (p.ttl <= 0) {
+        this.fieldItems.splice(i, 1)
+        continue
+      }
+      if (!this.heroAlive || this.deadTimer > 0) continue
+      if (
+        Math.hypot(this.heroX - p.x, this.heroY - p.y) >=
+        HERO_RADIUS + SHIELD_PICKUP_HALF
+      ) {
+        continue
+      }
+      if (p.kind === 'shield') this.shield = SHIELD_PICKUP_FRAMES
+      else if (p.kind === 'bomb') this.detonateEnemies()
+      else this.slowLeft = SLOW_FRAMES
+      this.fieldItems.splice(i, 1)
+      play(itemSound)
+    }
+  }
+
+  private detonateEnemies() {
+    for (let i = this.live.length - 1; i >= 0; i--) {
+      this.destroyEnemy(this.live[i], true)
+    }
+  }
+
+  private drawFieldItems() {
+    const ctx = this.ctx
+    const on = Math.floor(this.frame / 7) % 2 === 0
+    ctx.save()
+    ctx.lineJoin = 'miter'
+    ctx.lineCap = 'round'
+    for (const p of this.fieldItems) {
+      ctx.save()
+      ctx.translate(p.x, p.y)
+      ctx.globalAlpha = on ? 0.95 : 0.2
+      if (p.kind === 'shield') this.drawShieldGlyph(ctx)
+      else if (p.kind === 'bomb') this.drawBombGlyph(ctx)
+      else this.drawSlowGlyph(ctx)
+      ctx.restore()
+    }
+    ctx.restore()
+  }
+
+  private drawShieldGlyph(ctx: CanvasRenderingContext2D) {
+    this.drawItemFrame(ctx)
+    setContextAttribute(ctx, -1, 1, '#fff')
+    ctx.beginPath()
+    for (let i = 0; i < 5; i++) {
+      const outer = -Math.PI / 2 + (i * 2 * Math.PI) / 5
+      const inner = outer + Math.PI / 5
+      const ox = Math.cos(outer) * 10.5
+      const oy = Math.sin(outer) * 10.5
+      if (i === 0) ctx.moveTo(ox, oy)
+      else ctx.lineTo(ox, oy)
+      ctx.lineTo(Math.cos(inner) * 4.2, Math.sin(inner) * 4.2)
+    }
+    ctx.closePath()
+    ctx.fill()
+  }
+
+  private drawBombGlyph(ctx: CanvasRenderingContext2D) {
+    this.drawItemFrame(ctx)
+    setContextAttribute(ctx, -1, 1, '#fff')
+    ctx.beginPath()
+    ctx.arc(0, 3, 7, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillRect(-1.3, -5.2, 2.6, 3.4)
+    setContextAttribute(ctx, -1, 0, '#fff')
+    setContextAttribute(ctx, -1, 2, 1.6)
+    ctx.beginPath()
+    ctx.moveTo(0, -4)
+    ctx.quadraticCurveTo(5, -6, 3.5, -9)
+    ctx.stroke()
+    setContextAttribute(ctx, -1, 1, '#ffe6a3')
+    ctx.beginPath()
+    ctx.arc(3.5, -9, 1.6, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  private drawSlowGlyph(ctx: CanvasRenderingContext2D) {
+    this.drawItemFrame(ctx)
+    setContextAttribute(ctx, -1, 1, '#fff')
+    ctx.fillRect(-2.2, -12.5, 4.4, 3)
+    setContextAttribute(ctx, -1, 0, '#fff')
+    setContextAttribute(ctx, -1, 2, 1.6)
+    ctx.beginPath()
+    ctx.arc(0, 1.5, 8, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(0, 1.5)
+    ctx.lineTo(0, -4.5)
+    ctx.moveTo(0, 1.5)
+    ctx.lineTo(4.2, 3.2)
+    ctx.stroke()
+  }
+
+  private enemyPace() {
+    return this.slowLeft > 0 ? ENEMY_SLOW_SCALE : 1
+  }
+
+  private drawItemFrame(ctx: CanvasRenderingContext2D) {
+    const half = SHIELD_PICKUP_HALF
+    setContextAttribute(ctx, -1, 0, '#fff')
+    setContextAttribute(ctx, -1, 2, 1.9)
+    ctx.beginPath()
+    ctx.rect(-half, -half, half * 2, half * 2)
+    ctx.stroke()
   }
 
   private drawWeaponPickup() {
@@ -945,10 +1126,11 @@ export class Game {
   }
 
   private updateEnemyBullets() {
+    const pace = this.enemyPace()
     for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
       const b = this.enemyBullets[i]
-      b.x += b.vx
-      b.y += b.vy
+      b.x += b.vx * pace
+      b.y += b.vy * pace
       if (b.x < 0 || b.x > MAP_W || b.y < 0 || b.y > MAP_H) {
         this.enemyBullets.splice(i, 1)
         continue
@@ -965,10 +1147,9 @@ export class Game {
     }
   }
 
-  /** Base hull at level 1, about double by level 40. */
   private cruiserHp() {
     const t = (this.spawner.getLevel() - 1) / (MAX_SPAWN_INDEX - 1)
-    return CRUISER_HP + Math.round(t * CRUISER_HP)
+    return Math.round(CRUISER_HP + t * (CRUISER_HP_MAX - CRUISER_HP))
   }
 
   private rollCruiserDelay() {
@@ -1080,12 +1261,21 @@ export class Game {
   }
 
   private hitEnemy(e: Enemy) {
-    playRandom(hitSounds)
     if (e.kind === 'blackHole') {
       e.strength -= 0.35
-      if (e.strength > 0.7) return
+      if (e.strength > 0.7) {
+        playRandom(hitSounds)
+        return
+      }
+    }
+    if (e.kind === 'snake' && e.body.length > 0) {
+      const tail = e.body.pop()
+      if (tail) this.burst(tail.x, tail.y, DEFS.snake.color, 5)
+      playRandom(hitSounds)
+      return
     }
     if (e.hp > 1) {
+      playRandom(hitSounds)
       e.hp--
       this.burst(e.x, e.y, DEFS[e.kind].color, 5)
       return
@@ -1104,10 +1294,10 @@ export class Game {
     const boom = EXPLOSION[e.kind]
     this.burst(e.x, e.y, def.color, boom.n, boom.scale)
     this.spawnGridRipple(e.x, e.y)
+    playRandom(hitSounds)
     if (scoreIt && this.heroAlive) {
       this.addKill(def.score, e.x, e.y)
       if (e.kind === 'cruiser') play(cruiserDie)
-      else playEnemyBoom(boom.volume)
     }
     e.state = 'inactive'
     this.runningIds.delete(e.genId)
@@ -1264,14 +1454,15 @@ export class Game {
     } else {
       e.fireCd--
     }
+    const step = SNAKE_SPEED * this.enemyPace()
     const margin = SPAWN_MARGIN
-    const aheadX = e.x + Math.cos(e.heading) * SNAKE_SPEED
-    const aheadY = e.y + Math.sin(e.heading) * SNAKE_SPEED
+    const aheadX = e.x + Math.cos(e.heading) * step
+    const aheadY = e.y + Math.sin(e.heading) * step
     if (aheadX < margin || aheadX > GRID_W - margin)
       e.heading = Math.PI - e.heading
     if (aheadY < margin || aheadY > GRID_H - margin) e.heading = -e.heading
-    e.x += Math.cos(e.heading) * SNAKE_SPEED
-    e.y += Math.sin(e.heading) * SNAKE_SPEED
+    e.x += Math.cos(e.heading) * step
+    e.y += Math.sin(e.heading) * step
     e.vx = 0
     e.vy = 0
     e.trail.push({ x: e.x, y: e.y })
@@ -1302,8 +1493,9 @@ export class Game {
         i--
         continue
       }
-      e.x += e.vx
-      e.y += e.vy
+      const pace = this.enemyPace()
+      e.x += e.vx * pace
+      e.y += e.vy * pace
       e.x = clamp(e.x, 1, GRID_W - 1)
       e.y = clamp(e.y, 1, GRID_H - 1)
     }
@@ -1964,7 +2156,7 @@ export class Game {
   private emitThrustParticles(boosting: boolean) {
     const rear = this.heroAngle + Math.PI
     const side = this.heroAngle + Math.PI / 2
-    const back = HERO_RADIUS * (1.15 + Math.random() * 0.15)
+    const back = HERO_RADIUS * (1.15 - HERO_ART_FORWARD + Math.random() * 0.15)
     for (const sign of [-1, 1] as const) {
       // Idle: sparse sparks; boosting: denser/faster plume
       if (Math.random() > (boosting ? 0.65 : 0.22)) continue
@@ -2012,15 +2204,15 @@ export class Game {
   private drawGlitchTitle(word: string, x: number, y: number, size: number) {
     const ctx = this.ctx
     const f = this.frame
-    displayWord(ctx, word, x, y, size, [0, 9, 0, 9])
+    displaySegmentWord(ctx, word, x, y, size, [0, 9, 0, 9])
 
     const burst = f % 200 < 2
     if (!burst) return
 
     const ox = (Math.random() - 0.5) * size * 0.9
     const oy = (Math.random() - 0.5) * size * 0.2
-    displayWord(ctx, word, x + ox, y + oy, size, [10, 2])
-    displayWord(ctx, word, x - ox * 0.65, y - oy * 0.5, size, [15, 11])
+    displaySegmentWord(ctx, word, x + ox, y + oy, size, [10, 2])
+    displaySegmentWord(ctx, word, x - ox * 0.65, y - oy * 0.5, size, [15, 11])
 
     const tears = 2 + Math.floor(Math.random() * 3)
     for (let i = 0; i < tears; i++) {
@@ -2031,7 +2223,7 @@ export class Game {
       ctx.beginPath()
       ctx.rect(0, sy, this.screenW, sh)
       ctx.clip()
-      displayWord(
+      displaySegmentWord(
         ctx,
         word,
         sx,
@@ -2158,34 +2350,73 @@ export class Game {
     ctx.stroke()
   }
 
+  /** Steady ring; arcs orbit so the field reads as energy without flashing the hull. */
+  private drawShield() {
+    if (this.shield <= 0) return
+    const ctx = this.ctx
+    const r = HERO_RADIUS * 2.45
+    const spin = this.frame * 0.045
+    ctx.save()
+    ctx.translate(this.heroX, this.heroY)
+    ctx.lineCap = 'round'
+
+    const ring = (radius: number, color: string, width: number) => {
+      setContextAttribute(ctx, -1, 0, color)
+      setContextAttribute(ctx, -1, 2, width)
+      ctx.beginPath()
+      ctx.arc(0, 0, radius, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+    const arc = (
+      radius: number,
+      a0: number,
+      sweep: number,
+      color: string,
+      width: number,
+    ) => {
+      setContextAttribute(ctx, -1, 0, color)
+      setContextAttribute(ctx, -1, 2, width)
+      ctx.beginPath()
+      ctx.arc(0, 0, radius, a0, a0 + sweep)
+      ctx.stroke()
+    }
+
+    ring(r, 'rgba(110,220,255,0.16)', 1)
+    ring(r, 'rgba(72,255,206,0.05)', 6)
+
+    const bands = 3
+    const sweep = Math.PI * 0.28
+    for (let i = 0; i < bands; i++) {
+      const a0 = spin + (i / bands) * Math.PI * 2
+      arc(r, a0, sweep, 'rgba(170,255,240,0.42)', 1.25)
+      arc(
+        r * 0.9,
+        -spin * 1.35 + (i / bands) * Math.PI * 2,
+        sweep * 0.55,
+        'rgba(130,200,255,0.28)',
+        0.85,
+      )
+    }
+
+    ctx.restore()
+  }
+
   private drawHero() {
     const ctx = this.ctx
     const s = HERO_RADIUS
     const thrusting = this.keys.a || this.keys.w || this.keys.s || this.keys.d
-    const shieldPulse = 0.5 + 0.35 * Math.sin(this.frame * 0.3)
-    const a = this.shield > 0 ? 0.55 + shieldPulse * 0.4 : 1
     // Per-part palette: hull cyan · pods mint · fins violet · accents warm
-    const hullCol =
-      this.shield > 0 ? `rgba(90,210,255,${a})` : 'rgb(100,215,255)'
-    const podCol = this.shield > 0 ? `rgba(72,255,206,${a})` : 'rgb(90,255,200)'
-    const finCol =
-      this.shield > 0 ? `rgba(190,170,255,${a})` : 'rgb(180,165,255)'
-    const accentCol =
-      this.shield > 0
-        ? `rgba(255,240,200,${0.7 + shieldPulse * 0.25})`
-        : 'rgb(255,230,170)'
-    const strutCol =
-      this.shield > 0
-        ? `rgba(120,200,230,${0.4 + shieldPulse * 0.2})`
-        : 'rgba(140,190,220,0.75)'
-    const spineCol =
-      this.shield > 0
-        ? `rgba(160,240,255,${0.45 + shieldPulse * 0.25})`
-        : 'rgba(160,230,255,0.8)'
+    const hullCol = 'rgb(100,215,255)'
+    const podCol = 'rgb(90,255,200)'
+    const finCol = 'rgb(180,165,255)'
+    const accentCol = 'rgb(255,230,170)'
+    const strutCol = 'rgba(140,190,220,0.75)'
+    const spineCol = 'rgba(160,230,255,0.8)'
 
     ctx.save()
     ctx.translate(this.heroX, this.heroY)
     ctx.rotate(this.heroAngle + Math.PI / 2)
+    ctx.translate(0, -HERO_ART_FORWARD * s)
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
 
@@ -2628,7 +2859,11 @@ export class Game {
     ctx.globalAlpha = 1
     ctx.restore()
 
-    if (this.heroAlive) this.drawHero()
+    this.drawFieldItems()
+    if (this.heroAlive) {
+      this.drawShield()
+      this.drawHero()
+    }
 
     ctx.restore()
 
@@ -2638,8 +2873,8 @@ export class Game {
     const cy = this.screenH / 2
     const hudRight = this.screenW - 50
     ctx.save()
-    displayWord(ctx, this.score.toFixed(0), hudRight, 60, 18, [9, 0], 1)
-    displayWord(ctx, `x${this.multiplier}`, hudRight, 110, 9, [24, 0], 1)
+    displaySegmentWord(ctx, this.score.toFixed(0), hudRight, 60, 18, [9, 0], 1)
+    displaySegmentWord(ctx, `x${this.multiplier}`, hudRight, 110, 9, [24, 0], 1)
     displayWord(ctx, `${t('lives')} ${this.lives}`, 80, 60, 9, [0, 13])
     displayWord(ctx, `${t('bombs')} ${this.bombs}`, 80, 100, 9, [0, 9])
     this.drawLevel(cx)
@@ -2665,7 +2900,7 @@ export class Game {
       } else {
         displayWord(ctx, t('gameOver'), cx, cy - 60, 20, [0, 13])
       }
-      displayWord(ctx, this.score.toFixed(0), cx, cy - 140, 18, [0, 9])
+      displaySegmentWord(ctx, this.score.toFixed(0), cx, cy - 140, 18, [0, 9])
       displayWord(ctx, t('start'), cx, cy + 100, 12, [0, 13])
     } else {
       this.drawPointer()

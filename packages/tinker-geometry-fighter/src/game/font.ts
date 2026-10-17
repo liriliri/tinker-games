@@ -130,8 +130,8 @@ function displayCanvasWord(
   ctx.restore()
 }
 
-/** Evil Glitch 14-segment word renderer; falls back to neon canvas text for CJK. */
-export function displayWord(
+/** Title, score, and multiplier stay on the segment face. */
+export function displaySegmentWord(
   ctx: CanvasRenderingContext2D,
   word: string,
   x: number,
@@ -160,4 +160,17 @@ export function displayWord(
       spacing,
     )
   }
+}
+
+/** HUD copy. Same canvas face for English and CJK. */
+export function displayWord(
+  ctx: CanvasRenderingContext2D,
+  word: string,
+  x: number,
+  y: number,
+  size: number,
+  colorIndexes: number[],
+  side = 0,
+) {
+  displayCanvasWord(ctx, word, x, y, size, colorIndexes, side)
 }
