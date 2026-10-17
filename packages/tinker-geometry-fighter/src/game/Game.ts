@@ -111,6 +111,8 @@ interface FloatMsg {
   x: number
   y: number
   ttl: number
+  /** Kill totals use the same segment face as the score. */
+  segment?: boolean
 }
 
 interface Bolt {
@@ -1356,6 +1358,7 @@ export class Game {
       x,
       y,
       ttl: 40,
+      segment: true,
     })
   }
 
@@ -2896,7 +2899,8 @@ export class Game {
         sy > this.screenH - 20
       )
         continue
-      displayWord(ctx, m.text, sx, sy, 9, [0, 6])
+      const draw = m.segment ? displaySegmentWord : displayWord
+      draw(ctx, m.text, sx, sy, 9, [0, 6])
     }
 
     if (this.gameOver) {
