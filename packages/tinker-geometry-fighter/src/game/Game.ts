@@ -1417,7 +1417,7 @@ export class Game {
     e.trail = []
     e.nearStamp = 0
     if (kind === 'snake') {
-      e.fireCd = random(28, 85)
+      e.angle = random(-0.02, 0.02)
       this.layoutSnake(e, random(SNAKE_MIN, SNAKE_MAX) - 1)
     }
     if (kind === 'cruiser') {
@@ -1448,19 +1448,26 @@ export class Game {
   }
 
   private stepSnake(e: Enemy) {
-    if (e.fireCd <= 0) {
-      e.heading += random(-1.1, 1.1)
-      e.fireCd = random(28, 85)
-    } else {
-      e.fireCd--
-    }
     const step = SNAKE_SPEED * this.enemyPace()
     const margin = SPAWN_MARGIN
-    const aheadX = e.x + Math.cos(e.heading) * step
-    const aheadY = e.y + Math.sin(e.heading) * step
-    if (aheadX < margin || aheadX > GRID_W - margin)
-      e.heading = Math.PI - e.heading
-    if (aheadY < margin || aheadY > GRID_H - margin) e.heading = -e.heading
+    // angle is turn rate. A damped wander bends the head in a continuous arc
+    // so the trail, and the body on it, curves instead of kinking.
+    e.angle = clamp(
+      e.angle * 0.985 + (Math.random() - 0.5) * 0.003,
+      -0.035,
+      0.035,
+    )
+    const dx = clamp(e.x, margin, GRID_W - margin) - e.x
+    const dy = clamp(e.y, margin, GRID_H - margin) - e.y
+    const depth = Math.hypot(dx, dy)
+    if (depth > 0) {
+      const urgency = clamp(depth / margin, 0, 1)
+      const diff = shortestTurn(e.heading, Math.atan2(dy, dx))
+      e.heading += e.angle * (1 - urgency)
+      e.heading += clamp(diff, -0.12, 0.12) * urgency
+    } else {
+      e.heading += e.angle
+    }
     e.x += Math.cos(e.heading) * step
     e.y += Math.sin(e.heading) * step
     e.vx = 0
@@ -2928,6 +2935,11 @@ const SNAKE_MIN = 4
 const SNAKE_MAX = 9
 const SNAKE_SPEED = 0.34 * UNIT
 const SNAKE_GAP = 20
+
+function shortestTurn(from: number, to: number) {
+  const tau = Math.PI * 2
+  return ((((to - from + Math.PI) % tau) + tau) % tau) - Math.PI
+}
 
 function pointBehind(trail: { x: number; y: number }[], dist: number) {
   let remain = dist
