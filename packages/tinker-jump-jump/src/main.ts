@@ -18,7 +18,6 @@ function applyCopy() {
   if (finalScoreLabel) finalScoreLabel.textContent = t('score')
   if (restartBtn) restartBtn.textContent = t('playAgain')
   if (overlayRecord) overlayRecord.textContent = t('newBest')
-  document.title = t('title')
 }
 
 async function init() {

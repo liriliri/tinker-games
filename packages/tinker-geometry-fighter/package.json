@@ -1,0 +1,34 @@
+{
+  "name": "tinker-geometry-fighter",
+  "version": "0.1.0",
+  "description": "Twin-stick geometry shooter — survive escalating swarms, chain multipliers, clear the grid!",
+  "files": [
+    "dist/",
+    "icon.png"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
+  "keywords": [
+    "tinker",
+    "game"
+  ],
+  "tinker": {
+    "name": "Geometry Fighter",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "category": "entertainment",
+    "locales": {
+      "zh-CN": {
+        "name": "几何战机",
+        "description": "双摇杆几何射击——扛住越来越猛的敌潮，叠倍率清场！"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  }
+}
