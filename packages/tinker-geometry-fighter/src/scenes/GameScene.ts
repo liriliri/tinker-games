@@ -92,8 +92,7 @@ export class GameScene extends Phaser.Scene {
       p.rightButtonDown(),
     )
 
-    this.engine.tick(performance.now())
-    this.canvasTex.refresh()
+    if (this.engine.tick(performance.now())) this.canvasTex.refresh()
   }
 
   private bindKeys() {

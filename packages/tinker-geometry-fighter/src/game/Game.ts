@@ -172,6 +172,8 @@ const HERO_ART_FORWARD = 0.34
 /** Screen pixels, not grid units. */
 const SHIELD_PICKUP_HALF = 17
 
+const SIM_MS = 1000 / 60
+
 /** Geometry Wars–style loop driven by OpenGW spawner logic. */
 export class Game {
   private keys: KeyState = { a: false, w: false, s: false, d: false }
@@ -192,7 +194,9 @@ export class Game {
   private pauseRequested = false
   private armed = false
   private lastTime = 0
+  private simAcc = 0
   private frame = 0
+  private dirty = true
 
   private screenW = FW
   private screenH = FH
@@ -349,6 +353,7 @@ export class Game {
     this.screenH = Math.max(1, h)
     this.snapViewPort()
     this.initFieldStars()
+    this.dirty = true
   }
 
   /** OpenGW camera target: keep fighter centered with soft edge bias. */
@@ -476,32 +481,40 @@ export class Game {
 
   tick(t: number) {
     if (!this.lastTime) this.lastTime = t
-    const dt = Math.min(100, t - this.lastTime) / 1000
+    const elapsed = Math.min(100, t - this.lastTime)
     this.lastTime = t
 
     // OpenGW: pause only during play. Logic returns; the last frame keeps drawing.
     this.pollPause()
     if (this.paused) {
       this.draw()
-      return
+      return true
     }
 
-    this.frame++
-
-    this.updateBgLasers()
-    if (this.splash) {
-      this.drawSplash()
-    } else {
-      if (!this.gameOver) this.update(dt)
-      this.draw()
+    // Speeds and timers are counted in frames tuned for 60Hz.
+    this.simAcc += elapsed
+    if (this.simAcc >= SIM_MS) {
+      this.simAcc -= SIM_MS
+      if (this.simAcc > SIM_MS) this.simAcc = SIM_MS
+      this.frame++
+      this.updateBgLasers()
+      if (!this.splash && !this.gameOver) this.update(SIM_MS / 1000)
+      if (this.fade > 0) this.fade += 0.05
+      if (this.fade > 1) this.init()
+      this.dirty = true
     }
 
-    if (this.fade > 0) this.fade += 0.05
-    if (this.fade > 1) this.init()
+    if (!this.dirty) return false
+    this.dirty = false
+
+    if (this.splash) this.drawSplash()
+    else this.draw()
+
     if (this.fade > 0 && this.fade < 1) {
       setContextAttribute(this.ctx, -1, 1, `rgba(220,220,220,${this.fade})`)
       this.ctx.fillRect(0, 0, this.screenW, this.screenH)
     }
+    return true
   }
 
   private pollPause() {
@@ -510,12 +523,14 @@ export class Game {
     if (this.splash || this.gameOver || this.fade > 0) return
     this.paused = !this.paused
     if (this.paused) pauseGameAudio()
-    else resumeGameAudio()
+    else {
+      resumeGameAudio()
+      this.dirty = true
+    }
   }
 
   private update(_dt: number) {
     this.rebuildGrid()
-    // OpenGW is frame-based; tick once per render frame.
     if (this.deadTimer > 0) {
       this.deadTimer--
       if (this.deadTimer === 0) {

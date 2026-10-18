@@ -1,6 +1,6 @@
 {
   "name": "tinker-geometry-fighter",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Twin-stick geometry shooter — survive escalating swarms, chain multipliers, clear the grid!",
   "files": [
     "dist/",

@@ -1,6 +1,9 @@
 import { Howl, Howler } from 'howler'
 import randomItem from 'licia/randomItem'
 
+const MASTER_VOLUME = 0.6
+Howler.volume(MASTER_VOLUME)
+
 type Sfx = () => void
 
 export function play(sfx: Sfx) {
