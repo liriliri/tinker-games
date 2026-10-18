@@ -155,10 +155,10 @@ export class Spawner {
     if (level <= 3) return 1
     if (level <= 7) return 2
     if (level <= 10) return 3
-    if (level <= 14) return 4
-    if (level <= 18) return 5
-    if (level <= 23) return 6
-    if (level <= 29) return 7
+    if (level <= 16) return 4
+    if (level <= 22) return 5
+    if (level <= 28) return 6
+    if (level <= 34) return 7
     return 8
   }
 
