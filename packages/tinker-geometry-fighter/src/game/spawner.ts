@@ -137,10 +137,7 @@ export class Spawner {
       }
     }
 
-    this.numWavesAllowed = 0
-    if (index > 1) this.numWavesAllowed = 1
-    if (index > 12) this.numWavesAllowed = 2
-    if (index > 20) this.numWavesAllowed = 9999
+    this.numWavesAllowed = this.waveCap(level)
 
     if (
       ++this.waveStartTimer >= 20 &&
@@ -151,6 +148,18 @@ export class Spawner {
     }
 
     this.runWaves(host)
+  }
+
+  private waveCap(level: number) {
+    if (level <= 1) return 0
+    if (level <= 3) return 1
+    if (level <= 7) return 2
+    if (level <= 10) return 3
+    if (level <= 14) return 4
+    if (level <= 18) return 5
+    if (level <= 23) return 6
+    if (level <= 29) return 7
+    return 8
   }
 
   /** 0 means the kind is present from the opening, not on the intro schedule. */
