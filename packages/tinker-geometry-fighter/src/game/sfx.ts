@@ -21,7 +21,6 @@ export function unlockAudio() {
   }
 }
 
-/** Looping in-game BGM from public/sound/bgm.mp3 */
 const BGM_VOLUME = 0.55
 let bgm: Howl | null = null
 let bgmId: number | undefined

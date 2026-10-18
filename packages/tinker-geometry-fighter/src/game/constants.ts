@@ -23,7 +23,6 @@ export const GRID_H = MAP_H
 
 /** OpenGW spawn distances × UNIT. */
 export const SPAWN_MARGIN = 15 * UNIT
-/** Min distance from fighter for random top-up / corner swarm spawns. */
 export const SPAWN_CLEAR_RADIUS = 28 * UNIT
 export const RUSH_RADIUS = 40 * UNIT
 export const RUSH_RADIUS_BH = 80 * UNIT

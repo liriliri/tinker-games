@@ -44,8 +44,9 @@ interface SpawnerHost {
 }
 
 const NUM_WAVES = 80
+/** OpenGW sized each wave for one or two at a time. Several run together now. */
+const WAVE_SCALE = 1 / 3
 
-/** Early kinds come first; every kind has debuted by about level 30. */
 const INTRO: readonly { kind: EnemyKind; level: number; keep: number }[] = [
   { kind: 'spinner', level: 3, keep: 2 },
   { kind: 'weaver', level: 6, keep: 2 },
@@ -55,7 +56,6 @@ const INTRO: readonly { kind: EnemyKind; level: number; keep: number }[] = [
   { kind: 'mayfly', level: 30, keep: 1 },
 ]
 
-/** OpenGW `spawner` — continuous spawnIndex difficulty + swarm/rush waves. */
 export class Spawner {
   private spawnIndex = 0
   private lastSpawnIndex = 0
@@ -187,9 +187,11 @@ export class Spawner {
 
   private rollWave(level: number) {
     const p = this.spawnProgress
-    const max = (n: number, floor: number) => Math.max(floor, Math.ceil(n * p))
+    const scaled = (n: number) => Math.max(1, Math.ceil(n * WAVE_SCALE))
+    const max = (n: number, floor: number) =>
+      Math.max(scaled(floor), Math.ceil(n * p * WAVE_SCALE))
     const rush = (n: number, floor: number) =>
-      Math.max(floor, Math.ceil((n * p) / 2))
+      Math.max(scaled(floor), Math.ceil((n * p * WAVE_SCALE) / 2))
     const roll = Math.floor(Math.random() * 13)
     const wave = (type: WaveType, kind: EnemyKind, count: number) => {
       const n = this.waveSize(level, kind, count)
@@ -213,7 +215,10 @@ export class Spawner {
         wave(
           'swarm',
           'blackHole',
-          Math.max(4, Math.ceil(Math.random() * POOL.blackHole * p)),
+          Math.max(
+            scaled(4),
+            Math.ceil(Math.random() * POOL.blackHole * p * WAVE_SCALE),
+          ),
         )
         break
       case 5:
@@ -232,7 +237,9 @@ export class Spawner {
         wave('rush', 'spinner', rush(POOL.spinner, 20))
         break
       case 11: {
-        const n = Math.ceil((Math.random() * POOL.repulsor * p) / 2)
+        const n = Math.ceil(
+          (Math.random() * POOL.repulsor * p * WAVE_SCALE) / 2,
+        )
         wave('rush', 'repulsor', Math.max(1, n))
         break
       }

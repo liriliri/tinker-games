@@ -94,7 +94,6 @@ function canUseSegmentFont(word: string) {
   return true
 }
 
-/** Light CJK HUD text — thin weight, soft accent fringe. */
 function displayCanvasWord(
   ctx: CanvasRenderingContext2D,
   word: string,

@@ -174,7 +174,6 @@ const SHIELD_PICKUP_HALF = 17
 
 const SIM_MS = 1000 / 60
 
-/** Geometry Wars–style loop driven by OpenGW spawner logic. */
 export class Game {
   private keys: KeyState = { a: false, w: false, s: false, d: false }
   private pointer = [0, 0, 0, 0]
@@ -201,7 +200,6 @@ export class Game {
   private screenW = FW
   private screenH = FH
 
-  /** Map → screen translate; OpenGW-style smooth follow. */
   private viewPort = [0, 0]
   private heroX = MAP_W / 2
   private heroY = MAP_H / 2
@@ -267,7 +265,6 @@ export class Game {
   private fieldItems: FieldItem[] = []
   private fieldItemTimer = 0
   private weaponPickupTimer = this.rollWeaponPickupDelay()
-  /** Central fuselage (nose −Y), flat stern. */
   private heroHull: [number, number][] = [
     [0, -1.15],
     [0.24, -0.55],
@@ -277,7 +274,6 @@ export class Game {
     [-0.3, 0.15],
     [-0.24, -0.55],
   ]
-  /** Side thruster pods — long nacelles set aft. */
   private heroPodR: [number, number][] = [
     [0.58, -0.08],
     [0.98, 0.08],
@@ -292,7 +288,6 @@ export class Game {
     [-0.82, 1.32],
     [-0.6, 0.88],
   ]
-  /** Small swept winglets on each pod. */
   private heroFinR: [number, number][] = [
     [1.0, 0.12],
     [1.55, 0.42],
@@ -305,7 +300,6 @@ export class Game {
     [-1.42, 0.62],
     [-1.02, 0.55],
   ]
-  /** Pylons bridging fuselage ↔ thruster pods. */
   private heroPylonR: [number, number][] = [
     [0.3, 0.06],
     [0.58, 0.14],
@@ -325,7 +319,6 @@ export class Game {
     phase: number
     speed: number
   }[] = []
-  /** Distant space-battle beams behind the playfield. */
   private bgLasers: {
     x0: number
     y0: number
@@ -741,7 +734,6 @@ export class Game {
     this.bombPickups.push(this.makeFloatingPickup())
   }
 
-  /** Moves a capsule in map space. Returns false when it expires. */
   private driftPickup(p: WeaponPickup): boolean {
     p.ttl--
     p.vx += (Math.random() - 0.5) * 0.06
@@ -1089,7 +1081,6 @@ export class Game {
     }
   }
 
-  /** Head, or any snake segment, within a squared radius. */
   private touches(e: Enemy, x: number, y: number, reach2: number) {
     const dx = e.x - x
     const dy = e.y - y
@@ -1793,14 +1784,12 @@ export class Game {
       const a = Math.max(0, r.alpha)
       if (a <= 0) continue
 
-      // Soft outer bloom
       setContextAttribute(ctx, -1, 0, `rgba(72,255,206,${a * 0.18})`)
       setContextAttribute(ctx, -1, 2, Math.max(6, r.thickness * 0.9))
       ctx.beginPath()
       ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2)
       ctx.stroke()
 
-      // Trailing echo rings
       for (const [scale, alphaMul, w] of [
         [0.86, 0.35, 2.2],
         [0.72, 0.18, 1.4],
@@ -1830,7 +1819,6 @@ export class Game {
       }
       ctx.stroke()
 
-      // Bright core ring
       setContextAttribute(ctx, -1, 0, `rgba(72,255,206,${a * 0.95})`)
       setContextAttribute(ctx, -1, 2, 2.4)
       ctx.beginPath()
@@ -1842,7 +1830,6 @@ export class Game {
       ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2)
       ctx.stroke()
 
-      // Leading sparkle ticks
       setContextAttribute(ctx, -1, 0, `rgba(255,245,180,${a * 0.7})`)
       setContextAttribute(ctx, -1, 2, 1.6)
       ctx.beginPath()
@@ -1904,7 +1891,6 @@ export class Game {
     }
   }
 
-  /** Geometry Wars–style radial sine warp for grid vertices. */
   private distortGridPoint(x: number, y: number): [number, number] {
     let dx = 0
     let dy = 0
@@ -1991,7 +1977,6 @@ export class Game {
     this.drawBombGridFlash()
   }
 
-  /** Local grid lines flare bright at a blast, then fall off from the center. */
   private drawGridFlash() {
     const ctx = this.ctx
     const reach = TILESET * 5.5
@@ -2064,7 +2049,6 @@ export class Game {
     ctx.restore()
   }
 
-  /** Grid lines under the bomb wavefront flare, then the bright band moves outward. */
   private drawBombGridFlash() {
     if (this.bombRings.length === 0) return
     const ctx = this.ctx
@@ -2430,7 +2414,6 @@ export class Game {
     const ctx = this.ctx
     const s = HERO_RADIUS
     const thrusting = this.keys.a || this.keys.w || this.keys.s || this.keys.d
-    // Per-part palette: hull cyan · pods mint · fins violet · accents warm
     const hullCol = 'rgb(100,215,255)'
     const podCol = 'rgb(90,255,200)'
     const finCol = 'rgb(180,165,255)'
@@ -2459,7 +2442,6 @@ export class Game {
     }
 
     {
-      // Idle: short pilot flame; boosting: long plume.
       const flare = 0.35 + 0.45 * Math.abs(Math.sin(this.frame * 0.9))
       const len = thrusting
         ? (0.85 + flare * 0.65) * s
@@ -2487,7 +2469,6 @@ export class Game {
       ctx.globalAlpha = 1
     }
 
-    // Soft bloom per part color
     strokePart(this.heroHull, 3.6, hullCol, 0.22)
     strokePart(this.heroPylonR, 3.0, strutCol, 0.18)
     strokePart(this.heroPylonL, 3.0, strutCol, 0.18)
@@ -2496,7 +2477,6 @@ export class Game {
     strokePart(this.heroFinR, 2.8, finCol, 0.18)
     strokePart(this.heroFinL, 2.8, finCol, 0.18)
 
-    // Body outlines
     strokePart(this.heroHull, 1.75, hullCol)
     strokePart(this.heroPylonR, 1.45, strutCol)
     strokePart(this.heroPylonL, 1.45, strutCol)
@@ -2505,7 +2485,6 @@ export class Game {
     strokePart(this.heroFinR, 1.4, finCol)
     strokePart(this.heroFinL, 1.4, finCol)
 
-    // Fuselage stern bar
     setContextAttribute(ctx, -1, 2, 1.3)
     setContextAttribute(ctx, -1, 0, accentCol)
     ctx.beginPath()
@@ -2513,7 +2492,6 @@ export class Game {
     ctx.lineTo(0.26 * s, 0.78 * s)
     ctx.stroke()
 
-    // Winglet leading edges
     setContextAttribute(ctx, -1, 2, 1.15)
     setContextAttribute(ctx, -1, 0, accentCol)
     ctx.beginPath()
@@ -2523,7 +2501,6 @@ export class Game {
     ctx.lineTo(-1.5 * s, 0.44 * s)
     ctx.stroke()
 
-    // Pod nozzle bells + intake lips
     setContextAttribute(ctx, -1, 2, 1.25)
     setContextAttribute(ctx, -1, 0, accentCol)
     for (const x of [0.88, -0.88]) {
@@ -2536,7 +2513,6 @@ export class Game {
       ctx.stroke()
     }
 
-    // Pod seam lines
     setContextAttribute(ctx, -1, 2, 0.95)
     setContextAttribute(ctx, -1, 0, spineCol)
     ctx.beginPath()
@@ -2546,7 +2522,6 @@ export class Game {
     ctx.lineTo(-0.86 * s, 0.95 * s)
     ctx.stroke()
 
-    // Pylon cross-braces
     setContextAttribute(ctx, -1, 2, 1)
     setContextAttribute(ctx, -1, 0, accentCol)
     ctx.beginPath()
@@ -2949,7 +2924,6 @@ export class Game {
 
 const GRID_CELL = 96
 
-/** Visible pieces, including the head. */
 const SNAKE_MIN = 4
 const SNAKE_MAX = 9
 const SNAKE_SPEED = 0.34 * UNIT
