@@ -21,7 +21,7 @@ Report each hit as `[Category] path:line — …`.
 - Package dir + npm name: `tinker-*` kebab-case
 - Scene / GameObject / class files + identifiers: PascalCase (e.g. `GameScene.ts`, `Board.ts`)
 - Functions/vars: camelCase; constants: `UPPER_SNAKE`; types/interfaces: PascalCase
-- Scene keys / string constants: dedicated module (e.g. `scenes/keys.ts`) when shared
+- Scene keys: `export const SCENE_*` in the scene file that owns the key (e.g. `SCENE_GAME` in `GameScene.ts`). Other files import that constant. No `scenes/keys.ts`, and not a class static
 
 ### 2. Layout
 - Required: `src/main.ts`, `index.html`, `icon.png` (200×200), `package.json`, `vite.config.ts`

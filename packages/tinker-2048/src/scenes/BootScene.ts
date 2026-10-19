@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
 import { initStorage } from '../lib/storage'
-import { SCENE_BOOT, SCENE_MENU } from './keys'
+import { SCENE_MENU } from './MenuScene'
+
+export const SCENE_BOOT = 'Boot'
 
 export class BootScene extends Phaser.Scene {
   constructor() {

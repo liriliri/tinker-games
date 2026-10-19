@@ -18,7 +18,8 @@ import { TableLayer } from '../gameObjects/TableLayer'
 import { t } from '../lib/i18n'
 import { getStorage, initStorage } from '../lib/storage'
 import { applyRenderScale, RELAYOUT_EVENT } from '../lib/scale'
-import { SCENE_GAME } from './keys'
+
+export const SCENE_GAME = 'Game'
 
 export class GameScene extends Phaser.Scene implements Actuator {
   private gameManager!: GameManager

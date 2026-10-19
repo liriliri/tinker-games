@@ -1,0 +1,115 @@
+.touch-stick {
+  position: fixed;
+  left: max(20px, env(safe-area-inset-left, 0px));
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 20;
+  transition: opacity 0.12s ease;
+  will-change: opacity;
+}
+
+.touch-stick.is-shown,
+.touch-stick.is-active {
+  opacity: 1;
+}
+
+.touch-stick-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.touch-stick-ring--outer {
+  background: none;
+  border: 1px solid rgba(50, 90, 170, 0.72);
+  box-shadow: 1px 0 0 rgba(90, 160, 230, 0.55);
+}
+
+.touch-stick-ring--outer::before {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(30, 70, 140, 0.55);
+  box-shadow: 1px 0 0 rgba(70, 140, 210, 0.35);
+}
+
+.touch-stick.is-active .touch-stick-ring--outer {
+  border-color: rgba(140, 200, 255, 0.8);
+}
+
+.touch-stick-cross {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.touch-stick-cross::before,
+.touch-stick-cross::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: linear-gradient(
+    90deg,
+    rgba(126, 186, 255, 0.75) 0 12px,
+    transparent 12px calc(100% - 12px),
+    rgba(126, 186, 255, 0.75) calc(100% - 12px)
+  );
+  transform: translate(-50%, -50%);
+}
+
+.touch-stick-cross::before {
+  width: 100%;
+  height: 1px;
+}
+
+.touch-stick-cross::after {
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(126, 186, 255, 0.75) 0 12px,
+    transparent 12px calc(100% - 12px),
+    rgba(126, 186, 255, 0.75) calc(100% - 12px)
+  );
+}
+
+.touch-stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(214, 244, 255, 0.95);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(186, 236, 255, 0.42) 0 16%,
+    rgba(80, 170, 230, 0.14) 48%,
+    transparent 72%
+  );
+  box-shadow:
+    0 0 0 1px rgba(70, 160, 220, 0.4),
+    0 0 12px rgba(100, 200, 255, 0.45);
+  will-change: transform;
+}
+
+.touch-stick-knob span {
+  position: absolute;
+  inset: 8px;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(230, 248, 255, 0.55);
+  background: radial-gradient(circle, #fff 0 2.5px, transparent 3.5px);
+  box-shadow: none;
+  transform: none;
+}

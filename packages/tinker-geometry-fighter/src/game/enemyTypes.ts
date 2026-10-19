@@ -36,8 +36,8 @@ export const POOL: Record<EnemyKind, number> = {
   weaver: 200,
   mayfly: 400,
   snake: 50,
-  blackHole: 8,
-  repulsor: 4,
+  blackHole: 16,
+  repulsor: 16,
   proton: 200,
   cruiser: 2,
 }

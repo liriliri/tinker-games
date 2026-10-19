@@ -1,8 +1,8 @@
 import clamp from 'licia/clamp'
 import find from 'licia/find'
 import {
-  GRID_H,
-  GRID_W,
+  MAP_H,
+  MAP_W,
   MAX_SPAWN_INDEX,
   RUSH_RADIUS,
   RUSH_RADIUS_BH,
@@ -47,13 +47,18 @@ const NUM_WAVES = 80
 /** OpenGW sized each wave for one or two at a time. Several run together now. */
 const WAVE_SCALE = 1 / 3
 
+/** Linear difficulty still made late waves too large. */
+function waveProgress(progress: number) {
+  return progress * (1 - 0.5 * progress)
+}
+
 const INTRO: readonly { kind: EnemyKind; level: number; keep: number }[] = [
   { kind: 'spinner', level: 3, keep: 2 },
   { kind: 'weaver', level: 6, keep: 2 },
   { kind: 'blackHole', level: 10, keep: 1 },
   { kind: 'snake', level: 16, keep: 1 },
   { kind: 'repulsor', level: 23, keep: 1 },
-  { kind: 'mayfly', level: 30, keep: 1 },
+  { kind: 'mayfly', level: 26, keep: 1 },
 ]
 
 export class Spawner {
@@ -185,8 +190,18 @@ export class Spawner {
     return count
   }
 
+  private bandCount(
+    level: number,
+    bands: readonly (readonly [number, number])[],
+  ) {
+    for (const [until, count] of bands) {
+      if (level <= until) return count
+    }
+    return bands[bands.length - 1][1]
+  }
+
   private rollWave(level: number) {
-    const p = this.spawnProgress
+    const p = waveProgress(this.spawnProgress)
     const scaled = (n: number) => Math.max(1, Math.ceil(n * WAVE_SCALE))
     const max = (n: number, floor: number) =>
       Math.max(scaled(floor), Math.ceil(n * p * WAVE_SCALE))
@@ -215,14 +230,24 @@ export class Spawner {
         wave(
           'swarm',
           'blackHole',
-          Math.max(
-            scaled(4),
-            Math.ceil(Math.random() * POOL.blackHole * p * WAVE_SCALE),
-          ),
+          this.bandCount(level, [
+            [18, 3],
+            [26, 4],
+            [33, 5],
+            [40, 6],
+          ]),
         )
         break
       case 5:
-        wave('swarm', 'mayfly', max(POOL.mayfly, 50))
+        wave(
+          'swarm',
+          'mayfly',
+          this.bandCount(level, [
+            [31, 60],
+            [36, 80],
+            [40, 100],
+          ]),
+        )
         break
       case 6:
         wave('rush', 'grunt', rush(POOL.grunt, 20))
@@ -236,13 +261,17 @@ export class Spawner {
       case 9:
         wave('rush', 'spinner', rush(POOL.spinner, 20))
         break
-      case 11: {
-        const n = Math.ceil(
-          (Math.random() * POOL.repulsor * p * WAVE_SCALE) / 2,
+      case 11:
+        wave(
+          'rush',
+          'repulsor',
+          this.bandCount(level, [
+            [29, 4],
+            [35, 6],
+            [40, 8],
+          ]),
         )
-        wave('rush', 'repulsor', Math.max(1, n))
         break
-      }
       default:
         break
     }
@@ -254,8 +283,8 @@ export class Spawner {
     minDist = SPAWN_CLEAR_RADIUS,
   ): [number, number] {
     for (let i = 0; i < 24; i++) {
-      const x = margin + Math.random() * (GRID_W - margin * 2)
-      const y = margin + Math.random() * (GRID_H - margin * 2)
+      const x = margin + Math.random() * (MAP_W - margin * 2)
+      const y = margin + Math.random() * (MAP_H - margin * 2)
       if (Math.hypot(x - host.playerX, y - host.playerY) >= minDist) {
         return [x, y]
       }
@@ -263,8 +292,8 @@ export class Spawner {
     const ang = Math.random() * Math.PI * 2
     const dist = minDist + 4 * UNIT
     return [
-      clamp(host.playerX + Math.cos(ang) * dist, margin, GRID_W - margin),
-      clamp(host.playerY + Math.sin(ang) * dist, margin, GRID_H - margin),
+      clamp(host.playerX + Math.cos(ang) * dist, margin, MAP_W - margin),
+      clamp(host.playerY + Math.sin(ang) * dist, margin, MAP_H - margin),
     ]
   }
 
@@ -275,7 +304,7 @@ export class Spawner {
   }
 
   private newWave(type: WaveType, kind: EnemyKind, spawnCount: number) {
-    const wd = this.waves.find((w) => w.type === 'unused')
+    const wd = find(this.waves, (w) => w.type === 'unused')
     if (!wd || spawnCount <= 0) return
     wd.type = type
     wd.kind = kind
@@ -308,8 +337,8 @@ export class Spawner {
             (Math.random() * 2 - 1) * jitter
           const e = host.spawnEnemy(
             wd.kind,
-            clamp(x, margin, GRID_W - margin),
-            clamp(y, margin, GRID_H - margin),
+            clamp(x, margin, MAP_W - margin),
+            clamp(y, margin, MAP_H - margin),
           )
           if (e) wd.trackers.push({ genId: e.genId, alive: true })
         }
@@ -323,14 +352,14 @@ export class Spawner {
           switch (this.swarmCorner % 4) {
             case 0:
               x = margin + rx
-              y = GRID_H - margin + ry
+              y = MAP_H - margin + ry
               break
             case 1:
-              x = GRID_W - margin + rx
-              y = GRID_H - margin + ry
+              x = MAP_W - margin + rx
+              y = MAP_H - margin + ry
               break
             case 2:
-              x = GRID_W - margin + rx
+              x = MAP_W - margin + rx
               y = margin + ry
               break
             case 3:
@@ -339,8 +368,8 @@ export class Spawner {
               break
           }
           this.swarmCorner++
-          x = clamp(x, margin, GRID_W - margin)
-          y = clamp(y, margin, GRID_H - margin)
+          x = clamp(x, margin, MAP_W - margin)
+          y = clamp(y, margin, MAP_H - margin)
           // Corner may land near the fighter — push out if too close.
           if (
             Math.hypot(x - host.playerX, y - host.playerY) < SPAWN_CLEAR_RADIUS

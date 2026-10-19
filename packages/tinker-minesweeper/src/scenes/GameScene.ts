@@ -14,7 +14,8 @@ import { GameOverlay } from '../gameObjects/GameOverlay'
 import { LevelDialog } from '../gameObjects/LevelDialog'
 import { StatusBar } from '../gameObjects/StatusBar'
 import { positionFromPoint } from '../gameObjects/gridLayout'
-import { SCENE_GAME } from './keys'
+
+export const SCENE_GAME = 'Game'
 
 type PendingAction = 'single' | 'multi' | ''
 

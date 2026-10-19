@@ -7,7 +7,6 @@ import {
 } from '../game/GameManager'
 import type { LevelId } from '../game/levels'
 import type { Grid } from '../game/SudokuEngine'
-import { SCENE_GAME } from './keys'
 import { getStorage, initStorage } from '../lib/storage'
 import { applyRenderScale, RELAYOUT_EVENT } from '../lib/scale'
 import { DigitPad } from '../gameObjects/DigitPad'
@@ -16,6 +15,8 @@ import { StatusBar } from '../gameObjects/StatusBar'
 import { SudokuBoard } from '../gameObjects/SudokuBoard'
 import { WinOverlay } from '../gameObjects/WinOverlay'
 import { positionFromPoint } from '../gameObjects/gridLayout'
+
+export const SCENE_GAME = 'Game'
 
 export class GameScene extends Phaser.Scene implements Actuator {
   private gameManager!: GameManager

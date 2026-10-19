@@ -19,7 +19,9 @@ import { Board } from '../gameObjects/Board'
 import { GameOverlay } from '../gameObjects/GameOverlay'
 import { ScorePanel } from '../gameObjects/ScorePanel'
 import { TileLayer } from '../gameObjects/TileLayer'
-import { SCENE_GAME, SCENE_MENU } from './keys'
+import { SCENE_MENU } from './MenuScene'
+
+export const SCENE_GAME = 'Game'
 
 export class GameScene extends Phaser.Scene implements Actuator {
   private gameManager!: GameManager

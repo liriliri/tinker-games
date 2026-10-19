@@ -1,4 +1,5 @@
 import startWith from 'licia/startWith'
+import strTpl from 'licia/strTpl'
 
 type Locale = 'en' | 'zh-CN'
 
@@ -25,10 +26,10 @@ const messages: Record<Locale, Messages> = {
     newRecord: '-new record-',
     lives: 'lives',
     bombs: 'bombs',
-    multiplier: 'x{n}',
+    multiplier: 'x{{n}}',
     extraLife: '1up',
     extraBomb: 'bomb',
-    weapon: '{n}-shot',
+    weapon: '{{n}}-shot',
     paused: 'paused',
     level: 'level',
   },
@@ -39,10 +40,10 @@ const messages: Record<Locale, Messages> = {
     newRecord: '-新纪录-',
     lives: '生命',
     bombs: '炸弹',
-    multiplier: 'x{n}',
+    multiplier: 'x{{n}}',
     extraLife: '续命',
     extraBomb: '炸弹',
-    weapon: '{n}发',
+    weapon: '{{n}}发',
     paused: '已暂停',
     level: '难度',
   },
@@ -72,11 +73,7 @@ export function t(key: MessageKey): string {
 }
 
 export function tf(key: MessageKey, vars: Record<string, string | number>) {
-  let s = messages[locale][key]
-  for (const [k, v] of Object.entries(vars)) {
-    s = s.replace(`{${k}}`, String(v))
-  }
-  return s
+  return strTpl(messages[locale][key], vars)
 }
 
 export function getFontFamily(): string {

@@ -22,8 +22,6 @@ import {
   EXTRA_LIFE_SCORE,
   FH,
   FW,
-  GRID_H,
-  GRID_W,
   HERO_RADIUS,
   MAP_H,
   MAP_W,
@@ -354,7 +352,8 @@ export class Game {
     const border = -20 * UNIT
     const lookX = (this.heroX / MAP_W) * (MAP_W + border * 2) - border
     const lookY = (this.heroY / MAP_H) * (MAP_H + border * 2) - border
-    return [this.screenW / 2 - lookX, this.screenH / 2 - lookY]
+    const [viewW, viewH] = this.viewExtent()
+    return [viewW / 2 - lookX, viewH / 2 - lookY]
   }
 
   private snapViewPort() {
@@ -373,16 +372,34 @@ export class Game {
   }
 
   private clampViewPort() {
-    if (MAP_W <= this.screenW) {
-      this.viewPort[0] = (this.screenW - MAP_W) / 2
+    const [viewW, viewH] = this.viewExtent()
+    if (MAP_W <= viewW) {
+      this.viewPort[0] = (viewW - MAP_W) / 2
     } else {
-      this.viewPort[0] = clamp(this.viewPort[0], this.screenW - MAP_W, 0)
+      this.viewPort[0] = clamp(this.viewPort[0], viewW - MAP_W, 0)
     }
-    if (MAP_H <= this.screenH) {
-      this.viewPort[1] = (this.screenH - MAP_H) / 2
+    if (MAP_H <= viewH) {
+      this.viewPort[1] = (viewH - MAP_H) / 2
     } else {
-      this.viewPort[1] = clamp(this.viewPort[1], this.screenH - MAP_H, 0)
+      this.viewPort[1] = clamp(this.viewPort[1], viewH - MAP_H, 0)
     }
+  }
+
+  /** Narrow screens show more of the map, and the HUD shrinks with it. */
+  private viewZoom() {
+    const span = Math.min(this.screenW, this.screenH)
+    if (span >= 700) return 1
+    return clamp(span / 700, 0.62, 1)
+  }
+
+  private viewExtent(): [number, number] {
+    const z = this.viewZoom()
+    return [this.screenW / z, this.screenH / z]
+  }
+
+  private worldToScreen(x: number, y: number): [number, number] {
+    const z = this.viewZoom()
+    return [(x + this.viewPort[0]) * z, (y + this.viewPort[1]) * z]
   }
 
   private initFieldStars() {
@@ -416,6 +433,10 @@ export class Game {
 
   requestPause() {
     this.pauseRequested = true
+  }
+
+  isTitle() {
+    return this.splash
   }
 
   onPointerDown(fire: boolean) {
@@ -610,7 +631,7 @@ export class Game {
       this.heroAngle = Math.atan2(this.pad.aimY, this.pad.aimX)
     } else {
       this.heroAngle = getAngle(
-        [this.heroX + this.viewPort[0], this.heroY + this.viewPort[1]],
+        this.worldToScreen(this.heroX, this.heroY),
         this.pointer,
       )
     }
@@ -702,11 +723,12 @@ export class Game {
   private visibleSpawnRect(pad: number) {
     const viewLeft = -this.viewPort[0]
     const viewTop = -this.viewPort[1]
+    const [viewW, viewH] = this.viewExtent()
     return {
       left: Math.max(pad, viewLeft + pad),
       top: Math.max(pad, viewTop + pad),
-      right: Math.min(MAP_W - pad, viewLeft + this.screenW - pad),
-      bottom: Math.min(MAP_H - pad, viewTop + this.screenH - pad),
+      right: Math.min(MAP_W - pad, viewLeft + viewW - pad),
+      bottom: Math.min(MAP_H - pad, viewTop + viewH - pad),
     }
   }
 
@@ -986,7 +1008,9 @@ export class Game {
     const hw = 9
     const hh = 15
     ctx.save()
-    ctx.translate(p.x + this.viewPort[0], p.y + this.viewPort[1])
+    const [sx, sy] = this.worldToScreen(p.x, p.y)
+    ctx.translate(sx, sy)
+    ctx.scale(this.viewZoom(), this.viewZoom())
     ctx.globalAlpha = fade
     ctx.beginPath()
     ctx.roundRect(-hw, -hh, hw * 2, hh * 2, hw)
@@ -1186,16 +1210,17 @@ export class Game {
     const pad = 120
     const viewLeft = -this.viewPort[0]
     const viewTop = -this.viewPort[1]
+    const [viewW, viewH] = this.viewExtent()
     let x = this.heroX + SPAWN_CLEAR_RADIUS
     let y = this.heroY
     for (let i = 0; i < 16; i++) {
       const nx = clamp(
-        viewLeft + pad + Math.random() * Math.max(1, this.screenW - pad * 2),
+        viewLeft + pad + Math.random() * Math.max(1, viewW - pad * 2),
         pad,
         MAP_W - pad,
       )
       const ny = clamp(
-        viewTop + pad + Math.random() * Math.max(1, this.screenH - pad * 2),
+        viewTop + pad + Math.random() * Math.max(1, viewH - pad * 2),
         pad,
         MAP_H - pad,
       )
@@ -1466,8 +1491,8 @@ export class Game {
       -0.035,
       0.035,
     )
-    const dx = clamp(e.x, margin, GRID_W - margin) - e.x
-    const dy = clamp(e.y, margin, GRID_H - margin) - e.y
+    const dx = clamp(e.x, margin, MAP_W - margin) - e.x
+    const dy = clamp(e.y, margin, MAP_H - margin) - e.y
     const depth = Math.hypot(dx, dy)
     if (depth > 0) {
       const urgency = clamp(depth / margin, 0, 1)
@@ -1512,8 +1537,8 @@ export class Game {
       const pace = this.enemyPace()
       e.x += e.vx * pace
       e.y += e.vy * pace
-      e.x = clamp(e.x, 1, GRID_W - 1)
-      e.y = clamp(e.y, 1, GRID_H - 1)
+      e.x = clamp(e.x, 1, MAP_W - 1)
+      e.y = clamp(e.y, 1, MAP_H - 1)
     }
   }
 
@@ -1537,8 +1562,8 @@ export class Game {
         }
         e.vx *= 0.99
         e.vy *= 0.99
-        if (e.x < SPAWN_MARGIN || e.x > GRID_W - SPAWN_MARGIN) e.vx *= -1
-        if (e.y < SPAWN_MARGIN || e.y > GRID_H - SPAWN_MARGIN) e.vy *= -1
+        if (e.x < SPAWN_MARGIN || e.x > MAP_W - SPAWN_MARGIN) e.vx *= -1
+        if (e.y < SPAWN_MARGIN || e.y > MAP_H - SPAWN_MARGIN) e.vy *= -1
         break
       }
       case 'grunt':
@@ -2196,18 +2221,42 @@ export class Game {
     const ctx = this.ctx
     const cx = this.screenW / 2
     const cy = this.screenH / 2
+    const title = t('title')
+    const maxW = Math.max(80, this.screenW - 48)
+    const grow = 1 + this.fade
+    const lines =
+      this.segmentSpan(title, 30) > maxW
+        ? title.split(' ').filter((part) => part.length > 0)
+        : [title]
+    const size = Math.min(
+      30 * grow,
+      ...lines.map((line) => this.fitSegmentSize(line, 30 * grow, maxW)),
+    )
+    const y = cy - 80 - this.fade * 50
+    const gap = size * 3.2
+    const block = gap * (lines.length - 1)
     ctx.save()
     setContextAttribute(ctx, 23, 1)
     ctx.fillRect(0, 0, this.screenW, this.screenH)
     this.drawFieldStars()
-    this.drawGlitchTitle(
-      t('title'),
-      cx,
-      cy - 80 - this.fade * 50,
-      30 * (1 + this.fade),
-    )
+    lines.forEach((line, i) => {
+      this.drawGlitchTitle(line, cx, y - block / 2 + i * gap, size)
+    })
     displayWord(ctx, t('start'), cx, cy + 80, 12, [0, 13])
     ctx.restore()
+  }
+
+  private segmentSpan(word: string, size: number) {
+    const spacing = size < 25 ? 10 : size * 0.5
+    return (size + spacing) * word.length
+  }
+
+  private fitSegmentSize(word: string, preferred: number, maxWidth: number) {
+    if (this.segmentSpan(word, preferred) <= maxWidth) return preferred
+    const n = Math.max(1, word.length)
+    const wide = maxWidth / (1.5 * n)
+    const size = wide >= 25 ? wide : Math.max(8, maxWidth / n - 10)
+    return Math.min(preferred, size)
   }
 
   private drawGlitchTitle(word: string, x: number, y: number, size: number) {
@@ -2538,19 +2587,18 @@ export class Game {
     ctx.restore()
   }
 
-  /** Quiet readout on the same row as the side numbers. */
-  private drawLevel(cx: number) {
+  /** Quiet readout, on the same line as the side counters. */
+  private drawLevel(cx: number, y = 60, scale = 1) {
     const n = this.spawner.getLevel()
     const ctx = this.ctx
-    const size = 9
-    const y = 60 + size * 1.05
+    const size = 9 * scale
     ctx.save()
-    ctx.font = `300 18px ${getFontFamily()}`
+    ctx.font = `300 ${Math.max(16, Math.round(size * 2))}px ${getFontFamily()}`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.letterSpacing = '0.06em'
     ctx.fillStyle = 'rgba(255, 186, 96, 0.55)'
-    ctx.fillText(`${t('level')} ${n}`, cx, y)
+    ctx.fillText(`${t('level')} ${n}`, cx, y + size * 1.05)
     ctx.restore()
   }
 
@@ -2730,7 +2778,10 @@ export class Game {
     this.drawFieldStars()
 
     const vp = this.viewPort
+    const z = this.viewZoom()
+    const [viewW, viewH] = this.viewExtent()
     ctx.save()
+    ctx.scale(z, z)
     ctx.translate(vp[0], vp[1])
 
     setContextAttribute(
@@ -2747,8 +2798,8 @@ export class Game {
 
     const viewLeft = -vp[0] - 80
     const viewTop = -vp[1] - 80
-    const viewRight = -vp[0] + this.screenW + 80
-    const viewBottom = -vp[1] + this.screenH + 80
+    const viewRight = -vp[0] + viewW + 80
+    const viewBottom = -vp[1] + viewH + 80
     for (let i = 0; i < this.live.length; i++) {
       const e = this.live[i]
       if (!this.onScreen(e, viewLeft, viewTop, viewRight, viewBottom)) continue
@@ -2871,17 +2922,49 @@ export class Game {
 
     const cx = this.screenW / 2
     const cy = this.screenH / 2
-    const hudRight = this.screenW - 50
+    const hudRight = z < 1 ? this.screenW - 20 : this.screenW - 50
+    const hudLeft = z < 1 ? 52 : 80
+    const top = z < 1 ? 36 : 60
+    const row = z < 1 ? 34 : 50
     ctx.save()
-    displaySegmentWord(ctx, this.score.toFixed(0), hudRight, 60, 18, [9, 0], 1)
-    displaySegmentWord(ctx, `x${this.multiplier}`, hudRight, 110, 9, [24, 0], 1)
-    displayWord(ctx, `${t('lives')} ${this.lives}`, 80, 60, 9, [0, 13])
-    displayWord(ctx, `${t('bombs')} ${this.bombs}`, 80, 100, 9, [0, 9])
-    this.drawLevel(cx)
+    displaySegmentWord(
+      ctx,
+      this.score.toFixed(0),
+      hudRight,
+      top,
+      18 * z,
+      [9, 0],
+      1,
+    )
+    displaySegmentWord(
+      ctx,
+      `x${this.multiplier}`,
+      hudRight,
+      top + row,
+      9 * z,
+      [24, 0],
+      1,
+    )
+    displayWord(
+      ctx,
+      `${t('lives')} ${this.lives}`,
+      hudLeft,
+      top,
+      9 * z,
+      [0, 13],
+    )
+    displayWord(
+      ctx,
+      `${t('bombs')} ${this.bombs}`,
+      hudLeft,
+      top + row,
+      9 * z,
+      [0, 9],
+    )
+    this.drawLevel(cx, top, z)
 
     for (const m of this.floatMsgs) {
-      const sx = m.x + vp[0]
-      const sy = m.y + vp[1]
+      const [sx, sy] = this.worldToScreen(m.x, m.y)
       if (
         sx < 20 ||
         sx > this.screenW - 20 ||

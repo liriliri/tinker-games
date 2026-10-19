@@ -8,7 +8,7 @@ import { createMenuButton } from '../ui/createMenuButton'
 import { createSoundButton } from '../ui/createSoundButton'
 import { addSharpText } from '../ui/sharpText'
 import { fillSmoothRoundedRect } from '../ui/drawRoundedRect'
-import { SCENE_MENU } from '../scenes/keys'
+import { SCENE_MENU } from '../scenes/MenuScene'
 
 export class ScorePanel {
   private root: Phaser.GameObjects.Container

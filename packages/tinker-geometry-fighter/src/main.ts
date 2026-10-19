@@ -17,6 +17,9 @@ async function init() {
       antialiasGL: true,
       roundPixels: false,
     },
+    input: {
+      activePointers: 2,
+    },
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,

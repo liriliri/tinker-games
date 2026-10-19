@@ -33,7 +33,8 @@ import filter from 'licia/filter'
 import map from 'licia/map'
 import range from 'licia/range'
 import shuffle from 'licia/shuffle'
-import { SCENE_GAME } from './keys'
+
+export const SCENE_GAME = 'GameScene'
 
 type GridPosition = {
   x: number

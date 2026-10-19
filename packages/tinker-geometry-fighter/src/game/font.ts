@@ -1,3 +1,5 @@
+import contain from 'licia/contain'
+import every from 'licia/every'
 import { setContextAttribute } from './colors'
 import { getFontFamily } from '../lib/i18n'
 
@@ -87,11 +89,7 @@ function drawWordCenter(
 }
 
 function canUseSegmentFont(word: string) {
-  const lower = word.toLowerCase()
-  for (let i = 0; i < lower.length; i++) {
-    if (MAP_LETTERS.indexOf(lower[i]) === -1) return false
-  }
-  return true
+  return every(word.toLowerCase(), (ch) => contain(MAP_LETTERS, ch))
 }
 
 function displayCanvasWord(

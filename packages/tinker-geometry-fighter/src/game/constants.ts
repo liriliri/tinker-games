@@ -6,8 +6,8 @@ export const FH = 600
  * Base GW is 33×22 → 133×89; we use a larger 52×34 field.
  * UNIT = pixels per grid unit (keeps speeds/radii in screen space).
  */
-export const OG_W = 209
-export const OG_H = 137
+const OG_W = 209
+const OG_H = 137
 export const UNIT = 8
 
 /** Playable map in pixels (span between first and last grid points). */
@@ -16,10 +16,6 @@ export const MAP_H = (OG_H - 1) * UNIT
 
 /** One major GW cell (4 OpenGW units) — neon grid spacing. */
 export const TILESET = 4 * UNIT
-
-/** Gameplay coords = map pixels. */
-export const GRID_W = MAP_W
-export const GRID_H = MAP_H
 
 /** OpenGW spawn distances × UNIT. */
 export const SPAWN_MARGIN = 15 * UNIT

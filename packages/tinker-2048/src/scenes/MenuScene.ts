@@ -11,7 +11,9 @@ import { applyRenderScale, RELAYOUT_EVENT, s } from '../lib/scale'
 import { createButton } from '../ui/createButton'
 import { addSharpText } from '../ui/sharpText'
 import { MenuBackground } from './MenuBackground'
-import { SCENE_GAME, SCENE_MENU } from './keys'
+import { SCENE_GAME } from './GameScene'
+
+export const SCENE_MENU = 'Menu'
 
 const MENU_BUTTON_WIDTH = 200
 const MENU_BUTTON_HEIGHT = 48

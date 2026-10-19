@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
 import { GlowPipeline } from '../game/GlowPipeline'
-import { SCENE_BOOT, SCENE_GAME } from './keys'
+import { SCENE_GAME } from './GameScene'
+
+export const SCENE_BOOT = 'Boot'
 
 export class BootScene extends Phaser.Scene {
   constructor() {
