@@ -42,8 +42,6 @@ const OTHER_SOUNDS: SoundName[] = [
 
 const pool = new Map<SoundName, Howl>()
 let charging = false
-let chargeIntroId: number | null = null
-let chargeLoopId: number | null = null
 
 function ensure(name: SoundName): Howl {
   let sound = pool.get(name)
@@ -70,21 +68,11 @@ function stop(name: SoundName) {
 
 function stopCharge() {
   charging = false
-  const intro = pool.get('charge-intro')
-  intro?.off('end')
-  if (chargeIntroId != null) {
-    intro?.stop(chargeIntroId)
-    chargeIntroId = null
-  }
+  pool.get('charge-intro')?.off('end')
   stop('charge-intro')
-  if (chargeLoopId != null) {
-    pool.get('charge-loop')?.stop(chargeLoopId)
-    chargeLoopId = null
-  }
   stop('charge-loop')
 }
 
-/** Prefetch charge SFX first, then the rest — call at game boot. */
 export function preloadAudio() {
   for (const name of CHARGE_SOUNDS) ensure(name)
   for (const name of OTHER_SOUNDS) ensure(name)
@@ -101,19 +89,23 @@ export function unlockAudio() {
 export function playCharge() {
   charging = true
   stop('charge-loop')
-  chargeLoopId = null
   const intro = ensure('charge-intro')
   intro.off('end')
-  chargeIntroId = intro.play()
+  intro.play()
   intro.once('end', () => {
     if (!charging) return
-    chargeLoopId = play('charge-loop')
+    play('charge-loop')
   })
 }
 
 /** Original has no dedicated jump SFX — charge stop is the cue. */
 export function playJump() {
   stopCharge()
+}
+
+function playSting(name: SoundName) {
+  stopCharge()
+  play(name)
 }
 
 /** Original: always success; on perfect also combo{N} (perfect.mp3 is unused). */
@@ -126,14 +118,12 @@ export function playLand(perfect: boolean, comboIndex = 1) {
 }
 
 export function playFall() {
-  stopCharge()
-  play('fall')
+  playSting('fall')
 }
 
 /** Drop off a platform edge (vs open-air miss). */
 export function playFallEdge() {
-  stopCharge()
-  play('fall-edge')
+  playSting('fall-edge')
 }
 
 export function playPop() {
@@ -141,6 +131,5 @@ export function playPop() {
 }
 
 export function playRestart() {
-  stopCharge()
-  play('restart')
+  playSting('restart')
 }

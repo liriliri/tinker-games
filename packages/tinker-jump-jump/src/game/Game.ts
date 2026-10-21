@@ -10,7 +10,7 @@ import {
   BLOCK,
   BOTTLE,
   CAMERA_OFFSET,
-  FRUSTUM_HEIGHT,
+  frustumHeightForAspect,
   GAME,
   type GameState,
 } from './constants'
@@ -83,20 +83,12 @@ export class Game {
     // Original jump-jump has no filmic curve — keep midtones bright and flat.
     this.renderer.toneMapping = THREE.NoToneMapping
     this.renderer.setPixelRatio(min(window.devicePixelRatio, 2))
-    this.renderer.setSize(window.innerWidth, window.innerHeight)
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.BasicShadowMap
     document.body.appendChild(this.renderer.domElement)
 
-    const aspect = window.innerWidth / window.innerHeight
-    this.camera = new THREE.OrthographicCamera(
-      (-FRUSTUM_HEIGHT * aspect) / 2,
-      (FRUSTUM_HEIGHT * aspect) / 2,
-      FRUSTUM_HEIGHT / 2,
-      -FRUSTUM_HEIGHT / 2,
-      -50,
-      120,
-    )
+    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -50, 120)
+    this.applyViewport()
     this.scene.add(this.camera)
 
     // Soft room lighting so bottle clearcoat picks up opaque-glass reflections.
@@ -164,11 +156,18 @@ export class Game {
       this.restart()
     })
 
-    window.addEventListener('pointerdown', this.onPointerDown)
+    window.addEventListener('pointerdown', this.onPointerDown, {
+      passive: false,
+    })
     window.addEventListener('pointerup', this.onPointerUp)
+    window.addEventListener('contextmenu', (event) => {
+      event.preventDefault()
+    })
     window.addEventListener('pointercancel', this.onPointerUp)
     window.addEventListener('blur', this.onPointerUp)
-    window.addEventListener('resize', () => this.onResize())
+    window.addEventListener('resize', this.applyViewport)
+    window.visualViewport?.addEventListener('resize', this.applyViewport)
+    window.visualViewport?.addEventListener('scroll', this.syncCanvasOffset)
     window.addEventListener(
       'keydown',
       (e) => {
@@ -258,7 +257,7 @@ export class Game {
     this.lastTime = t
 
     if (this.state === 'charging') {
-      this.currentBlock.update(dt)
+      this.currentBlock.update()
       this.bottle.update(dt)
     } else if (this.state === 'jumping') {
       this.bottle.update(dt)
@@ -511,12 +510,16 @@ export class Game {
     )
   }
 
-  private snapCamera() {
-    this.camera.position.set(
+  private cameraFocus() {
+    return new THREE.Vector3(
       this.cameraTarget.x + CAMERA_OFFSET.x,
       this.cameraTarget.y + CAMERA_OFFSET.y,
       this.cameraTarget.z + CAMERA_OFFSET.z,
     )
+  }
+
+  private snapCamera() {
+    this.camera.position.copy(this.cameraFocus())
     // Orientation is set once; later updates only translate (like the original).
     this.camera.up.set(0, 1, 0)
     this.camera.lookAt(
@@ -528,11 +531,7 @@ export class Game {
   }
 
   private updateCamera(dt: number) {
-    const desired = new THREE.Vector3(
-      this.cameraTarget.x + CAMERA_OFFSET.x,
-      this.cameraTarget.y + CAMERA_OFFSET.y,
-      this.cameraTarget.z + CAMERA_OFFSET.z,
-    )
+    const desired = this.cameraFocus()
     // Pure translation — do not re-lookAt, or a lagging position would yaw/pitch.
     this.camera.position.lerp(desired, clamp(dt * 3.2, 0, 1))
     this.syncLightAndGround()
@@ -558,6 +557,8 @@ export class Game {
 
   private onPointerDown = (event: PointerEvent) => {
     if ((event.target as HTMLElement | null)?.closest?.('#overlay')) return
+    // Claim the touch so a long press does not open the browser context menu.
+    event.preventDefault()
     this.beginCharge()
   }
 
@@ -565,15 +566,27 @@ export class Game {
     this.endCharge()
   }
 
-  private onResize() {
-    const w = window.innerWidth
-    const h = window.innerHeight
-    const aspect = w / h
-    this.renderer.setSize(w, h)
-    this.camera.left = (-FRUSTUM_HEIGHT * aspect) / 2
-    this.camera.right = (FRUSTUM_HEIGHT * aspect) / 2
-    this.camera.top = FRUSTUM_HEIGHT / 2
-    this.camera.bottom = -FRUSTUM_HEIGHT / 2
+  private syncCanvasOffset = () => {
+    const vv = window.visualViewport
+    const canvas = this.renderer.domElement
+    canvas.style.left = `${vv?.offsetLeft ?? 0}px`
+    canvas.style.top = `${vv?.offsetTop ?? 0}px`
+  }
+
+  private applyViewport = () => {
+    this.syncCanvasOffset()
+    const vv = window.visualViewport
+    const width = vv?.width ?? window.innerWidth
+    const height = vv?.height ?? window.innerHeight
+    const aspect = max(width, 1) / max(height, 1)
+    const frustumHeight = frustumHeightForAspect(aspect)
+
+    this.renderer.setSize(width, height)
+
+    this.camera.left = (-frustumHeight * aspect) / 2
+    this.camera.right = (frustumHeight * aspect) / 2
+    this.camera.top = frustumHeight / 2
+    this.camera.bottom = -frustumHeight / 2
     this.camera.updateProjectionMatrix()
   }
 }

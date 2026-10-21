@@ -1,7 +1,6 @@
 type Locale = 'en' | 'zh-CN'
 
 interface Messages {
-  title: string
   score: string
   best: string
   hint: string
@@ -12,7 +11,6 @@ interface Messages {
 
 const messages: Record<Locale, Messages> = {
   en: {
-    title: 'Jump Jump',
     score: 'Score',
     best: 'Best',
     hint: 'Hold to charge · Release to jump',
@@ -21,7 +19,6 @@ const messages: Record<Locale, Messages> = {
     newBest: 'New best',
   },
   'zh-CN': {
-    title: '跳一跳',
     score: '分数',
     best: '最佳',
     hint: '长按蓄力 · 松手起跳',

@@ -100,7 +100,6 @@ function tween(
   }
 }
 
-/** Animate numeric properties on an object (mutates in place). */
 export function tweenProps(
   target: TweenTarget,
   to: TweenTarget,

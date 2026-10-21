@@ -10,7 +10,6 @@ const shared: Record<ShadowKind, THREE.BufferGeometry | null> = {
 }
 
 function boxShadowShape(): THREE.Shape {
-  // Chamfered square.
   const s = 5.5
   const shape = new THREE.Shape()
   shape.moveTo(-s, s)

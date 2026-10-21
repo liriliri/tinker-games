@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import max from 'licia/max'
 import type { Bottle } from './Bottle'
 
 const LIFETIME_MS = 100
@@ -86,8 +87,7 @@ export class TailSystem {
     for (let h = 1; h <= count; h++) {
       const t = h / steps
       this.tmpTo.copy(this.lastDot).lerp(this.now, t)
-      let scaleY = 1 + (dtMs / LIFETIME_MS) * (t - 1)
-      if (scaleY < 0) scaleY = 0
+      const scaleY = max(0, 1 + (dtMs / LIFETIME_MS) * (t - 1))
       this.lay(prev, this.tmpTo, scaleY)
       prev = this.tmpTo.clone()
       if (h === count) this.lastDot.copy(this.tmpTo)

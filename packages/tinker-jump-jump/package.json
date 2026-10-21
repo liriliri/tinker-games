@@ -1,6 +1,6 @@
 {
   "name": "tinker-jump-jump",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Hold to charge, release to jump — land on the next platform!",
   "files": [
     "dist/",

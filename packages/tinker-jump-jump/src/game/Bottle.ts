@@ -48,7 +48,6 @@ export class Bottle {
         ior: 1.5,
       })
 
-    // Two-tone dark blue glass.
     const headMat = glass(0x1e4a8c)
     const bodyMat = glass(0x0f2d5c)
 
@@ -195,7 +194,7 @@ export class Bottle {
     )
   }
 
-  showup(onDone?: () => void) {
+  showup() {
     this.status = 'showup'
     this.human.rotation.set(0, 0, 0)
     this.body.scale.set(1, 1, 1)
@@ -214,7 +213,6 @@ export class Bottle {
         onComplete: () => {
           this.status = 'stop'
           this.obj.position.y = BLOCK.height / 2
-          onDone?.()
         },
       },
     )

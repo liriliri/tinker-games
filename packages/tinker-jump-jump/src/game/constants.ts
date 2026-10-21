@@ -1,3 +1,5 @@
+import max from 'licia/max'
+
 export type GameState = 'ready' | 'charging' | 'jumping' | 'gameover'
 
 /** Palette from the original WeChat jump-jump config. */
@@ -77,15 +79,57 @@ export const GAME = {
   groundY: -BLOCK.height / 2 - 0.3,
 } as const
 
-/** World units visible vertically; wider landscape just expands X coverage. */
-export const FRUSTUM_HEIGHT = 38
-
 /**
  * Camera offset from the focus point. Original jump-jump looks along (1,-1,-1)
  * (camera − lookAt = (−30, 30, 30)), so a world-axis box top reads as a
  * diamond with its vertical diagonal on screen.
  */
 export const CAMERA_OFFSET = { x: -30, y: 30, z: 30 } as const
+
+/**
+ * World units visible vertically on wide screens. Narrow screens grow this
+ * (see `frustumHeightForAspect`) so the width never clips a max-length jump.
+ */
+const FRUSTUM_HEIGHT = 38
+
+/**
+ * Orthographic height for a viewport aspect (width / height).
+ * Landscape keeps `FRUSTUM_HEIGHT` and lets width grow. Portrait would
+ * otherwise shrink width below the two platforms, so the height grows until
+ * the horizontal span fits a max-distance pair of full-size blocks.
+ */
+export function frustumHeightForAspect(aspect: number): number {
+  if (FRUSTUM_HEIGHT * aspect >= MIN_JUMP_VIEW_WIDTH) return FRUSTUM_HEIGHT
+  return MIN_JUMP_VIEW_WIDTH / aspect
+}
+
+/** Keep outer block corners off the screen edge. */
+const FRUSTUM_WIDTH_MARGIN = 1.25
+
+/**
+ * On-screen width of two full-size blocks at `BLOCK.maxDistance`, plus margin.
+ * Uses the same camera basis as `lookAt` (up = +Y): right = normalize(up × offset).
+ */
+function maxJumpViewWidth(): number {
+  const radius = BLOCK.radius
+  const centerOffset = (radius * 2 + BLOCK.maxDistance) / 2
+  const zLen = Math.hypot(CAMERA_OFFSET.x, CAMERA_OFFSET.y, CAMERA_OFFSET.z)
+  const zx = CAMERA_OFFSET.x / zLen
+  const zz = CAMERA_OFFSET.z / zLen
+  // up (0, 1, 0) × offset → (zz, 0, −zx)
+  const xLen = Math.hypot(zz, zx)
+  const rightX = zz / xLen
+  const rightZ = -zx / xLen
+  const absX = Math.abs(rightX)
+  const absZ = Math.abs(rightZ)
+  return (
+    (centerOffset * max(absX, absZ) + radius * (absX + absZ)) *
+    2 *
+    FRUSTUM_WIDTH_MARGIN
+  )
+}
+
+const MIN_JUMP_VIEW_WIDTH = maxJumpViewWidth()
 
 export const WAVE = {
   innerRadius: 2.2,

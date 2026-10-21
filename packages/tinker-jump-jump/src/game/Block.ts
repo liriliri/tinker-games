@@ -134,16 +134,7 @@ export class Block {
 
   static createStarter(): Block {
     // Default green theme like original greenMaterial / whiteMaterial.
-    const block = new Block(
-      'box',
-      COLORS.blockGreen,
-      COLORS.platformWhite,
-      false,
-    )
-    block.radiusScale = 1
-    block.radius = BLOCK.radius
-    block.obj.scale.set(1, 1, 1)
-    return block
+    return new Block('box', COLORS.blockGreen, COLORS.platformWhite, false)
   }
 
   randomizeScale() {
@@ -202,7 +193,7 @@ export class Block {
     this.scale = 1
   }
 
-  update(_dt: number) {
+  update() {
     if (this.status !== 'shrink') return
     if (this.scale <= BLOCK.minScale) return
     this.scale = clamp(this.scale - BLOCK.reduction, BLOCK.minScale, 1)
