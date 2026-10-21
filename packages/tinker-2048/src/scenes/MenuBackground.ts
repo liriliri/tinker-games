@@ -1,11 +1,11 @@
 import Phaser from 'phaser'
 import random from 'licia/random'
 import randomItem from 'licia/randomItem'
-import type { Direction } from '../game/GameManager'
-import { getTileStyle } from '../ui/constants'
+import { directionVector, type Direction } from '../game/GameManager'
 import { FIELD_WIDTH, GAME_HEIGHT, TILE_BORDER_RADIUS } from '../lib/layout'
 import { s, sf } from '../lib/scale'
-import { fillSmoothRoundedRect } from '../ui/drawRoundedRect'
+import { fillSmoothRoundedRect } from '../lib/util'
+import { getTileStyle } from '../ui/constants'
 import { sharpTextStyle } from '../ui/sharpText'
 
 const MAX_TILES = 14
@@ -46,16 +46,6 @@ export class MenuBackground {
 
   private randomDirection(): Direction {
     return random(0, 3) as Direction
-  }
-
-  private velocity(direction: Direction, speed: number) {
-    const map: Record<Direction, { vx: number; vy: number }> = {
-      0: { vx: 0, vy: -speed },
-      1: { vx: speed, vy: 0 },
-      2: { vx: 0, vy: speed },
-      3: { vx: -speed, vy: 0 },
-    }
-    return map[direction]
   }
 
   private isHorizontal(direction: Direction) {
@@ -306,9 +296,9 @@ export class MenuBackground {
 
   private moveTile(tile: BackgroundTile, delta: number) {
     const dt = delta / 1000
-    const { vx, vy } = this.velocity(tile.direction, tile.speed)
-    let x = tile.container.x + vx * dt
-    let y = tile.container.y + vy * dt
+    const vector = directionVector(tile.direction)
+    let x = tile.container.x + vector.x * tile.speed * dt
+    let y = tile.container.y + vector.y * tile.speed * dt
 
     const min = tile.half
     const maxX = this.width - tile.half

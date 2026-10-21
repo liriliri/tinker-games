@@ -13,6 +13,10 @@ const DIRECTION_VECTORS: Record<Direction, Position> = {
   3: { x: -1, y: 0 },
 }
 
+export function directionVector(direction: Direction): Position {
+  return DIRECTION_VECTORS[direction]
+}
+
 export interface GameMetadata {
   score: number
   over: boolean
@@ -46,7 +50,7 @@ export class GameManager {
   move(direction: Direction) {
     if (this.isGameTerminated()) return
 
-    const vector = this.getVector(direction)
+    const vector = directionVector(direction)
     const traversals = this.buildTraversals(vector)
     let moved = false
     let merged = false
@@ -196,10 +200,6 @@ export class GameManager {
     tile.updatePosition(cell)
   }
 
-  private getVector(direction: Direction): Position {
-    return DIRECTION_VECTORS[direction]
-  }
-
   private buildTraversals(vector: Position) {
     const traversals = {
       x: range(this.grid.size),
@@ -232,7 +232,7 @@ export class GameManager {
         const tile = this.grid.cellContent({ x, y })
         if (tile) {
           for (let direction = 0; direction < 4; direction++) {
-            const vector = this.getVector(direction as Direction)
+            const vector = directionVector(direction as Direction)
             const cell = { x: x + vector.x, y: y + vector.y }
             const other = this.grid.cellContent(cell)
             if (other && other.value === tile.value) return true

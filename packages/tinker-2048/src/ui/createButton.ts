@@ -1,9 +1,12 @@
 import Phaser from 'phaser'
 import { COLORS } from './constants'
 import { s } from '../lib/scale'
-import { fillSmoothRoundedRect } from './drawRoundedRect'
+import {
+  fillSmoothRoundedRect,
+  setCenterHitArea,
+  tweenScale,
+} from '../lib/util'
 import { sharpTextStyle } from './sharpText'
-import { tweenScale } from './tweenScale'
 
 function drawButtonBg(
   bg: Phaser.GameObjects.Graphics,
@@ -39,16 +42,7 @@ export function createButton(
   drawButtonBg(bg, width, scaledHeight, COLORS.button)
 
   const container = scene.add.container(s(x), s(y), [bg, text])
-  container.setInteractive({
-    hitArea: new Phaser.Geom.Rectangle(
-      -width / 2,
-      -scaledHeight / 2,
-      width,
-      scaledHeight,
-    ),
-    hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-    useHandCursor: true,
-  })
+  setCenterHitArea(container, width, scaledHeight)
 
   let hovered = false
 

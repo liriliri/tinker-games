@@ -1,4 +1,3 @@
-import Phaser from 'phaser'
 import {
   FIELD_WIDTH,
   GAME_CONTAINER_Y,
@@ -22,13 +21,4 @@ export function tilePosition(position: Position, tileSize: number) {
       s(GRID_SPACING) +
       position.y * (tileSize + s(GRID_SPACING)),
   }
-}
-
-export function boardBounds() {
-  return new Phaser.Geom.Rectangle(
-    s(GRID_SPACING),
-    s(GAME_CONTAINER_Y),
-    s(FIELD_WIDTH),
-    s(FIELD_WIDTH),
-  )
 }

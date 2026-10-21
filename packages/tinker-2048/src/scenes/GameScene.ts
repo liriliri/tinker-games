@@ -133,12 +133,7 @@ export class GameScene extends Phaser.Scene implements Actuator {
   }
 
   private syncSwipeBounds() {
-    this.swipeBounds.setTo(
-      this.board.bounds.x,
-      this.board.bounds.y,
-      this.board.bounds.width,
-      this.board.bounds.height,
-    )
+    this.swipeBounds.setTo(0, 0, this.scale.width, this.scale.height)
     this.swipeBinding?.updateBounds(this.swipeBounds)
   }
 

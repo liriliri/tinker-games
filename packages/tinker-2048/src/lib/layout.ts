@@ -3,7 +3,7 @@ export const GRID_SIZE = 4
 export const GRID_SPACING = 15
 export const TILE_BORDER_RADIUS = 6
 export const GAME_CONTAINER_BORDER_RADIUS = 12
-export const GAME_CONTAINER_MARGIN_TOP = 20
+const GAME_CONTAINER_MARGIN_TOP = 20
 export const GAME_CONTAINER_MARGIN_BOTTOM = 40
 
 const HEADER_HEIGHT = 55

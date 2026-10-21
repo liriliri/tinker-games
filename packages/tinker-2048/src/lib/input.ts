@@ -16,7 +16,9 @@ const KEY_MAP: Record<number, Direction> = {
   65: 3,
 }
 
-const SWIPE_THRESHOLD = 10
+const SWIPE_THRESHOLD_PX = 40
+const WHEEL_THRESHOLD = 64
+const WHEEL_GAP_MS = 140
 const STICK_THRESHOLD = 0.5
 
 export interface SwipeBinding {
@@ -58,40 +60,134 @@ export function bindKeyboard(
   }
 }
 
+function swipeDirection(dx: number, dy: number, threshold: number) {
+  const absDx = Math.abs(dx)
+  const absDy = Math.abs(dy)
+  if (Math.max(absDx, absDy) <= threshold) return
+
+  const direction: Direction = absDx > absDy ? (dx > 0 ? 1 : 3) : dy > 0 ? 2 : 0
+  return direction
+}
+
 export function bindSwipe(
   scene: Phaser.Scene,
   bounds: Phaser.Geom.Rectangle,
   onMove: (direction: Direction) => void,
 ): SwipeBinding {
-  const zone = scene.add
-    .zone(bounds.x, bounds.y, bounds.width, bounds.height)
-    .setOrigin(0)
-    .setDepth(1)
-    .setInteractive()
+  const area = new Phaser.Geom.Rectangle(
+    bounds.x,
+    bounds.y,
+    bounds.width,
+    bounds.height,
+  )
+  let gesture: { id: number; x: number; y: number; fired: boolean } | undefined
+  let wheelX = 0
+  let wheelY = 0
+  let wheelLockUntil = 0
 
-  const onPointerUp = (pointer: Phaser.Input.Pointer) => {
-    const dx = pointer.upX - pointer.downX
-    const dy = pointer.upY - pointer.downY
-    const absDx = Math.abs(dx)
-    const absDy = Math.abs(dy)
-
-    if (Math.max(absDx, absDy) <= SWIPE_THRESHOLD) return
-
-    const direction: Direction =
-      absDx > absDy ? (dx > 0 ? 1 : 3) : dy > 0 ? 2 : 0
+  const commit = (dx: number, dy: number, threshold: number) => {
+    const direction = swipeDirection(dx, dy, threshold)
+    if (direction === undefined) return false
     onMove(direction)
+    return true
   }
 
-  zone.on('pointerup', onPointerUp)
+  const pointerThreshold = () =>
+    SWIPE_THRESHOLD_PX * (scene.scale.displayScale.x || 1)
+
+  // Object pointerup only fires when the pointer is released over that object,
+  // so a swipe that leaves the board is dropped. Follow the gesture on the scene
+  // and commit as soon as it clears the threshold.
+  const onPointerDown = (
+    pointer: Phaser.Input.Pointer,
+    currentlyOver: Phaser.GameObjects.GameObject[],
+  ) => {
+    if (currentlyOver.length > 0) {
+      gesture = undefined
+      return
+    }
+    if (!pointer.wasTouch && pointer.button !== 0) return
+    if (!area.contains(pointer.x, pointer.y)) return
+
+    gesture = { id: pointer.id, x: pointer.x, y: pointer.y, fired: false }
+  }
+
+  const onPointerMove = (pointer: Phaser.Input.Pointer) => {
+    if (
+      !gesture ||
+      gesture.id !== pointer.id ||
+      gesture.fired ||
+      !pointer.isDown
+    ) {
+      return
+    }
+    if (
+      commit(pointer.x - gesture.x, pointer.y - gesture.y, pointerThreshold())
+    ) {
+      gesture.fired = true
+    }
+  }
+
+  const onPointerUp = (pointer: Phaser.Input.Pointer) => {
+    if (!gesture || gesture.id !== pointer.id) return
+    if (!gesture.fired) {
+      commit(pointer.x - gesture.x, pointer.y - gesture.y, pointerThreshold())
+    }
+    gesture = undefined
+  }
+
+  const onWheel = (
+    pointer: Phaser.Input.Pointer,
+    _currentlyOver: Phaser.GameObjects.GameObject[],
+    deltaX: number,
+    deltaY: number,
+  ) => {
+    const now = scene.time.now
+    if (now < wheelLockUntil) {
+      wheelLockUntil = now + WHEEL_GAP_MS
+      wheelX = 0
+      wheelY = 0
+      return
+    }
+
+    const wheel = pointer.event as WheelEvent | undefined
+    const unit =
+      wheel?.deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? 16
+        : wheel?.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? scene.scale.height
+          : 1
+
+    wheelX += deltaX * unit
+    wheelY += deltaY * unit
+    if (!commit(wheelX, wheelY, WHEEL_THRESHOLD)) return
+
+    wheelX = 0
+    wheelY = 0
+    wheelLockUntil = now + WHEEL_GAP_MS
+  }
+
+  scene.input.on('pointerdown', onPointerDown)
+  scene.input.on('pointermove', onPointerMove)
+  scene.input.on('pointerup', onPointerUp)
+  scene.input.on('pointerupoutside', onPointerUp)
+  scene.input.on('wheel', onWheel)
 
   return {
     updateBounds(nextBounds) {
-      zone.setPosition(nextBounds.x, nextBounds.y)
-      zone.setSize(nextBounds.width, nextBounds.height)
+      area.setTo(
+        nextBounds.x,
+        nextBounds.y,
+        nextBounds.width,
+        nextBounds.height,
+      )
     },
     destroy() {
-      zone.off('pointerup', onPointerUp)
-      zone.destroy()
+      scene.input.off('pointerdown', onPointerDown)
+      scene.input.off('pointermove', onPointerMove)
+      scene.input.off('pointerup', onPointerUp)
+      scene.input.off('pointerupoutside', onPointerUp)
+      scene.input.off('wheel', onWheel)
     },
   }
 }
@@ -144,15 +240,8 @@ export function bindGamepad(
       !pad.right
 
     if (stickActive && !prevStickActive) {
-      const direction: Direction =
-        absX > absY
-          ? pad.leftStick.x > 0
-            ? 1
-            : 3
-          : pad.leftStick.y > 0
-            ? 2
-            : 0
-      onMove(direction)
+      const direction = swipeDirection(pad.leftStick.x, pad.leftStick.y, 0)
+      if (direction !== undefined) onMove(direction)
     }
 
     prevStickActive = stickActive

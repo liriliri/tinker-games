@@ -1,13 +1,13 @@
 import Phaser from 'phaser'
-import { COLORS } from '../ui/constants'
-import { FIELD_WIDTH } from '../lib/layout'
 import { t } from '../lib/i18n'
-import { getStorage } from '../lib/storage'
+import { FIELD_WIDTH } from '../lib/layout'
 import { s } from '../lib/scale'
+import { getStorage } from '../lib/storage'
+import { fillSmoothRoundedRect } from '../lib/util'
+import { COLORS } from '../ui/constants'
 import { createMenuButton } from '../ui/createMenuButton'
 import { createSoundButton } from '../ui/createSoundButton'
 import { addSharpText } from '../ui/sharpText'
-import { fillSmoothRoundedRect } from '../ui/drawRoundedRect'
 import { SCENE_MENU } from '../scenes/MenuScene'
 
 export class ScorePanel {
@@ -100,20 +100,38 @@ export class ScorePanel {
     const scoreX = centerX - (scoreBoxWidth + scoreBoxGap) / 2
     const bestX = centerX + (scoreBoxWidth + scoreBoxGap) / 2
 
-    this.scoreBox = this.createScoreBox(t('score'), scoreX, headerCenterY)
+    this.scoreBox = this.createScoreBox(
+      t('score'),
+      scoreX,
+      headerCenterY,
+      scoreBoxWidth,
+      scoreBoxHeight,
+    )
     this.scoreText = this.scoreBox.getByName('value') as Phaser.GameObjects.Text
     this.scoreText.setText(String(initialScore))
     this.root.add(this.scoreBox)
 
-    const bestBox = this.createScoreBox(t('best'), bestX, headerCenterY)
+    const bestBox = this.createScoreBox(
+      t('best'),
+      bestX,
+      headerCenterY,
+      scoreBoxWidth,
+      scoreBoxHeight,
+    )
     this.bestScoreText = bestBox.getByName('value') as Phaser.GameObjects.Text
     this.bestScoreText.setText(String(initialBestScore))
     this.root.add(bestBox)
   }
 
-  private createScoreBox(label: string, centerX: number, centerY: number) {
-    const width = s(75)
-    const height = s(55)
+  private createScoreBox(
+    label: string,
+    centerX: number,
+    centerY: number,
+    boxWidth: number,
+    boxHeight: number,
+  ) {
+    const width = s(boxWidth)
+    const height = s(boxHeight)
     const container = this.scene.add.container(s(centerX), s(centerY))
 
     const bg = this.scene.add.graphics()

@@ -7,18 +7,16 @@ import {
   TILE_BORDER_RADIUS,
 } from '../lib/layout'
 import { s } from '../lib/scale'
+import { fillSmoothRoundedRect } from '../lib/util'
 import { COLORS } from '../ui/constants'
-import { fillSmoothRoundedRect } from '../ui/drawRoundedRect'
-import { boardBounds, computeTileSize, tilePosition } from './gridLayout'
+import { computeTileSize, tilePosition } from './gridLayout'
 
 export class Board {
   readonly tileSize: number
-  readonly bounds: Phaser.Geom.Rectangle
   private gfx: Phaser.GameObjects.Graphics
 
   constructor(private scene: Phaser.Scene) {
     this.tileSize = computeTileSize()
-    this.bounds = boardBounds()
     this.gfx = scene.add.graphics()
     this.draw()
   }

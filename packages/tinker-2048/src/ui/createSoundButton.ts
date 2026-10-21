@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import { s } from '../lib/scale'
-import { tweenScale } from './tweenScale'
+import { setCenterHitArea, tweenScale } from '../lib/util'
 
 const SOUND_BUTTON_SIZE = 26
 
@@ -22,16 +22,7 @@ export function createSoundButton(
   }
 
   const container = scene.add.container(s(x), s(y), [icon])
-  container.setInteractive({
-    hitArea: new Phaser.Geom.Rectangle(
-      -scaledSize / 2,
-      -scaledSize / 2,
-      scaledSize,
-      scaledSize,
-    ),
-    hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-    useHandCursor: true,
-  })
+  setCenterHitArea(container, scaledSize, scaledSize)
 
   container.on('pointerover', () => {
     tweenScale(scene, container, 1.1)

@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import { s } from '../lib/scale'
-import { tweenScale } from './tweenScale'
+import { setCenterHitArea, tweenScale } from '../lib/util'
 
 const ICON_NORMAL = 0x776e65
 const ICON_HOVER = 0x5a524c
@@ -30,16 +30,7 @@ export function createMenuButton(
   drawIcon(ICON_NORMAL)
 
   const container = scene.add.container(s(x), s(y), [icon])
-  container.setInteractive({
-    hitArea: new Phaser.Geom.Rectangle(
-      -scaledSize / 2,
-      -scaledSize / 2,
-      scaledSize,
-      scaledSize,
-    ),
-    hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-    useHandCursor: true,
-  })
+  setCenterHitArea(container, scaledSize, scaledSize)
 
   let hovered = false
 
