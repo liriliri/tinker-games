@@ -1,0 +1,34 @@
+{
+  "name": "tinker-jigsaw",
+  "version": "0.1.0",
+  "description": "Drag the pieces together until the picture is whole again.",
+  "files": [
+    "dist/",
+    "icon.png"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
+  "keywords": [
+    "tinker",
+    "game"
+  ],
+  "tinker": {
+    "name": "Jigsaw",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "category": "entertainment",
+    "locales": {
+      "zh-CN": {
+        "name": "拼图",
+        "description": "把碎片拖回原位，拼出整张图。"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  }
+}
