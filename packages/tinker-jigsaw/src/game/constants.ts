@@ -19,6 +19,9 @@ export const COLORS = {
   ink: css(INK),
   inkMark: INK,
   paper: css(PAPER),
+  paperMark: PAPER,
+  // Darker than the page, so a print sits in a recess.
+  mat: 0x0c0b0a,
   star: STAR,
   starText: css(STAR),
   button: 0x000000,

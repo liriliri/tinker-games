@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { cutPiece, pieceTexture } from '../game/cutPiece'
 import { boardGrid, cutBoard, type PieceCut } from '../game/jigsaw'
 import { splitLevels } from '../game/splitLevels'
+import { keepsScore } from '../game/gallery'
 import { pictureCanvas, PREVIEW_TEXTURE } from '../game/paintPicture'
 import { BoardView, type PiecePlacement } from '../gameObjects/BoardView'
 import { ConfirmDialog } from '../gameObjects/ConfirmDialog'
@@ -38,6 +39,8 @@ export class GameScene extends Phaser.Scene {
   private texturedDeal = -1
   private dialog: ConfirmDialog | null = null
   private solvedTimer?: Phaser.Time.TimerEvent
+  private elapsedMs = 0
+  private clockRunning = false
   private combo = 0
   private comboUntil = 0
   private slowUntil = 0
@@ -70,6 +73,8 @@ export class GameScene extends Phaser.Scene {
     this.combo = 0
     this.comboUntil = 0
     this.slowUntil = 0
+    this.elapsedMs = 0
+    this.clockRunning = true
     this.dealId += 1
     this.rebuild()
   }
@@ -86,7 +91,10 @@ export class GameScene extends Phaser.Scene {
       this.columns * this.rows,
       this.levels,
       this.level,
-      getStorage(this).getBest(this.pictureId),
+      keepsScore(this.pictureId)
+        ? getStorage(this).getBest(this.pictureId)
+        : null,
+      this.elapsedMs,
       {
         onBack: () =>
           this.ask(t('leavePrompt'), () => this.scene.start(SCENE_GALLERY)),
@@ -100,23 +108,32 @@ export class GameScene extends Phaser.Scene {
       this,
       this.picture.width,
       this.picture.height,
-      this.levels[this.levels.length - 1],
       (nextPlaced, total) => {
         this.hud.setPlaced(nextPlaced, total)
         if (nextPlaced < total) return
-        const best = getStorage(this).recordClear(
-          this.pictureId,
-          this.levels.indexOf(this.level),
-        )
-        if (best !== null) this.hud.setBest(best)
+        this.clockRunning = false
+        if (keepsScore(this.pictureId)) {
+          const best = getStorage(this).recordClear(
+            this.pictureId,
+            this.levels.indexOf(this.level),
+          )
+          if (best !== null) this.hud.setBest(best)
+        }
         this.noteSolved()
       },
       () => this.fail(),
+      this.levels.indexOf(this.level),
       this.combo,
       this.comboUntil,
       this.slowUntil,
     )
     this.board.mount(this.cuts, this.placements)
+  }
+
+  update(_time: number, delta: number) {
+    if (!this.clockRunning || this.dialog) return
+    this.elapsedMs += delta
+    this.hud?.setTime(this.elapsedMs)
   }
 
   private syncTextures() {
@@ -155,6 +172,7 @@ export class GameScene extends Phaser.Scene {
       const dialog = this.dialog
       if (!dialog) return
       this.dialog = null
+      this.board?.setPaused(false)
       this.time.delayedCall(0, () => {
         dialog.destroy()
         next()
@@ -167,6 +185,7 @@ export class GameScene extends Phaser.Scene {
       () => finish(cancel),
       labels,
     )
+    this.board?.setPaused(true)
   }
 
   private fail() {
@@ -183,6 +202,7 @@ export class GameScene extends Phaser.Scene {
   private closeDialog() {
     this.dialog?.destroy()
     this.dialog = null
+    this.board?.setPaused(false)
   }
 
   private noteSolved() {

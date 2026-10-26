@@ -71,13 +71,22 @@ export class ConfirmDialog {
       s(PANEL_HEIGHT),
       s(3),
     )
-    panel.lineStyle(max(1, s(1)), COLORS.brass, 0.5)
+    panel.lineStyle(max(1, s(1)), COLORS.brass, 0.55)
     panel.strokeRoundedRect(
       s(panelX),
       s(panelY),
       s(PANEL_WIDTH),
       s(PANEL_HEIGHT),
       s(3),
+    )
+    const frame = s(4)
+    panel.lineStyle(max(1, s(1)), COLORS.brass, 0.18)
+    panel.strokeRoundedRect(
+      s(panelX) + frame,
+      s(panelY) + frame,
+      s(PANEL_WIDTH) - frame * 2,
+      s(PANEL_HEIGHT) - frame * 2,
+      s(2),
     )
     panel.setInteractive(
       new Phaser.Geom.Rectangle(

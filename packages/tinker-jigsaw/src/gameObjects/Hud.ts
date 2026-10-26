@@ -1,23 +1,27 @@
 import Phaser from 'phaser'
+import lpad from 'licia/lpad'
 import max from 'licia/max'
 import { COLORS } from '../game/constants'
-import { FIELD_WIDTH, HEADER_HEIGHT, HUD_TOP, PAGE_PAD } from '../lib/layout'
+import { BAR_HEIGHT, FIELD_WIDTH, PAGE_PAD } from '../lib/layout'
 import { s } from '../lib/scale'
 import type { SplitRank } from '../lib/storage'
 import { createTextButton } from '../ui/createTextButton'
 import { addCountText } from '../ui/sharpText'
+import { fillStar, traceStar } from '../ui/traceStar'
 
-const CHIP_HEIGHT = 18
-const CHIP_GAP = 4
-const CHIP_PAD_X = 7
-const STAR_OUTER = 3.5
-const STAR_INNER = 1.4
-const STAR_GAP = 8
-const BACK_SIZE = 18
+const CHIP_HEIGHT = 26
+const CHIP_GAP = 6
+const CHIP_PAD_X = 4
+const STAR_OUTER = 4.2
+const STAR_INNER = 1.7
+const STAR_GAP = 9
+const BACK_SIZE = 22
+const COUNT_GAP = 14
 
 export class Hud {
   private readonly root: Phaser.GameObjects.Container
   private readonly countText: Phaser.GameObjects.Text
+  private readonly timeText: Phaser.GameObjects.Text
   private readonly redrawChips: Array<() => void> = []
   private best: SplitRank | null
 
@@ -28,6 +32,7 @@ export class Hud {
     levels: number[],
     level: number,
     best: SplitRank | null,
+    elapsedMs: number,
     actions: {
       onBack: () => void
       onLevel: (level: number) => void
@@ -35,25 +40,34 @@ export class Hud {
   ) {
     this.best = best
     this.root = scene.add.container(0, 0).setDepth(10)
-
+    const midY = BAR_HEIGHT / 2
     const back = createTextButton(
       scene,
       '',
       PAGE_PAD + BACK_SIZE / 2,
-      HUD_TOP + HEADER_HEIGHT / 2,
+      midY,
       BACK_SIZE,
       BACK_SIZE,
       actions.onBack,
-      { mark: drawBackMark },
+      { round: true, mark: drawBackMark },
     )
 
     this.countText = addCountText(
       scene,
-      s(FIELD_WIDTH / 2),
-      s(HUD_TOP + HEADER_HEIGHT / 2),
+      s(PAGE_PAD + BACK_SIZE + COUNT_GAP),
+      s(midY),
       `${placed}/${total}`,
-      13,
-      { color: COLORS.paper, fontStyle: 'normal' },
+      14,
+      { color: COLORS.paper },
+    ).setOrigin(0, 0.5)
+
+    this.timeText = addCountText(
+      scene,
+      s(FIELD_WIDTH / 2),
+      s(midY - 1),
+      formatClock(elapsedMs),
+      18,
+      { color: COLORS.starText },
     ).setOrigin(0.5)
 
     const widths = levels.map((_, index) => starChipWidth(index + 1))
@@ -69,12 +83,12 @@ export class Hud {
         scene,
         '',
         x,
-        HUD_TOP + HEADER_HEIGHT / 2,
+        midY,
         width,
         CHIP_HEIGHT,
         () => actions.onLevel(chipLevel),
         {
-          brass: chipLevel === level,
+          bare: true,
           bindRedraw: (redraw) => this.redrawChips.push(redraw),
           mark: (graphics, tone) => {
             drawStars(
@@ -82,18 +96,30 @@ export class Hud {
               index + 1,
               this.best !== null && index <= this.best,
               chipLevel === level,
-              tone,
+              tone.alpha >= 1,
             )
           },
         },
       )
     })
 
-    this.root.add([back, this.countText, ...chips])
+    this.root.add([
+      drawClockMarks(scene),
+      back,
+      this.countText,
+      this.timeText,
+      ...chips,
+    ])
   }
 
   setPlaced(placed: number, total: number) {
     this.countText.setText(`${placed}/${total}`)
+  }
+
+  setTime(elapsedMs: number) {
+    const text = formatClock(elapsedMs)
+    if (text === this.timeText.text) return
+    this.timeText.setText(text)
   }
 
   setBest(best: SplitRank | null) {
@@ -106,6 +132,40 @@ export class Hud {
   }
 }
 
+function drawClockMarks(scene: Phaser.Scene) {
+  const marks = scene.add.graphics()
+  const center = s(FIELD_WIDTH / 2)
+  const y = s(BAR_HEIGHT / 2 - 1)
+  const apart = s(36)
+  diamond(marks, center - apart, y, s(2.6))
+  diamond(marks, center + apart, y, s(2.6))
+  const ruleY = y + s(15)
+  marks.lineStyle(max(1, s(1)), COLORS.star, 0.7)
+  marks.lineBetween(center - s(16), ruleY, center + s(16), ruleY)
+  return marks
+}
+
+function diamond(
+  graphics: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  radius: number,
+) {
+  graphics.fillStyle(COLORS.star, 0.9)
+  graphics.beginPath()
+  graphics.moveTo(x, y - radius)
+  graphics.lineTo(x + radius * 0.72, y)
+  graphics.lineTo(x, y + radius)
+  graphics.lineTo(x - radius * 0.72, y)
+  graphics.closePath()
+  graphics.fillPath()
+}
+
+function formatClock(elapsedMs: number) {
+  const total = Math.floor(max(0, elapsedMs) / 1000)
+  return `${Math.floor(total / 60)}:${lpad(String(total % 60), 2, '0')}`
+}
+
 function starChipWidth(count: number) {
   return CHIP_PAD_X * 2 + STAR_OUTER * 2 + (count - 1) * STAR_GAP
 }
@@ -114,8 +174,8 @@ function drawStars(
   graphics: Phaser.GameObjects.Graphics,
   count: number,
   filled: boolean,
-  ink: boolean,
-  tone: { color: number; alpha: number },
+  selected: boolean,
+  hot: boolean,
 ) {
   graphics.clear()
   const outer = s(STAR_OUTER)
@@ -125,41 +185,22 @@ function drawStars(
   for (let star = 0; star < count; star++) {
     const x = origin + star * gap
     if (filled) {
-      traceStar(graphics, x, 0, outer, inner)
-      graphics.fillStyle(COLORS.star, 1)
-      graphics.fillPath()
-      traceStar(graphics, x, 0, outer, inner)
-      graphics.lineStyle(max(1, s(0.7)), COLORS.inkMark, ink ? 0.55 : 0.28)
-      graphics.strokePath()
+      fillStar(graphics, x, 0, outer, inner, max(1, s(0.6)), 0.35)
       continue
     }
     traceStar(graphics, x, 0, outer, inner)
     graphics.lineStyle(
       max(1, s(0.9)),
-      ink ? COLORS.inkMark : tone.color,
-      ink ? 0.9 : tone.alpha,
+      COLORS.star,
+      selected ? 1 : hot ? 0.8 : 0.4,
     )
     graphics.strokePath()
   }
-}
-
-function traceStar(
-  graphics: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  outer: number,
-  inner: number,
-) {
-  graphics.beginPath()
-  for (let point = 0; point < 10; point++) {
-    const radius = point % 2 === 0 ? outer : inner
-    const angle = -Math.PI / 2 + (point * Math.PI) / 5
-    const px = x + Math.cos(angle) * radius
-    const py = y + Math.sin(angle) * radius
-    if (point === 0) graphics.moveTo(px, py)
-    else graphics.lineTo(px, py)
-  }
-  graphics.closePath()
+  if (!selected) return
+  const span = (count - 1) * gap + outer * 2
+  const y = outer + s(4)
+  graphics.lineStyle(max(1, s(1)), COLORS.star, 0.9)
+  graphics.lineBetween(-span / 2, y, span / 2, y)
 }
 
 function drawBackMark(
@@ -167,11 +208,11 @@ function drawBackMark(
   tone: { color: number; alpha: number },
 ) {
   graphics.clear()
-  graphics.lineStyle(max(1, s(1)), tone.color, tone.alpha)
-  const reach = s(3.5)
+  graphics.lineStyle(max(1, s(1.15)), tone.color, tone.alpha)
+  const reach = s(3.6)
   graphics.beginPath()
-  graphics.moveTo(reach * 0.45, -reach)
+  graphics.moveTo(reach * 0.4, -reach)
   graphics.lineTo(-reach * 0.55, 0)
-  graphics.lineTo(reach * 0.45, reach)
+  graphics.lineTo(reach * 0.4, reach)
   graphics.strokePath()
 }

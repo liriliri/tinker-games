@@ -1,5 +1,5 @@
 import { createCanvas, fitLongSide } from '../lib/util'
-import type { GalleryItem } from './gallery'
+import { CUSTOM_PICTURE_ID, type GalleryItem } from './gallery'
 
 const MAX_SIDE = 1920
 
@@ -20,6 +20,15 @@ export async function loadGalleryPictures(items: GalleryItem[]) {
       canvases.set(item.id, await paintFile(item.file))
     }),
   )
+}
+
+export async function rememberLocalPicture(file: Blob) {
+  const url = URL.createObjectURL(file)
+  try {
+    canvases.set(CUSTOM_PICTURE_ID, await paintFile(url))
+  } finally {
+    URL.revokeObjectURL(url)
+  }
 }
 
 async function paintFile(file: string) {

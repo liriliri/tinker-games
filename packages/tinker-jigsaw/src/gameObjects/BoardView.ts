@@ -5,9 +5,9 @@ import pluck from 'licia/pluck'
 import shuffle from 'licia/shuffle'
 import { COLORS, REST_SATURATION, SOLVED_FADE_MS } from '../game/constants'
 import { padRatio, pieceTexture, seamCanvas } from '../game/cutPiece'
-import { boardGrid, type PieceCut } from '../game/jigsaw'
+import { type PieceCut } from '../game/jigsaw'
 import { PREVIEW_TEXTURE } from '../game/paintPicture'
-import { FIELD_WIDTH, GAME_HEIGHT, HEADER_HEIGHT, HUD_TOP } from '../lib/layout'
+import { BAR_HEIGHT, BOARD_GAP, FIELD_WIDTH, GAME_HEIGHT } from '../lib/layout'
 import { s } from '../lib/scale'
 import { preloadSnapSound, playSnapSound } from '../lib/sound'
 import { motionDuration } from '../lib/util'
@@ -15,15 +15,19 @@ import { addCountText } from '../ui/sharpText'
 
 const SNAP_MS = 140
 const REJOIN_MS = 220
-const PARADE_MS = 108000
+// A denser board needs a longer lap. The base keeps a short puzzle from sprinting.
+const PARADE_BASE_MS = 30400
+const PARADE_PER_PIECE_MS = 646
 const QUEUE_SCALE = 0.32
+// Same long side on every picture and difficulty. Finer grids used to shrink the queue.
+const QUEUE_SLOT = 40
 const SEAM_TEXTURE = 'jigsaw-seams'
 const COMBO_MAX = 5
-// Long enough to pull the next card off the parade, short enough that waiting drops the chain.
-const COMBO_WINDOW_MS = 10000
-// A full lap is slow on purpose. Quarter speed is the crawl the combo buys.
-const COMBO_SLOW_SCALE = 0.25
-const COMBO_SLOW_MS = [0, 0, 2000, 3000, 4000]
+// Longer laps need a wider chain window.
+const COMBO_WINDOW_MS = [6000, 7500, 9000]
+// Combo slow is a softer crawl than a stop, long enough to grab the next card.
+const COMBO_SLOW_SCALE = 0.4
+const COMBO_SLOW_MS = [0, 0, 1600, 2400, 3200]
 const COMBO_REWIND_SLOTS = 3
 const REWIND_BUDGET_MS = 480
 const COMBO_FLOAT_MS = 670
@@ -68,6 +72,10 @@ export class BoardView {
   private grabY = 0
   private alive = true
   private failed = false
+  private paused = false
+  private pausedAt = 0
+  private paradeMs = PARADE_BASE_MS
+  private readonly comboWindowMs: number
   private combo: number
   private comboUntil: number
   private slowUntil: number
@@ -81,13 +89,15 @@ export class BoardView {
     private scene: Phaser.Scene,
     private pictureWidth: number,
     private pictureHeight: number,
-    private fineLevel: number,
     private onProgress: (placed: number, total: number) => void,
     private onFail: () => void,
+    rank = 0,
     combo = 0,
     comboUntil = 0,
     slowUntil = 0,
   ) {
+    this.comboWindowMs =
+      COMBO_WINDOW_MS[rank] ?? COMBO_WINDOW_MS[COMBO_WINDOW_MS.length - 1]
     this.combo = combo
     this.comboUntil = comboUntil
     this.slowUntil = slowUntil
@@ -96,6 +106,7 @@ export class BoardView {
   }
 
   mount(cuts: PieceCut[], placements: PiecePlacement[] | null) {
+    this.paradeMs = PARADE_BASE_MS + PARADE_PER_PIECE_MS * max(cuts.length, 1)
     this.cuts = cuts
     this.rows = max(...pluck(cuts, 'row')) + 1
     this.columns = max(...pluck(cuts, 'column')) + 1
@@ -121,16 +132,20 @@ export class BoardView {
 
   private showSolved(options: { animate?: boolean } = {}) {
     const animate = options.animate !== false
-    this.scene.tweens.killTweensOf([this.seams, this.finalImage])
+    // A drag lifts that piece above the solved picture, and the cut is drawn on the piece itself.
+    const pieces = [...this.images.values()]
+    const fading = [this.seams, ...pieces]
+    this.scene.tweens.killTweensOf([...fading, this.finalImage])
     const duration = animate ? motionDuration(SOLVED_FADE_MS) : 0
+    this.root.bringToTop(this.finalImage)
     if (duration === 0) {
-      this.seams.setAlpha(0)
+      for (const image of fading) image.setAlpha(0)
       this.finalImage.setAlpha(1)
       return
     }
 
     this.scene.tweens.add({
-      targets: this.seams,
+      targets: fading,
       alpha: 0,
       duration,
     })
@@ -174,58 +189,25 @@ export class BoardView {
     )
     const fieldW = s(FIELD_WIDTH)
     const fieldH = s(GAME_HEIGHT)
-    const top = s(HUD_TOP + HEADER_HEIGHT + 8)
+    const top = s(BAR_HEIGHT + BOARD_GAP)
     const gap = s(6)
-    // Sliding pieces stay the finest split's size, so coarser boards do not grow them.
-    const fine = boardGrid(
-      this.pictureWidth,
-      this.pictureHeight,
-      this.fineLevel,
-    )
-    const finePad = padRatio(
-      fine.columns,
-      fine.rows,
-      this.pictureWidth,
-      this.pictureHeight,
-    )
-    let lane = s(48)
-    const fit = (laneWidth: number) => {
-      const maxH = fieldH - top - laneWidth
-      const maxW = fieldW - laneWidth * 2
-      const contentW = min(
-        maxW,
-        (maxH * this.pictureWidth) / this.pictureHeight,
-      )
-      const contentH = (contentW * this.pictureHeight) / this.pictureWidth
-      const cellW = contentW / fine.columns
-      const cellH = contentH / fine.rows
-      const fullW = cellW * (1 + finePad.x * 2)
-      const fullH = cellH * (1 + finePad.y * 2)
-      return {
-        contentW,
-        contentH,
-        maxH,
-        slot: max(fullW, fullH) * QUEUE_SCALE,
-      }
-    }
-    for (let pass = 0; pass < 4; pass++) {
-      const fitted = fit(lane)
-      lane = fitted.slot + gap + s(4)
-    }
-    const fitted = fit(lane)
-    this.contentW = fitted.contentW
-    this.contentH = fitted.contentH
+    const slot = s(QUEUE_SLOT)
+    const lane = slot + gap + s(4)
+    const maxH = fieldH - top - lane
+    const maxW = fieldW - lane * 2
+    this.contentW = min(maxW, (maxH * this.pictureWidth) / this.pictureHeight)
+    this.contentH = (this.contentW * this.pictureHeight) / this.pictureWidth
     this.cellW = this.contentW / this.columns
     this.cellH = this.contentH / this.rows
     this.padX = this.cellW * pad.x
     this.padY = this.cellH * pad.y
     this.fullW = this.cellW * (1 + pad.x * 2)
     this.fullH = this.cellH * (1 + pad.y * 2)
-    const slide = fitted.slot / max(this.fullW, this.fullH)
+    const slide = slot / max(this.fullW, this.fullH)
     this.queueW = this.fullW * slide
     this.queueH = this.fullH * slide
     this.originX = (fieldW - this.contentW) / 2
-    this.originY = top + (fitted.maxH - this.contentH) / 2
+    this.originY = top + (maxH - this.contentH) / 2
     this.paradeGap = gap
   }
 
@@ -336,7 +318,8 @@ export class BoardView {
   }
 
   private readonly onUpdate = (_time: number, delta: number) => {
-    if (!this.alive || this.failed || this.parade.size === 0) return
+    if (!this.alive || this.failed || this.paused || this.parade.size === 0)
+      return
     this.releaseSlow()
     const slowing = this.scene.time.now < this.slowUntil
     if (this.rewinding) {
@@ -350,7 +333,7 @@ export class BoardView {
       if (moved <= 1e-6 || this.rewindLeft <= 1e-5) this.rewinding = false
     } else if (motionDuration(1) !== 0) {
       const scale = slowing ? COMBO_SLOW_SCALE : 1
-      this.pushParade((min(delta, 48) / PARADE_MS) * scale)
+      this.pushParade((min(delta, 48) / this.paradeMs) * scale)
     }
     for (const [id, progress] of this.parade) {
       if (id === this.dragging) continue
@@ -451,7 +434,7 @@ export class BoardView {
   }
 
   private beginDrag(id: number, pointer: Phaser.Input.Pointer) {
-    if (this.failed || this.snapped.has(id)) return
+    if (this.failed || this.paused || this.snapped.has(id)) return
     if ((this.parade.get(id) ?? 0) < 0) return
     const image = this.images.get(id)
     if (!image) return
@@ -599,6 +582,21 @@ export class BoardView {
     })
   }
 
+  // The queue must not creep while a confirm dialog is covering the board.
+  setPaused(paused: boolean) {
+    if (this.paused === paused) return
+    const now = this.scene.time.now
+    if (paused) {
+      this.paused = true
+      this.pausedAt = now
+      return
+    }
+    const held = now - this.pausedAt
+    if (this.comboUntil > this.pausedAt) this.comboUntil += held
+    if (this.slowUntil > this.pausedAt) this.slowUntil += held
+    this.paused = false
+  }
+
   getCombo() {
     this.expireCombo()
     return this.combo
@@ -629,7 +627,7 @@ export class BoardView {
   private raiseCombo(piece: PieceCut) {
     this.expireCombo()
     this.combo = min(COMBO_MAX, this.combo + 1)
-    this.comboUntil = this.scene.time.now + COMBO_WINDOW_MS
+    this.comboUntil = this.scene.time.now + this.comboWindowMs
     this.floatCombo(piece, this.combo)
     const slow = COMBO_SLOW_MS[this.combo] ?? 0
     if (slow > 0 && this.revealedParadeCount() > 1) {

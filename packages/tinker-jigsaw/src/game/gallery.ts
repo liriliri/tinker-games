@@ -4,6 +4,13 @@ export interface GalleryItem {
   file: string
 }
 
+// A picture chosen from disk is not one of the gallery plates, so it has no clear to keep.
+export const CUSTOM_PICTURE_ID = 'custom'
+
+export function keepsScore(id: string) {
+  return id !== CUSTOM_PICTURE_ID
+}
+
 export const GALLERY: GalleryItem[] = [
   { id: 'rain-bridge', file: 'images/rain-bridge.jpg' },
   { id: 'maple-steps', file: 'images/maple-steps.jpg' },

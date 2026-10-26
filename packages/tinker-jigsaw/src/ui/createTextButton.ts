@@ -15,6 +15,8 @@ interface ButtonOptions {
   fontSize?: number
   mark?: (graphics: Phaser.GameObjects.Graphics, tone: MarkTone) => void
   bindRedraw?: (redraw: () => void) => void
+  round?: boolean
+  bare?: boolean
 }
 
 export function createTextButton(
@@ -30,7 +32,7 @@ export function createTextButton(
   const brass = options.brass === true
   const width = s(designWidth)
   const height = s(designHeight)
-  const radius = s(2)
+  const radius = s(options.round ? designHeight / 2 : 2)
   const text =
     label.length > 0
       ? scene.add
@@ -64,15 +66,17 @@ export function createTextButton(
 
   const redraw = () => {
     bg.clear()
-    bg.fillStyle(fillColor(), brass ? 1 : pressed ? 1 : 0)
-    bg.fillRoundedRect(-width / 2, -height / 2, width, height, radius)
-    if (!brass) {
-      bg.lineStyle(
-        max(1, s(1)),
-        hovered ? COLORS.brassHover : COLORS.brass,
-        hovered ? 0.9 : 0.4,
-      )
-      bg.strokeRoundedRect(-width / 2, -height / 2, width, height, radius)
+    if (!options.bare) {
+      bg.fillStyle(fillColor(), brass ? 1 : pressed ? 1 : 0)
+      bg.fillRoundedRect(-width / 2, -height / 2, width, height, radius)
+      if (!brass) {
+        bg.lineStyle(
+          max(1, s(1)),
+          hovered ? COLORS.brassHover : COLORS.brass,
+          hovered ? 0.9 : 0.55,
+        )
+        bg.strokeRoundedRect(-width / 2, -height / 2, width, height, radius)
+      }
     }
     if (mark && options.mark) {
       const tone = pressed

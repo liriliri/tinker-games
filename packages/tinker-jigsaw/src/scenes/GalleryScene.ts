@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
-import { GALLERY } from '../game/gallery'
-import { loadGalleryPictures } from '../game/paintPicture'
+import { CUSTOM_PICTURE_ID, GALLERY } from '../game/gallery'
+import { loadGalleryPictures, rememberLocalPicture } from '../game/paintPicture'
 import { GalleryView } from '../gameObjects/GalleryView'
 import { initStorage } from '../lib/storage'
 import { applyRenderScale, RELAYOUT_EVENT } from '../lib/scale'
@@ -34,15 +34,50 @@ export class GalleryScene extends Phaser.Scene {
   }
 
   private mount(scroll: number) {
-    this.view = new GalleryView(this, scroll, (pictureId) => {
-      this.choose(pictureId)
-    })
+    this.view = new GalleryView(
+      this,
+      scroll,
+      (pictureId) => {
+        this.choose(pictureId)
+      },
+      () => this.pick(),
+    )
   }
 
   private choose(pictureId: string) {
     if (this.leaving) return
     this.leaving = true
     this.scene.start(SCENE_GAME, { pictureId } satisfies GameLaunch)
+  }
+
+  private pick() {
+    if (this.leaving) return
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    document.body.appendChild(input)
+    const finish = () => input.remove()
+    input.addEventListener('cancel', finish)
+    input.addEventListener('change', () => {
+      const file = input.files?.[0]
+      finish()
+      if (!file) return
+      void this.openPicked(file)
+    })
+    input.click()
+  }
+
+  private async openPicked(file: Blob) {
+    try {
+      await rememberLocalPicture(file)
+    } catch {
+      return
+    }
+    if (!this.alive || this.leaving) return
+    this.leaving = true
+    this.scene.start(SCENE_GAME, {
+      pictureId: CUSTOM_PICTURE_ID,
+    } satisfies GameLaunch)
   }
 
   private readonly relayout = () => {

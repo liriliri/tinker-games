@@ -204,8 +204,9 @@ export function seamCanvas(
     ctx.lineWidth = lineWidth
     ctx.stroke()
   }
-  paint('rgba(17, 17, 17, 0.22)', 3)
-  paint('rgba(231, 225, 214, 0.42)', 1.4)
+  // Faint on purpose: the ghost should read as a picture, not a grid.
+  paint('rgba(17, 17, 17, 0.2)', 3)
+  paint('rgba(231, 225, 214, 0.36)', 1.4)
   return canvas
 }
 

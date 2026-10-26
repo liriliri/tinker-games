@@ -7,7 +7,9 @@ const MIN_SHORT = 4
 const MAX_SHORT = 8
 const FLOOR_SHORT = 4
 const LEVEL_SHIFT = 2
-const CAP_SHORT = 10
+const CAP_SHORT = 11
+// One extra short-side cell on every rank. The base split read as a step too easy.
+const RANK_BUMP = 1
 const SAMPLE_SIDE = 320
 const BLOCKS = 3
 // Mean distance from a cell to its nearest lookalike. Calibrated on the gallery.
@@ -29,7 +31,7 @@ export function splitLevels(source: HTMLCanvasElement) {
 }
 
 function raised(level: number) {
-  return min(CAP_SHORT, level + LEVEL_SHIFT)
+  return min(CAP_SHORT - RANK_BUMP, level + LEVEL_SHIFT)
 }
 
 function spread(hard: number) {
@@ -37,7 +39,7 @@ function spread(hard: number) {
   let mid = Math.round((easy + hard) / 2)
   if (mid <= easy) mid = easy + 1
   if (mid >= hard) mid = hard - 1
-  return [easy, mid, hard]
+  return [easy, mid, hard].map((level) => level + RANK_BUMP)
 }
 
 function samplePicture(source: HTMLCanvasElement) {
