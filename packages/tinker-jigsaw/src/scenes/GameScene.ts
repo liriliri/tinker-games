@@ -6,10 +6,14 @@ import { pictureCanvas, PREVIEW_TEXTURE } from '../game/paintPicture'
 import { BoardView, type PiecePlacement } from '../gameObjects/BoardView'
 import { ConfirmDialog } from '../gameObjects/ConfirmDialog'
 import { Hud } from '../gameObjects/Hud'
+import { SOLVED_FADE_MS } from '../game/constants'
 import { t } from '../lib/i18n'
 import { getStorage, initStorage, type SplitRank } from '../lib/storage'
 import { applyRenderScale, RELAYOUT_EVENT } from '../lib/scale'
+import { motionDuration } from '../lib/util'
 import { SCENE_GALLERY } from './GalleryScene'
+
+const CLEAR_HOLD_MS = 3000
 
 export const SCENE_GAME = 'Game'
 
@@ -33,6 +37,7 @@ export class GameScene extends Phaser.Scene {
   private dealId = 0
   private texturedDeal = -1
   private dialog: ConfirmDialog | null = null
+  private solvedTimer?: Phaser.Time.TimerEvent
   private combo = 0
   private comboUntil = 0
   private slowUntil = 0
@@ -70,6 +75,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private rebuild() {
+    this.clearSolvedTimer()
     const placed = this.placements?.filter((item) => item.snapped).length ?? 0
     this.board?.destroy()
     this.hud?.destroy()
@@ -103,6 +109,7 @@ export class GameScene extends Phaser.Scene {
           this.levels.indexOf(this.level),
         )
         if (best !== null) this.hud.setBest(best)
+        this.noteSolved()
       },
       () => this.fail(),
       this.combo,
@@ -141,7 +148,7 @@ export class GameScene extends Phaser.Scene {
     message: string,
     action: () => void,
     cancel: () => void = () => {},
-    labels?: { confirm?: string; cancel?: string },
+    labels?: { confirm?: string; cancel?: string; solo?: boolean },
   ) {
     if (this.dialog) return
     const finish = (next: () => void) => {
@@ -163,6 +170,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private fail() {
+    this.clearSolvedTimer()
     this.closeDialog()
     this.ask(
       t('failPrompt'),
@@ -175,6 +183,41 @@ export class GameScene extends Phaser.Scene {
   private closeDialog() {
     this.dialog?.destroy()
     this.dialog = null
+  }
+
+  private noteSolved() {
+    this.clearSolvedTimer()
+    const wait = motionDuration(SOLVED_FADE_MS) + CLEAR_HOLD_MS
+    this.solvedTimer = this.time.delayedCall(wait, () => this.offerNext())
+  }
+
+  private clearSolvedTimer() {
+    this.solvedTimer?.remove(false)
+    this.solvedTimer = undefined
+  }
+
+  private offerNext() {
+    this.solvedTimer = undefined
+    if (this.dialog) {
+      this.noteSolved()
+      return
+    }
+    const next = this.levels[this.levels.indexOf(this.level) + 1]
+    if (next === undefined) {
+      this.ask(
+        t('clearPrompt'),
+        () => {},
+        () => this.scene.start(SCENE_GALLERY),
+        { cancel: t('back'), solo: true },
+      )
+      return
+    }
+    this.ask(
+      t('clearNextPrompt'),
+      () => this.setLevel(next),
+      () => this.scene.start(SCENE_GALLERY),
+      { confirm: t('next'), cancel: t('back') },
+    )
   }
 
   private setLevel(level: number) {
@@ -194,6 +237,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private readonly shutdown = () => {
+    this.clearSolvedTimer()
     this.events.off(RELAYOUT_EVENT, this.relayout, this)
     this.closeDialog()
     this.board?.destroy()

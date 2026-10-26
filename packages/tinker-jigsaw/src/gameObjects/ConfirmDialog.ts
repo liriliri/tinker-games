@@ -21,7 +21,7 @@ export class ConfirmDialog {
     message: string,
     onConfirm: () => void,
     onCancel: () => void,
-    labels?: { confirm?: string; cancel?: string },
+    labels?: { confirm?: string; cancel?: string; solo?: boolean },
   ) {
     const fieldW = s(FIELD_WIDTH)
     const fieldH = s(GAME_HEIGHT)
@@ -124,28 +124,32 @@ export class ConfirmDialog {
       .setDepth(DIALOG_DEPTH + 2)
 
     const buttonY = panelY + 74
+    const solo = labels?.solo === true
     const cancel = createTextButton(
       scene,
       labels?.cancel ?? t('cancel'),
-      FIELD_WIDTH / 2 - BUTTON_WIDTH / 2 - 6,
+      solo ? FIELD_WIDTH / 2 : FIELD_WIDTH / 2 - BUTTON_WIDTH / 2 - 6,
       buttonY,
       BUTTON_WIDTH,
       BUTTON_HEIGHT,
       onCancel,
       { fontSize: 12 },
     ).setDepth(DIALOG_DEPTH + 3)
-    const confirm = createTextButton(
-      scene,
-      labels?.confirm ?? t('confirm'),
-      FIELD_WIDTH / 2 + BUTTON_WIDTH / 2 + 6,
-      buttonY,
-      BUTTON_WIDTH,
-      BUTTON_HEIGHT,
-      onConfirm,
-      { brass: true, fontSize: 12 },
-    ).setDepth(DIALOG_DEPTH + 3)
+    const confirm = solo
+      ? undefined
+      : createTextButton(
+          scene,
+          labels?.confirm ?? t('confirm'),
+          FIELD_WIDTH / 2 + BUTTON_WIDTH / 2 + 6,
+          buttonY,
+          BUTTON_WIDTH,
+          BUTTON_HEIGHT,
+          onConfirm,
+          { brass: true, fontSize: 12 },
+        ).setDepth(DIALOG_DEPTH + 3)
 
-    this.nodes = [veil, panel, label, cancel, confirm]
+    this.nodes = [veil, panel, label, cancel]
+    if (confirm) this.nodes.push(confirm)
   }
 
   destroy() {

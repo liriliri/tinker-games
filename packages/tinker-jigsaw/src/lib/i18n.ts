@@ -6,30 +6,39 @@ interface Messages {
   leavePrompt: string
   switchPrompt: string
   failPrompt: string
+  clearPrompt: string
+  clearNextPrompt: string
   cancel: string
   confirm: string
   retry: string
   back: string
+  next: string
 }
 
 const messages: Record<Locale, Messages> = {
   en: {
     leavePrompt: 'Leave this puzzle?',
     switchPrompt: 'Restart at the new difficulty?',
-    failPrompt: 'A piece slid off',
+    failPrompt: 'A piece got away',
+    clearPrompt: 'This picture is complete',
+    clearNextPrompt: 'Try the next difficulty?',
     cancel: 'Cancel',
     confirm: 'Confirm',
     retry: 'Retry',
     back: 'Back',
+    next: 'Next',
   },
   'zh-CN': {
     leavePrompt: '返回将离开当前拼图',
     switchPrompt: '切换难度将重新开始',
-    failPrompt: '方块滑出了',
+    failPrompt: '没接住这块碎片',
+    clearPrompt: '这张拼好了',
+    clearNextPrompt: '继续下一难度？',
     cancel: '取消',
     confirm: '确定',
     retry: '重来',
     back: '返回',
+    next: '下一难度',
   },
 }
 

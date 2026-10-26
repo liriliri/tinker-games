@@ -17,8 +17,6 @@ const SNAP_MS = 140
 const REJOIN_MS = 220
 const PARADE_MS = 108000
 const QUEUE_SCALE = 0.32
-// Short on purpose: cards stay too faint to grab while they are still fading in.
-const PARADE_FADE = 0.02
 const SEAM_TEXTURE = 'jigsaw-seams'
 const COMBO_MAX = 5
 // Long enough to pull the next card off the parade, short enough that waiting drops the chain.
@@ -75,6 +73,8 @@ export class BoardView {
   private slowUntil: number
   private rewinding = false
   private rewindLeft = 0
+  private entranceCover?: Phaser.GameObjects.Graphics
+  private entranceMask?: Phaser.Display.Masks.GeometryMask
   private readonly comboFloats: Phaser.GameObjects.Text[] = []
 
   constructor(
@@ -100,6 +100,7 @@ export class BoardView {
     this.rows = max(...pluck(cuts, 'row')) + 1
     this.columns = max(...pluck(cuts, 'column')) + 1
     this.measure()
+    this.createEntranceMask()
     this.createGhost()
     this.createSeams()
     this.createPieces(placements)
@@ -154,6 +155,10 @@ export class BoardView {
     if (this.seams) this.scene.tweens.killTweensOf(this.seams)
     if (this.finalImage) this.scene.tweens.killTweensOf(this.finalImage)
     this.root.destroy(true)
+    this.entranceMask?.destroy()
+    this.entranceCover?.destroy()
+    this.entranceMask = undefined
+    this.entranceCover = undefined
     if (this.scene.textures.exists(SEAM_TEXTURE)) {
       this.scene.textures.remove(SEAM_TEXTURE)
     }
@@ -222,6 +227,16 @@ export class BoardView {
     this.originX = (fieldW - this.contentW) / 2
     this.originY = top + (fitted.maxH - this.contentH) / 2
     this.paradeGap = gap
+  }
+
+  // Cards above this corner stay hidden, so each one slides out of the entrance instead of popping in whole.
+  private createEntranceMask() {
+    const graphics = this.scene.make.graphics({}, false)
+    graphics.fillStyle(0xffffff)
+    graphics.fillRect(0, this.originY, s(FIELD_WIDTH), s(GAME_HEIGHT))
+    graphics.fillRect(this.originX, 0, s(FIELD_WIDTH), this.originY)
+    this.entranceCover = graphics
+    this.entranceMask = graphics.createGeometryMask()
   }
 
   private createGhost() {
@@ -322,6 +337,7 @@ export class BoardView {
 
   private readonly onUpdate = (_time: number, delta: number) => {
     if (!this.alive || this.failed || this.parade.size === 0) return
+    this.releaseSlow()
     const slowing = this.scene.time.now < this.slowUntil
     if (this.rewinding) {
       const span = this.enterGap()
@@ -436,6 +452,7 @@ export class BoardView {
 
   private beginDrag(id: number, pointer: Phaser.Input.Pointer) {
     if (this.failed || this.snapped.has(id)) return
+    if ((this.parade.get(id) ?? 0) < 0) return
     const image = this.images.get(id)
     if (!image) return
     this.killSettle(id)
@@ -443,6 +460,7 @@ export class BoardView {
     const localX = (pointer.x - image.x) / scale
     const localY = (pointer.y - image.y) / scale
     image
+      .clearMask(false)
       .setDisplaySize(this.fullW, this.fullH)
       .setAlpha(1)
       .setDepth(DRAG_DEPTH)
@@ -471,7 +489,7 @@ export class BoardView {
     this.raiseCombo(piece)
     playSnapSound()
     this.parade.delete(id)
-    image.disableInteractive().setAlpha(1)
+    image.clearMask(false).disableInteractive().setAlpha(1)
     const duration = motionDuration(SNAP_MS)
     const finish = () => {
       if (!this.alive) return
@@ -502,6 +520,7 @@ export class BoardView {
     const duration = motionDuration(REJOIN_MS)
     this.killSettle(id)
     this.parade.set(id, this.firstGap(id))
+    if (this.entranceMask) image.setMask(this.entranceMask)
     if (duration === 0) {
       this.poseOnParade(id, this.paradeProgress(id))
       return
@@ -515,9 +534,7 @@ export class BoardView {
       ease: 'Cubic.easeOut',
       onUpdate: () => {
         if (!this.alive) return
-        const progress = this.paradeProgress(id)
-        const shown = progress < 0 ? 0 : progress
-        const point = this.pointOnParade(shown)
+        const point = this.pointOnParade(this.paradeProgress(id))
         const width = this.fullW + (this.queueW - this.fullW) * state.t
         const height = this.fullH + (this.queueH - this.fullH) * state.t
         image.setDisplaySize(width, height)
@@ -525,7 +542,7 @@ export class BoardView {
           dropX + (point.x - width / 2 - dropX) * state.t,
           dropY + (point.y - height / 2 - dropY) * state.t,
         )
-        image.setAlpha(1 + (this.paradeAlpha(shown) - 1) * state.t)
+        image.setAlpha(1)
       },
       onComplete: () => {
         if (this.settling.get(id) !== tween) return
@@ -546,19 +563,23 @@ export class BoardView {
   private poseOnParade(id: number, progress: number) {
     const image = this.images.get(id)
     if (!image) return
-    if (progress < 0 || progress >= 1) {
+    const point = this.pointOnParade(progress)
+    image.setDisplaySize(this.queueW, this.queueH)
+    image.setPosition(point.x - this.queueW / 2, point.y - this.queueH / 2)
+    image.setAlpha(1)
+    image.setDepth(10 + max(point.y, 0))
+    if (this.entranceMask) image.setMask(this.entranceMask)
+    const bottom = image.y + this.queueH
+    if (progress >= 1 || bottom <= this.originY) {
       image.setVisible(false).disableInteractive()
       return
     }
     image.setVisible(true)
-    const point = this.pointOnParade(progress)
-    const alpha = this.paradeAlpha(progress)
-    image.setDisplaySize(this.queueW, this.queueH)
-    image.setPosition(point.x - this.queueW / 2, point.y - this.queueH / 2)
-    image.setAlpha(alpha)
-    image.setDepth(10 + point.y)
-    if (alpha < 0.35) image.disableInteractive()
-    else if (!image.input?.enabled) this.armPiece(image)
+    if (progress < 0) {
+      image.disableInteractive()
+      return
+    }
+    if (!image.input?.enabled) this.armPiece(image)
   }
 
   private armPiece(image: Phaser.GameObjects.Image) {
@@ -591,13 +612,29 @@ export class BoardView {
     return this.slowUntil
   }
 
+  // A single cleared card has nothing behind it to chain, so the crawl would only stall that card.
+  private releaseSlow() {
+    if (this.revealedParadeCount() > 1) return
+    this.slowUntil = 0
+  }
+
+  private revealedParadeCount() {
+    let count = 0
+    for (const progress of this.parade.values()) {
+      if (progress >= 0 && progress < 1) count += 1
+    }
+    return count
+  }
+
   private raiseCombo(piece: PieceCut) {
     this.expireCombo()
     this.combo = min(COMBO_MAX, this.combo + 1)
     this.comboUntil = this.scene.time.now + COMBO_WINDOW_MS
     this.floatCombo(piece, this.combo)
     const slow = COMBO_SLOW_MS[this.combo] ?? 0
-    if (slow > 0) this.slowUntil = this.scene.time.now + slow
+    if (slow > 0 && this.revealedParadeCount() > 1) {
+      this.slowUntil = this.scene.time.now + slow
+    }
     if (this.combo < COMBO_MAX) return
     this.rewindParade()
     this.combo = 0
@@ -792,12 +829,6 @@ export class BoardView {
       bottomLen,
       total: leftLen + bottomLen + leftLen,
     }
-  }
-
-  private paradeAlpha(progress: number) {
-    if (progress < PARADE_FADE) return progress / PARADE_FADE
-    if (progress > 1 - PARADE_FADE) return (1 - progress) / PARADE_FADE
-    return 1
   }
 
   private homeOf(piece: PieceCut) {
