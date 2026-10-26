@@ -6,6 +6,7 @@ import { REST_SATURATION } from '../game/constants'
 import { GALLERY, galleryTexture } from '../game/gallery'
 import { pictureCanvas } from '../game/paintPicture'
 import { FIELD_WIDTH, GAME_HEIGHT, PAGE_PAD } from '../lib/layout'
+import { playMenuSound, preloadMenuSound } from '../lib/sound'
 import { s } from '../lib/scale'
 import { motionDuration } from '../lib/util'
 
@@ -35,6 +36,7 @@ export class GalleryView {
     scroll: number,
     private onChoose: (pictureId: string) => void,
   ) {
+    preloadMenuSound()
     this.viewTop = s(VIEW_TOP)
     this.viewHeight = s(GAME_HEIGHT - PAGE_PAD) - this.viewTop
     const gap = s(CARD_GAP)
@@ -117,10 +119,16 @@ export class GalleryView {
     if (!this.scene.textures.exists(key)) {
       this.scene.textures.addCanvas(key, pictureCanvas(id))
     }
+    const source = pictureCanvas(id)
+    // The wall frame stays 16:9. The photo keeps its own ratio inside it.
+    const frameAspect = width / height
+    const imageAspect = source.width / source.height
+    const displayW = imageAspect > frameAspect ? width : height * imageAspect
+    const displayH = imageAspect > frameAspect ? width / imageAspect : height
     const image = this.scene.add
-      .image(0, 0, key)
+      .image((width - displayW) / 2, (height - displayH) / 2, key)
       .setOrigin(0, 0)
-      .setDisplaySize(width, height)
+      .setDisplaySize(displayW, displayH)
     const root = this.scene.add.container(x, y, [image])
     this.bindSaturation(image, root)
 
@@ -138,6 +146,7 @@ export class GalleryView {
       ) {
         return
       }
+      playMenuSound()
       this.onChoose(id)
     })
 

@@ -3,24 +3,33 @@ import startWith from 'licia/startWith'
 type Locale = 'en' | 'zh-CN'
 
 interface Messages {
-  solved: string
-  size3: string
-  size4: string
-  size5: string
+  leavePrompt: string
+  switchPrompt: string
+  failPrompt: string
+  cancel: string
+  confirm: string
+  retry: string
+  back: string
 }
 
 const messages: Record<Locale, Messages> = {
   en: {
-    solved: 'Picture restored',
-    size3: '3×3',
-    size4: '4×4',
-    size5: '5×5',
+    leavePrompt: 'Leave this puzzle?',
+    switchPrompt: 'Restart at the new difficulty?',
+    failPrompt: 'A piece slid off',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    retry: 'Retry',
+    back: 'Back',
   },
   'zh-CN': {
-    solved: '拼好了',
-    size3: '3×3',
-    size4: '4×4',
-    size5: '5×5',
+    leavePrompt: '返回将离开当前拼图',
+    switchPrompt: '切换难度将重新开始',
+    failPrompt: '方块滑出了',
+    cancel: '取消',
+    confirm: '确定',
+    retry: '重来',
+    back: '返回',
   },
 }
 

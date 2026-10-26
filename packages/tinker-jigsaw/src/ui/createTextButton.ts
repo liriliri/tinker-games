@@ -14,6 +14,7 @@ interface ButtonOptions {
   brass?: boolean
   fontSize?: number
   mark?: (graphics: Phaser.GameObjects.Graphics, tone: MarkTone) => void
+  bindRedraw?: (redraw: () => void) => void
 }
 
 export function createTextButton(
@@ -83,6 +84,7 @@ export function createTextButton(
     }
   }
 
+  options.bindRedraw?.(redraw)
   redraw()
 
   const root = scene.add.container(
@@ -105,16 +107,34 @@ export function createTextButton(
     pressed = false
     redraw()
   })
-  root.on('pointerdown', () => {
-    pressed = true
-    redraw()
-  })
-  root.on('pointerup', () => {
-    const activate = pressed
-    pressed = false
-    redraw()
-    if (activate) onClick()
-  })
+  root.on(
+    'pointerdown',
+    (
+      _pointer: Phaser.Input.Pointer,
+      _x: number,
+      _y: number,
+      event: Phaser.Types.Input.EventData,
+    ) => {
+      event.stopPropagation()
+      pressed = true
+      redraw()
+    },
+  )
+  root.on(
+    'pointerup',
+    (
+      _pointer: Phaser.Input.Pointer,
+      _x: number,
+      _y: number,
+      event: Phaser.Types.Input.EventData,
+    ) => {
+      event.stopPropagation()
+      const activate = pressed
+      pressed = false
+      redraw()
+      if (activate) onClick()
+    },
+  )
 
   return root
 }

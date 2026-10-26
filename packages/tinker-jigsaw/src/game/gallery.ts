@@ -1,25 +1,25 @@
-// Files live in public/.
+// Listed from easier to harder.
 export interface GalleryItem {
   id: string
   file: string
 }
 
 export const GALLERY: GalleryItem[] = [
-  { id: 'maple-steps', file: 'maple-steps.jpg' },
-  { id: 'rain-bridge', file: 'rain-bridge.jpg' },
-  { id: 'cloud-steps', file: 'cloud-steps.jpg' },
-  { id: 'sword-peaks', file: 'sword-peaks.jpg' },
-  { id: 'moon-gate', file: 'moon-gate.jpg' },
-  { id: 'night-canal', file: 'night-canal.jpg' },
-  { id: 'spring-guzheng', file: 'spring-guzheng.jpg' },
-  { id: 'cloud-glance', file: 'cloud-glance.jpg' },
-  { id: 'hall-lecture', file: 'hall-lecture.jpg' },
-  { id: 'window-tea', file: 'window-tea.jpg' },
-  { id: 'courtyard-scroll', file: 'courtyard-scroll.jpg' },
-  { id: 'eaves-rain', file: 'eaves-rain.jpg' },
-  { id: 'snow-duel', file: 'snow-duel.jpg' },
-  { id: 'peak-dragon', file: 'peak-dragon.jpg' },
-  { id: 'window-lean', file: 'window-lean.jpg' },
+  { id: 'rain-bridge', file: 'images/rain-bridge.jpg' },
+  { id: 'maple-steps', file: 'images/maple-steps.jpg' },
+  { id: 'night-canal', file: 'images/night-canal.jpg' },
+  { id: 'window-tea', file: 'images/window-tea.jpg' },
+  { id: 'snow-duel', file: 'images/snow-duel.jpg' },
+  { id: 'cloud-glance', file: 'images/cloud-glance.jpg' },
+  { id: 'courtyard-scroll', file: 'images/courtyard-scroll.jpg' },
+  { id: 'sword-peaks', file: 'images/sword-peaks.jpg' },
+  { id: 'cloud-steps', file: 'images/cloud-steps.jpg' },
+  { id: 'hall-lecture', file: 'images/hall-lecture.jpg' },
+  { id: 'moon-gate', file: 'images/moon-gate.jpg' },
+  { id: 'window-lean', file: 'images/window-lean.jpg' },
+  { id: 'spring-guzheng', file: 'images/spring-guzheng.jpg' },
+  { id: 'peak-dragon', file: 'images/peak-dragon.jpg' },
+  { id: 'eaves-rain', file: 'images/eaves-rain.jpg' },
 ]
 
 export function galleryTexture(id: string) {
