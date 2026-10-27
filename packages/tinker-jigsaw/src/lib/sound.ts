@@ -23,6 +23,8 @@ function clip(src: string, volume: number) {
 
 const snap = clip('sound/snap.mp3', 0.25)
 const menu = clip('sound/select.mp3', 0.65)
+const victory = clip('sound/victory.mp3', 0.55)
+const gameover = clip('sound/gameover.mp3', 0.55)
 
 export function preloadSnapSound() {
   snap.preload()
@@ -38,4 +40,20 @@ export function preloadMenuSound() {
 
 export function playMenuSound() {
   menu.play()
+}
+
+export function preloadVictorySound() {
+  victory.preload()
+}
+
+export function playVictorySound() {
+  victory.play()
+}
+
+export function preloadGameoverSound() {
+  gameover.preload()
+}
+
+export function playGameoverSound() {
+  gameover.play()
 }

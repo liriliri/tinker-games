@@ -103,13 +103,7 @@ export class Hud {
       )
     })
 
-    this.root.add([
-      drawClockMarks(scene),
-      back,
-      this.countText,
-      this.timeText,
-      ...chips,
-    ])
+    this.root.add([back, this.countText, this.timeText, ...chips])
   }
 
   setPlaced(placed: number, total: number) {
@@ -132,38 +126,9 @@ export class Hud {
   }
 }
 
-function drawClockMarks(scene: Phaser.Scene) {
-  const marks = scene.add.graphics()
-  const center = s(FIELD_WIDTH / 2)
-  const y = s(BAR_HEIGHT / 2 - 1)
-  const apart = s(36)
-  diamond(marks, center - apart, y, s(2.6))
-  diamond(marks, center + apart, y, s(2.6))
-  const ruleY = y + s(15)
-  marks.lineStyle(max(1, s(1)), COLORS.star, 0.7)
-  marks.lineBetween(center - s(16), ruleY, center + s(16), ruleY)
-  return marks
-}
-
-function diamond(
-  graphics: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  radius: number,
-) {
-  graphics.fillStyle(COLORS.star, 0.9)
-  graphics.beginPath()
-  graphics.moveTo(x, y - radius)
-  graphics.lineTo(x + radius * 0.72, y)
-  graphics.lineTo(x, y + radius)
-  graphics.lineTo(x - radius * 0.72, y)
-  graphics.closePath()
-  graphics.fillPath()
-}
-
 function formatClock(elapsedMs: number) {
   const total = Math.floor(max(0, elapsedMs) / 1000)
-  return `${Math.floor(total / 60)}:${lpad(String(total % 60), 2, '0')}`
+  return `${lpad(String(Math.floor(total / 60)), 2, '0')}:${lpad(String(total % 60), 2, '0')}`
 }
 
 function starChipWidth(count: number) {
@@ -182,25 +147,17 @@ function drawStars(
   const inner = s(STAR_INNER)
   const gap = s(STAR_GAP)
   const origin = -((count - 1) * gap) / 2
+  const color = selected ? COLORS.star : COLORS.paperMark
   for (let star = 0; star < count; star++) {
     const x = origin + star * gap
     if (filled) {
-      fillStar(graphics, x, 0, outer, inner, max(1, s(0.6)), 0.35)
+      fillStar(graphics, x, 0, outer, inner, max(1, s(0.6)), 0.35, color)
       continue
     }
     traceStar(graphics, x, 0, outer, inner)
-    graphics.lineStyle(
-      max(1, s(0.9)),
-      COLORS.star,
-      selected ? 1 : hot ? 0.8 : 0.4,
-    )
+    graphics.lineStyle(max(1, s(0.9)), color, selected ? 1 : hot ? 0.8 : 0.4)
     graphics.strokePath()
   }
-  if (!selected) return
-  const span = (count - 1) * gap + outer * 2
-  const y = outer + s(4)
-  graphics.lineStyle(max(1, s(1)), COLORS.star, 0.9)
-  graphics.lineBetween(-span / 2, y, span / 2, y)
 }
 
 function drawBackMark(

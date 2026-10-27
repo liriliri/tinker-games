@@ -28,9 +28,10 @@ export function fillStar(
   inner: number,
   lineWidth: number,
   lineAlpha: number,
+  fillColor = COLORS.star,
 ) {
   traceStar(graphics, x, y, outer, inner)
-  graphics.fillStyle(COLORS.star, 1)
+  graphics.fillStyle(fillColor, 1)
   graphics.fillPath()
   traceStar(graphics, x, y, outer, inner)
   graphics.lineStyle(lineWidth, COLORS.inkMark, lineAlpha)

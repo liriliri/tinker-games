@@ -9,7 +9,14 @@ import { type PieceCut } from '../game/jigsaw'
 import { PREVIEW_TEXTURE } from '../game/paintPicture'
 import { BAR_HEIGHT, BOARD_GAP, FIELD_WIDTH, GAME_HEIGHT } from '../lib/layout'
 import { s } from '../lib/scale'
-import { preloadSnapSound, playSnapSound } from '../lib/sound'
+import {
+  playGameoverSound,
+  playSnapSound,
+  playVictorySound,
+  preloadGameoverSound,
+  preloadSnapSound,
+  preloadVictorySound,
+} from '../lib/sound'
 import { motionDuration } from '../lib/util'
 import { addCountText } from '../ui/sharpText'
 
@@ -102,6 +109,8 @@ export class BoardView {
     this.comboUntil = comboUntil
     this.slowUntil = slowUntil
     preloadSnapSound()
+    preloadVictorySound()
+    preloadGameoverSound()
     this.root = scene.add.container(0, 0).setDepth(1)
   }
 
@@ -112,6 +121,7 @@ export class BoardView {
     this.columns = max(...pluck(cuts, 'column')) + 1
     this.measure()
     this.createEntranceMask()
+    this.createEntranceFade()
     this.createGhost()
     this.createSeams()
     this.createPieces(placements)
@@ -144,6 +154,7 @@ export class BoardView {
       return
     }
 
+    playVictorySound()
     this.scene.tweens.add({
       targets: fading,
       alpha: 0,
@@ -219,6 +230,19 @@ export class BoardView {
     graphics.fillRect(this.originX, 0, s(FIELD_WIDTH), this.originY)
     this.entranceCover = graphics
     this.entranceMask = graphics.createGeometryMask()
+  }
+
+  // Softens the hard mask edge so cards ease into view instead of snapping in.
+  private createEntranceFade() {
+    const { xL } = this.paradeMetrics()
+    const pad = this.paradeGap
+    const width = this.queueW + pad * 2
+    const height = this.queueH * 1.35
+    const fade = this.scene.add.graphics().setDepth(1000)
+    const page = COLORS.pageMark
+    fade.fillGradientStyle(page, page, page, page, 1, 1, 0, 0)
+    fade.fillRect(xL - this.queueW / 2 - pad, this.originY, width, height)
+    this.root.add(fade)
   }
 
   private createGhost() {
@@ -416,6 +440,7 @@ export class BoardView {
     if (this.failed) return
     this.failed = true
     this.dragging = null
+    playGameoverSound()
     this.onFail()
   }
 
@@ -435,9 +460,8 @@ export class BoardView {
 
   private beginDrag(id: number, pointer: Phaser.Input.Pointer) {
     if (this.failed || this.paused || this.snapped.has(id)) return
-    if ((this.parade.get(id) ?? 0) < 0) return
     const image = this.images.get(id)
-    if (!image) return
+    if (!image || !image.visible) return
     this.killSettle(id)
     const scale = image.displayWidth / this.fullW || QUEUE_SCALE
     const localX = (pointer.x - image.x) / scale
@@ -557,11 +581,8 @@ export class BoardView {
       image.setVisible(false).disableInteractive()
       return
     }
+    // Partial cards at the entrance stay grabable once any strip is showing.
     image.setVisible(true)
-    if (progress < 0) {
-      image.disableInteractive()
-      return
-    }
     if (!image.input?.enabled) this.armPiece(image)
   }
 

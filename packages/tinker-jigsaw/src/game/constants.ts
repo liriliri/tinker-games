@@ -13,6 +13,7 @@ function css(color: number) {
 
 export const COLORS = {
   page: '#161513',
+  pageMark: 0x161513,
   brass: PAPER,
   brassHover: 0xf7f4ee,
   brassActive: 0xcfc6b6,

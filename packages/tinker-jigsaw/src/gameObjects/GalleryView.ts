@@ -132,15 +132,12 @@ export class GalleryView {
     }
     const source = pictureCanvas(id)
     // The wall frame stays 16:9. The photo keeps its own ratio inside it.
-    const mount = s(3)
-    const frameW = width - mount * 2
-    const frameH = height - mount * 2
-    const frameAspect = frameW / frameH
+    const frameAspect = width / height
     const imageAspect = source.width / source.height
-    const displayW = imageAspect > frameAspect ? frameW : frameH * imageAspect
-    const displayH = imageAspect > frameAspect ? frameW / imageAspect : frameH
-    const imageX = mount + (frameW - displayW) / 2
-    const imageY = mount + (frameH - displayH) / 2
+    const displayW = imageAspect > frameAspect ? width : height * imageAspect
+    const displayH = imageAspect > frameAspect ? width / imageAspect : height
+    const imageX = (width - displayW) / 2
+    const imageY = (height - displayH) / 2
     const image = this.scene.add
       .image(imageX, imageY, key)
       .setOrigin(0, 0)
@@ -155,13 +152,15 @@ export class GalleryView {
     return root
   }
 
-  private mountPlate(width: number, height: number) {
+  private mountPlate(width: number, height: number, bordered = false) {
     const plate = this.scene.add.graphics()
-    const line = max(1, s(1))
     plate.fillStyle(COLORS.mat, 1)
     plate.fillRect(0, 0, width, height)
-    plate.lineStyle(line, COLORS.paperMark, 0.38)
-    plate.strokeRect(line / 2, line / 2, width - line, height - line)
+    if (bordered) {
+      const line = max(1, s(1))
+      plate.lineStyle(line, COLORS.paperMark, 0.38)
+      plate.strokeRect(line / 2, line / 2, width - line, height - line)
+    }
     return plate
   }
 
@@ -178,7 +177,7 @@ export class GalleryView {
     mark.lineTo(centerX, centerY + arm)
     mark.strokePath()
     const root = this.scene.add.container(x, y, [
-      this.mountPlate(width, height),
+      this.mountPlate(width, height, true),
       mark,
     ])
     this.bindOpen(root, width, height, 0, () => this.onPick())
