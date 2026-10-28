@@ -26,6 +26,7 @@ export const GALLERY: GalleryItem[] = [
   { id: 'sword-peaks', file: 'images/sword-peaks.jpg' },
   { id: 'cloud-steps', file: 'images/cloud-steps.jpg' },
   { id: 'misty-bridge', file: 'images/misty-bridge.jpg' },
+  { id: 'secret-realm', file: 'images/secret-realm.jpg' },
   { id: 'desert-march', file: 'images/desert-march.jpg' },
   { id: 'hall-lecture', file: 'images/hall-lecture.jpg' },
   { id: 'moon-gate', file: 'images/moon-gate.jpg' },

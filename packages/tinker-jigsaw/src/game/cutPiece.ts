@@ -180,7 +180,7 @@ function traceSeams(
   }
 }
 
-// Dim the ghost plate, then draw thin light seams so they read on pale and dark areas alike.
+// Keep the plate readable; dual seam strokes cover light and dark areas without a black veil.
 export function etchedGhostCanvas(
   picture: CanvasImageSource,
   columns: number,
@@ -194,20 +194,52 @@ export function etchedGhostCanvas(
   const { canvas, ctx } = createCanvas(w, h)
   if (!ctx) return canvas
 
-  ctx.filter = 'contrast(1.35)'
+  // Desaturate so placed pieces pop; bright plates get a veil, dark ones a mild lift.
+  ctx.filter = 'contrast(1.08) saturate(0.2) brightness(1.08)'
   ctx.drawImage(picture, 0, 0, w, h)
   ctx.filter = 'none'
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.22)'
-  ctx.fillRect(0, 0, w, h)
+  const veil = brightPlateVeil(ctx, w, h)
+  if (veil > 0) {
+    ctx.fillStyle = `rgba(0, 0, 0, ${veil})`
+    ctx.fillRect(0, 0, w, h)
+  }
 
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
-  ctx.strokeStyle = 'rgba(255, 250, 244, 0.78)'
-  ctx.lineWidth = 1.35
+  const cellW = w / columns
+  const cellH = h / rows
+
+  ctx.strokeStyle = 'rgba(8, 6, 4, 0.28)'
+  ctx.lineWidth = 1.45
   ctx.beginPath()
-  traceSeams(ctx, columns, rows, cuts, w / columns, h / rows)
+  traceSeams(ctx, columns, rows, cuts, cellW, cellH)
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(255, 250, 244, 0.82)'
+  ctx.lineWidth = 1.15
+  ctx.beginPath()
+  traceSeams(ctx, columns, rows, cuts, cellW, cellH)
   ctx.stroke()
   return canvas
+}
+
+// Mid-grey plates stay clear; brighter ones darken so the light seam still reads.
+function brightPlateVeil(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+) {
+  const sample = ctx.getImageData(0, 0, width, height).data
+  let sum = 0
+  const step = 16
+  let count = 0
+  for (let i = 0; i < sample.length; i += 4 * step) {
+    sum += 0.299 * sample[i] + 0.587 * sample[i + 1] + 0.114 * sample[i + 2]
+    count++
+  }
+  const mean = sum / max(1, count)
+  if (mean <= 118) return 0
+  return min(0.5, ((mean - 118) / 90) * 0.5)
 }
 
 function tracePiece(

@@ -8,7 +8,7 @@ import { pictureCanvas } from '../game/paintPicture'
 import { FIELD_WIDTH, GAME_HEIGHT, PAGE_PAD } from '../lib/layout'
 import { playMenuSound, preloadMenuSound } from '../lib/sound'
 import { s } from '../lib/scale'
-import { getStorage } from '../lib/storage'
+import { getStorage, type SplitRank } from '../lib/storage'
 import { motionDuration } from '../lib/util'
 import { fillStar } from '../ui/traceStar'
 
@@ -147,7 +147,7 @@ export class GalleryView {
       image,
     ])
     this.addClearStars(id, root, imageX, imageY, displayW, displayH)
-    this.bindSaturation(image, root)
+    this.bindSaturation(image, root, restSaturation(getStorage(this.scene).getBest(id)))
     this.bindOpen(root, width, height, index, () => this.onChoose(id))
     return root
   }
@@ -251,12 +251,13 @@ export class GalleryView {
   private bindSaturation(
     image: Phaser.GameObjects.Image,
     root: Phaser.GameObjects.Container,
+    rest: number,
   ) {
     if (!image.preFX) return
     const color = image.preFX.addColorMatrix()
-    const tone = { value: REST_SATURATION }
+    const tone = { value: rest }
     this.tones.push(tone)
-    color.saturate(REST_SATURATION)
+    color.saturate(rest)
     const fade = (value: number) => {
       this.scene.tweens.killTweensOf(tone)
       const duration = motionDuration(SATURATION_MS)
@@ -275,7 +276,7 @@ export class GalleryView {
       })
     }
     root.on('pointerover', () => fade(0))
-    root.on('pointerout', () => fade(REST_SATURATION))
+    root.on('pointerout', () => fade(rest))
   }
 
   private readonly onDown = (pointer: Phaser.Input.Pointer) => {
@@ -307,4 +308,10 @@ export class GalleryView {
     this.scroll = clamp(value, 0, this.maxScroll)
     this.content.setY(this.baseY - this.scroll)
   }
+}
+
+// Uncleared stays grey; each cleared rank lifts color, 3 stars stop at 80% for hover.
+function restSaturation(best: SplitRank | null) {
+  if (best === null) return REST_SATURATION
+  return REST_SATURATION * (1 - ((best + 1) / 3) * 0.8)
 }

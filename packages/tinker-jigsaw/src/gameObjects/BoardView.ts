@@ -3,7 +3,7 @@ import max from 'licia/max'
 import min from 'licia/min'
 import pluck from 'licia/pluck'
 import shuffle from 'licia/shuffle'
-import { COLORS, REST_SATURATION, SOLVED_FADE_MS } from '../game/constants'
+import { COLORS, SOLVED_FADE_MS } from '../game/constants'
 import { etchedGhostCanvas, padRatio, pieceTexture } from '../game/cutPiece'
 import { type PieceCut } from '../game/jigsaw'
 import { PREVIEW_TEXTURE } from '../game/paintPicture'
@@ -263,9 +263,8 @@ export class BoardView {
       .image(this.originX, this.originY, GHOST_TEXTURE)
       .setOrigin(0, 0)
       .setDisplaySize(this.contentW, this.contentH)
-      .setAlpha(0.86)
+      .setAlpha(0.94)
       .setDepth(0)
-    ghost.preFX?.addColorMatrix().saturate(REST_SATURATION)
     this.root.add(ghost)
   }
 
