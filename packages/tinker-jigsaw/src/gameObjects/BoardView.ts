@@ -4,7 +4,7 @@ import min from 'licia/min'
 import pluck from 'licia/pluck'
 import shuffle from 'licia/shuffle'
 import { COLORS, REST_SATURATION, SOLVED_FADE_MS } from '../game/constants'
-import { padRatio, pieceTexture, seamCanvas } from '../game/cutPiece'
+import { etchedGhostCanvas, padRatio, pieceTexture } from '../game/cutPiece'
 import { type PieceCut } from '../game/jigsaw'
 import { PREVIEW_TEXTURE } from '../game/paintPicture'
 import { BAR_HEIGHT, BOARD_GAP, FIELD_WIDTH, GAME_HEIGHT } from '../lib/layout'
@@ -28,7 +28,7 @@ const PARADE_PER_PIECE_MS = 646
 const QUEUE_SCALE = 0.32
 // Same long side on every picture and difficulty. Finer grids used to shrink the queue.
 const QUEUE_SLOT = 40
-const SEAM_TEXTURE = 'jigsaw-seams'
+const GHOST_TEXTURE = 'jigsaw-ghost'
 const COMBO_MAX = 5
 // Longer laps need a wider chain window.
 const COMBO_WINDOW_MS = [6000, 7500, 9000]
@@ -56,7 +56,6 @@ export class BoardView {
   private readonly snapped = new Set<number>()
   private readonly parade = new Map<number, number>()
   private readonly settling = new Map<number, Phaser.Tweens.Tween>()
-  private seams!: Phaser.GameObjects.Image
   private finalImage!: Phaser.GameObjects.Image
   private cuts: PieceCut[] = []
   private columns = 1
@@ -123,7 +122,6 @@ export class BoardView {
     this.createEntranceMask()
     this.createEntranceFade()
     this.createGhost()
-    this.createSeams()
     this.createPieces(placements)
     this.createFinalImage()
     this.bindPointer()
@@ -143,8 +141,7 @@ export class BoardView {
   private showSolved(options: { animate?: boolean } = {}) {
     const animate = options.animate !== false
     // A drag lifts that piece above the solved picture, and the cut is drawn on the piece itself.
-    const pieces = [...this.images.values()]
-    const fading = [this.seams, ...pieces]
+    const fading = [...this.images.values()]
     this.scene.tweens.killTweensOf([...fading, this.finalImage])
     const duration = animate ? motionDuration(SOLVED_FADE_MS) : 0
     this.root.bringToTop(this.finalImage)
@@ -178,15 +175,14 @@ export class BoardView {
     for (const image of this.images.values()) {
       this.scene.tweens.killTweensOf(image)
     }
-    if (this.seams) this.scene.tweens.killTweensOf(this.seams)
     if (this.finalImage) this.scene.tweens.killTweensOf(this.finalImage)
     this.root.destroy(true)
     this.entranceMask?.destroy()
     this.entranceCover?.destroy()
     this.entranceMask = undefined
     this.entranceCover = undefined
-    if (this.scene.textures.exists(SEAM_TEXTURE)) {
-      this.scene.textures.remove(SEAM_TEXTURE)
+    if (this.scene.textures.exists(GHOST_TEXTURE)) {
+      this.scene.textures.remove(GHOST_TEXTURE)
     }
     this.images.clear()
   }
@@ -246,23 +242,16 @@ export class BoardView {
   }
 
   private createGhost() {
-    const ghost = this.scene.add
-      .image(this.originX, this.originY, PREVIEW_TEXTURE)
-      .setOrigin(0, 0)
-      .setDisplaySize(this.contentW, this.contentH)
-      .setAlpha(0.86)
-      .setDepth(0)
-    ghost.preFX?.addColorMatrix().saturate(REST_SATURATION)
-    this.root.add(ghost)
-  }
-
-  private createSeams() {
-    if (this.scene.textures.exists(SEAM_TEXTURE)) {
-      this.scene.textures.remove(SEAM_TEXTURE)
+    if (this.scene.textures.exists(GHOST_TEXTURE)) {
+      this.scene.textures.remove(GHOST_TEXTURE)
     }
+    const preview = this.scene.textures
+      .get(PREVIEW_TEXTURE)
+      .getSourceImage() as CanvasImageSource
     this.scene.textures.addCanvas(
-      SEAM_TEXTURE,
-      seamCanvas(
+      GHOST_TEXTURE,
+      etchedGhostCanvas(
+        preview,
         this.columns,
         this.rows,
         this.cuts,
@@ -270,12 +259,14 @@ export class BoardView {
         this.contentH,
       ),
     )
-    this.seams = this.scene.add
-      .image(this.originX, this.originY, SEAM_TEXTURE)
+    const ghost = this.scene.add
+      .image(this.originX, this.originY, GHOST_TEXTURE)
       .setOrigin(0, 0)
       .setDisplaySize(this.contentW, this.contentH)
-      .setDepth(0.5)
-    this.root.add(this.seams)
+      .setAlpha(0.86)
+      .setDepth(0)
+    ghost.preFX?.addColorMatrix().saturate(REST_SATURATION)
+    this.root.add(ghost)
   }
 
   private createFinalImage() {

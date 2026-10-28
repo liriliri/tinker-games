@@ -15,7 +15,7 @@ import { fillStar } from '../ui/traceStar'
 const VIEW_TOP = PAGE_PAD
 const CARD_GAP = 10
 const COLUMNS = 5
-const FIT_ROWS = 4
+const FIT_ROWS = 5
 const SATURATION_MS = 320
 const STAR_OUTER = 4.2
 const STAR_INNER = 1.7

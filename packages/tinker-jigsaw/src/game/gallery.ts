@@ -17,6 +17,7 @@ export const GALLERY: GalleryItem[] = [
   { id: 'night-canal', file: 'images/night-canal.jpg' },
   { id: 'window-tea', file: 'images/window-tea.jpg' },
   { id: 'snow-duel', file: 'images/snow-duel.jpg' },
+  { id: 'first-journey', file: 'images/first-journey.jpg' },
   { id: 'cloud-glance', file: 'images/cloud-glance.jpg' },
   { id: 'courtyard-sword', file: 'images/courtyard-sword.jpg' },
   { id: 'cloud-goddess', file: 'images/cloud-goddess.jpg' },
@@ -24,12 +25,14 @@ export const GALLERY: GalleryItem[] = [
   { id: 'courtyard-scroll', file: 'images/courtyard-scroll.jpg' },
   { id: 'sword-peaks', file: 'images/sword-peaks.jpg' },
   { id: 'cloud-steps', file: 'images/cloud-steps.jpg' },
+  { id: 'misty-bridge', file: 'images/misty-bridge.jpg' },
   { id: 'desert-march', file: 'images/desert-march.jpg' },
   { id: 'hall-lecture', file: 'images/hall-lecture.jpg' },
   { id: 'moon-gate', file: 'images/moon-gate.jpg' },
   { id: 'window-lean', file: 'images/window-lean.jpg' },
   { id: 'spring-guzheng', file: 'images/spring-guzheng.jpg' },
   { id: 'peak-dragon', file: 'images/peak-dragon.jpg' },
+  { id: 'flower-sea', file: 'images/flower-sea.jpg' },
   { id: 'eaves-rain', file: 'images/eaves-rain.jpg' },
 ]
 

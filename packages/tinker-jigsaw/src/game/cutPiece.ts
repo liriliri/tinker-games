@@ -180,33 +180,33 @@ function traceSeams(
   }
 }
 
-export function seamCanvas(
+// Dim the ghost plate, then draw thin light seams so they read on pale and dark areas alike.
+export function etchedGhostCanvas(
+  picture: CanvasImageSource,
   columns: number,
   rows: number,
   cuts: PieceCut[],
   width: number,
   height: number,
 ) {
-  const { canvas, ctx } = createCanvas(
-    max(1, Math.round(width)),
-    max(1, Math.round(height)),
-  )
+  const w = max(1, Math.round(width))
+  const h = max(1, Math.round(height))
+  const { canvas, ctx } = createCanvas(w, h)
   if (!ctx) return canvas
+
+  ctx.filter = 'contrast(1.35)'
+  ctx.drawImage(picture, 0, 0, w, h)
+  ctx.filter = 'none'
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.22)'
+  ctx.fillRect(0, 0, w, h)
 
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
-  const cellW = canvas.width / columns
-  const cellH = canvas.height / rows
-  const paint = (style: string, lineWidth: number) => {
-    ctx.beginPath()
-    traceSeams(ctx, columns, rows, cuts, cellW, cellH)
-    ctx.strokeStyle = style
-    ctx.lineWidth = lineWidth
-    ctx.stroke()
-  }
-  // Faint on purpose: the ghost should read as a picture, not a grid.
-  paint('rgba(17, 17, 17, 0.2)', 3)
-  paint('rgba(231, 225, 214, 0.36)', 1.4)
+  ctx.strokeStyle = 'rgba(255, 250, 244, 0.78)'
+  ctx.lineWidth = 1.35
+  ctx.beginPath()
+  traceSeams(ctx, columns, rows, cuts, w / columns, h / rows)
+  ctx.stroke()
   return canvas
 }
 
