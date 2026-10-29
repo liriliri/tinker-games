@@ -7,14 +7,17 @@ import { s } from '../lib/scale'
 import type { SplitRank } from '../lib/storage'
 import { createTextButton } from '../ui/createTextButton'
 import { addCountText } from '../ui/sharpText'
-import { fillStar, traceStar } from '../ui/traceStar'
+import {
+  fillStar,
+  STAR_GAP,
+  STAR_INNER,
+  STAR_OUTER,
+  traceStar,
+} from '../ui/traceStar'
 
 const CHIP_HEIGHT = 26
 const CHIP_GAP = 6
 const CHIP_PAD_X = 4
-const STAR_OUTER = 4.2
-const STAR_INNER = 1.7
-const STAR_GAP = 9
 const BACK_SIZE = 22
 const COUNT_GAP = 14
 

@@ -1,6 +1,10 @@
 import Phaser from 'phaser'
 import { COLORS } from '../game/constants'
 
+export const STAR_OUTER = 4.2
+export const STAR_INNER = 1.7
+export const STAR_GAP = 9
+
 export function traceStar(
   graphics: Phaser.GameObjects.Graphics,
   x: number,

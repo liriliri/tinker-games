@@ -4,22 +4,19 @@ import max from 'licia/max'
 import min from 'licia/min'
 import { COLORS, REST_SATURATION } from '../game/constants'
 import { GALLERY, galleryTexture } from '../game/gallery'
-import { pictureCanvas } from '../game/paintPicture'
+import { thumbCanvas } from '../game/paintPicture'
 import { FIELD_WIDTH, GAME_HEIGHT, PAGE_PAD } from '../lib/layout'
 import { playMenuSound, preloadMenuSound } from '../lib/sound'
 import { s } from '../lib/scale'
 import { getStorage, type SplitRank } from '../lib/storage'
 import { motionDuration } from '../lib/util'
-import { fillStar } from '../ui/traceStar'
+import { fillStar, STAR_GAP, STAR_INNER, STAR_OUTER } from '../ui/traceStar'
 
 const VIEW_TOP = PAGE_PAD
 const CARD_GAP = 10
 const COLUMNS = 5
 const FIT_ROWS = 5
 const SATURATION_MS = 320
-const STAR_OUTER = 4.2
-const STAR_INNER = 1.7
-const STAR_GAP = 9
 const STAR_INSET = 4
 
 export class GalleryView {
@@ -128,9 +125,9 @@ export class GalleryView {
   ) {
     const key = galleryTexture(id)
     if (!this.scene.textures.exists(key)) {
-      this.scene.textures.addCanvas(key, pictureCanvas(id))
+      this.scene.textures.addCanvas(key, thumbCanvas(id))
     }
-    const source = pictureCanvas(id)
+    const source = thumbCanvas(id)
     // The wall frame stays 16:9. The photo keeps its own ratio inside it.
     const frameAspect = width / height
     const imageAspect = source.width / source.height
@@ -147,7 +144,11 @@ export class GalleryView {
       image,
     ])
     this.addClearStars(id, root, imageX, imageY, displayW, displayH)
-    this.bindSaturation(image, root, restSaturation(getStorage(this.scene).getBest(id)))
+    this.bindSaturation(
+      image,
+      root,
+      restSaturation(getStorage(this.scene).getBest(id)),
+    )
     this.bindOpen(root, width, height, index, () => this.onChoose(id))
     return root
   }

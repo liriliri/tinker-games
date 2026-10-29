@@ -56,5 +56,13 @@ All games in the list can be installed to TINKER by running `npm i -g tinker-xxx
       <th><img src="./packages/tinker-checkers/screenshot.png"/></th>
       <th><img src="./packages/tinker-jump-jump/screenshot.png"/></th>
     </tr>
+    <tr>
+      <th width="50%"><a href="./packages/tinker-geometry-fighter/">tinker-geometry-fighter</a></th>
+      <th><a href="./packages/tinker-jigsaw/">tinker-jigsaw</a></th>
+    </tr>
+    <tr>
+      <th><img src="./packages/tinker-geometry-fighter/screenshot.png"/></th>
+      <th><img src="./packages/tinker-jigsaw/screenshot.png"/></th>
+    </tr>
   </tbody>
 </table>

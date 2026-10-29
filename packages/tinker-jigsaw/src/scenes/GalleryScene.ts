@@ -1,6 +1,10 @@
 import Phaser from 'phaser'
 import { CUSTOM_PICTURE_ID, GALLERY } from '../game/gallery'
-import { loadGalleryPictures, rememberLocalPicture } from '../game/paintPicture'
+import {
+  loadGalleryThumbs,
+  loadPicture,
+  rememberLocalPicture,
+} from '../game/paintPicture'
 import { GalleryView } from '../gameObjects/GalleryView'
 import { initStorage } from '../lib/storage'
 import { applyRenderScale, RELAYOUT_EVENT } from '../lib/scale'
@@ -27,7 +31,7 @@ export class GalleryScene extends Phaser.Scene {
   }
 
   private async open() {
-    await loadGalleryPictures(GALLERY)
+    await loadGalleryThumbs(GALLERY)
     if (!this.alive) return
     this.mount(0)
     this.events.on(RELAYOUT_EVENT, this.relayout, this)
@@ -38,15 +42,24 @@ export class GalleryScene extends Phaser.Scene {
       this,
       scroll,
       (pictureId) => {
-        this.choose(pictureId)
+        void this.choose(pictureId)
       },
       () => this.pick(),
     )
   }
 
-  private choose(pictureId: string) {
+  private async choose(pictureId: string) {
     if (this.leaving) return
+    const item = GALLERY.find((entry) => entry.id === pictureId)
+    if (!item) return
     this.leaving = true
+    try {
+      await loadPicture(item)
+    } catch {
+      this.leaving = false
+      return
+    }
+    if (!this.alive) return
     this.scene.start(SCENE_GAME, { pictureId } satisfies GameLaunch)
   }
 
@@ -68,13 +81,15 @@ export class GalleryScene extends Phaser.Scene {
   }
 
   private async openPicked(file: Blob) {
+    if (this.leaving) return
+    this.leaving = true
     try {
       await rememberLocalPicture(file)
     } catch {
+      this.leaving = false
       return
     }
-    if (!this.alive || this.leaving) return
-    this.leaving = true
+    if (!this.alive) return
     this.scene.start(SCENE_GAME, {
       pictureId: CUSTOM_PICTURE_ID,
     } satisfies GameLaunch)

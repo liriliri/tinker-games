@@ -22,6 +22,7 @@ export const GALLERY: GalleryItem[] = [
   { id: 'courtyard-sword', file: 'images/courtyard-sword.jpg' },
   { id: 'cloud-goddess', file: 'images/cloud-goddess.jpg' },
   { id: 'rooftop-night', file: 'images/rooftop-night.jpg' },
+  { id: 'waterside-pipa', file: 'images/waterside-pipa.jpg' },
   { id: 'courtyard-scroll', file: 'images/courtyard-scroll.jpg' },
   { id: 'sword-peaks', file: 'images/sword-peaks.jpg' },
   { id: 'cloud-steps', file: 'images/cloud-steps.jpg' },
@@ -39,4 +40,11 @@ export const GALLERY: GalleryItem[] = [
 
 export function galleryTexture(id: string) {
   return `gallery-${id}`
+}
+
+// Full plates live at images/x.jpg; wall cards load the matching thumbs copy.
+export function galleryThumb(file: string) {
+  const slash = file.lastIndexOf('/')
+  if (slash < 0) return `thumbs/${file}`
+  return `${file.slice(0, slash)}/thumbs/${file.slice(slash + 1)}`
 }
