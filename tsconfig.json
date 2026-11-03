@@ -17,6 +17,7 @@
   },
   "include": [
     "packages/tinker-*/src/**/*.ts",
+    "packages/tinker-*/src/**/*.d.ts",
     "node_modules/tinker-api-types/tinker.d.ts"
   ],
   "exclude": [

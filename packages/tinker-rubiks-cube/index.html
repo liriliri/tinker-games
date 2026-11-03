@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Rubik's Cube</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="cube-stage" role="img"></div>
+      <div id="webgl-error" class="hidden"></div>
+
+      <div id="hud-top" class="hud">
+        <div class="hud-row">
+          <div id="size-toggles" class="toggle-group"></div>
+          <div class="hud-right">
+            <button
+              type="button"
+              id="btn-hint"
+              class="btn btn-icon btn-hint"
+              aria-pressed="false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  class="bulb-body"
+                  d="M9 18h6M10 21h4M12 2a7 7 0 0 0-4 12.6V16a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-1.4A7 7 0 0 0 12 2Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  class="bulb-rays"
+                  d="M12 2v-1M5.6 5.6l-.8-.8M18.4 5.6l.8-.8M3.5 12H2.5M21.5 12h-1"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              id="btn-scramble"
+              class="btn btn-primary"
+            ></button>
+          </div>
+        </div>
+      </div>
+
+      <div id="hud-bottom" class="hud hud-bottom">
+        <div class="hud-bottom-row">
+          <div id="timer-block" class="stat-block">
+            <div id="timer" class="stat-value">0.00</div>
+            <div id="best" class="stat-label"></div>
+          </div>
+          <div id="moves-block" class="stat-block moves-block hidden">
+            <div id="moves" class="stat-value">0</div>
+            <div id="moves-label" class="stat-label"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="confirm-modal" class="modal hidden" aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div
+          class="modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-title"
+        >
+          <h2 id="confirm-title" class="modal-title"></h2>
+          <div class="modal-actions">
+            <button
+              type="button"
+              id="confirm-cancel"
+              class="modal-icon-btn modal-icon-btn--cancel"
+              aria-label=""
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M6.5 6.5l11 11M17.5 6.5l-11 11"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              id="confirm-ok"
+              class="modal-icon-btn modal-icon-btn--ok"
+              aria-label=""
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M5.5 12.5l4.2 4.2L18.5 7.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
