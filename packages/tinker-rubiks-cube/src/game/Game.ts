@@ -114,7 +114,7 @@ export class Game {
     this.renderStaticLabels()
     this.mountView(this.restoreSize(this.order))
     this.refreshUi()
-    void prepareSolver()
+    void prepareSolver().catch(() => undefined)
   }
 
   private bindUi(): void {

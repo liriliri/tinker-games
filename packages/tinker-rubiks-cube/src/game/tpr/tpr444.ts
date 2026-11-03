@@ -1,6 +1,6 @@
 import max from 'licia/max'
 import trim from 'licia/trim'
-import { FACE_TURN, type Move } from '../../model'
+import { FACE_TURN, type Move } from '../model'
 import { initTpr, solveFacelets } from './search'
 
 let initPromise: Promise<void> | null = null
