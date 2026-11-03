@@ -7,6 +7,7 @@ declare module 'cubejs' {
     move(algorithm: string): Cube
     asString(): string
     solve(maxDepth?: number): string
+    isSolved(): boolean
     clone(): Cube
   }
 }

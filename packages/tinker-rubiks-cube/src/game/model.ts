@@ -5,10 +5,10 @@ import map from 'licia/map'
 import range from 'licia/range'
 
 export type Axis = 0 | 1 | 2
-export type CubeSize = 3 | 4 | 5
+export type CubeSize = 3 | 4
 export type Vec3 = [number, number, number]
 
-export interface Sticker {
+interface Sticker {
   p: Vec3
   n: Vec3
   c: number
@@ -25,21 +25,33 @@ export interface Move {
   turns: number
 }
 
-export const CUBE_SIZES: CubeSize[] = [3, 4, 5]
+export const CUBE_SIZES: CubeSize[] = [3, 4]
 
 const SCRAMBLE_MOVES: Record<number, number> = {
   3: 22,
   4: 36,
-  5: 50,
+}
+
+/** Move.turns for one face-CW quarter (R/U/F use −1 under the right-hand rule). */
+export const FACE_TURN: Record<
+  string,
+  { axis: Axis; sign: 1 | -1; cw: number }
+> = {
+  R: { axis: 0, sign: 1, cw: -1 },
+  L: { axis: 0, sign: -1, cw: 1 },
+  U: { axis: 1, sign: 1, cw: -1 },
+  D: { axis: 1, sign: -1, cw: 1 },
+  F: { axis: 2, sign: 1, cw: -1 },
+  B: { axis: 2, sign: -1, cw: 1 },
 }
 
 const FACE_KEYS: Record<string, { axis: Axis; sign: number }> = {
-  r: { axis: 0, sign: 1 },
-  l: { axis: 0, sign: -1 },
-  u: { axis: 1, sign: 1 },
-  d: { axis: 1, sign: -1 },
-  f: { axis: 2, sign: 1 },
-  b: { axis: 2, sign: -1 },
+  r: FACE_TURN.R,
+  l: FACE_TURN.L,
+  u: FACE_TURN.U,
+  d: FACE_TURN.D,
+  f: FACE_TURN.F,
+  b: FACE_TURN.B,
 }
 
 const WHOLE_KEYS: Record<string, Axis> = { x: 0, y: 1, z: 2 }

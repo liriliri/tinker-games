@@ -1,3 +1,4 @@
+import clamp from 'licia/clamp'
 import contain from 'licia/contain'
 import min from 'licia/min'
 import { AudioKit } from '../lib/audio'
@@ -22,7 +23,7 @@ import {
   type CubeState,
   type Move,
 } from './model'
-import { findSolution, invertScramble, prepareSolver } from './solver'
+import { findSolution, prepareSolver } from './solver'
 import { CubeView, type MoveTag } from './view'
 
 function sameMove(a: Move, b: Move): boolean {
@@ -35,19 +36,12 @@ type PendingConfirm = 'scramble' | { type: 'size'; size: CubeSize }
 interface SolveResult {
   time: number
   moves: number
-  record: boolean
 }
 
 interface TimerState {
   acc: number
   start: number
   running: boolean
-}
-
-function isCoarsePointer(): boolean {
-  return (
-    window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 640
-  )
 }
 
 export class Game {
@@ -71,7 +65,6 @@ export class Game {
   private view: CubeView | null = null
   private prefs = loadPrefs()
   private order: CubeSize
-  private availableSizes: CubeSize[]
   private phase: Phase = 'free'
   private moves = 0
   private timer: TimerState = { acc: 0, start: 0, running: false }
@@ -113,10 +106,7 @@ export class Game {
       'confirm-ok',
     ) as HTMLButtonElement
 
-    this.availableSizes = isCoarsePointer() ? [3, 4] : [...CUBE_SIZES]
-    this.order = contain(this.availableSizes, this.prefs.order)
-      ? this.prefs.order
-      : 3
+    this.order = contain(CUBE_SIZES, this.prefs.order) ? this.prefs.order : 3
     this.best = getBest()
 
     this.stageEl.setAttribute('aria-label', t('cubeLabel'))
@@ -160,7 +150,7 @@ export class Game {
 
   private renderStaticLabels(): void {
     this.sizeTogglesEl.innerHTML = ''
-    for (const size of this.availableSizes) {
+    for (const size of CUBE_SIZES) {
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'toggle'
@@ -228,6 +218,7 @@ export class Game {
     this.solved = isSolved(state)
     this.result = null
     this.best = getBest()
+    this.hintQueue = null
     this.stopTimerTick()
     return state
   }
@@ -302,6 +293,7 @@ export class Game {
     if (!this.autoSolving) return
     this.autoSolving = false
     this.autoSolveGen += 1
+    this.hintQueue = null
     this.refreshUi()
   }
 
@@ -325,16 +317,11 @@ export class Game {
 
     const gen = ++this.autoSolveGen
     this.autoSolving = true
+    this.hintQueue = null
     view.locked = true
     this.refreshUi()
 
     try {
-      if (!this.hintQueue?.length) {
-        const solution = await findSolution(view.getState())
-        if (gen !== this.autoSolveGen) return
-        if (solution?.length) this.hintQueue = solution
-      }
-
       while (this.autoSolving && gen === this.autoSolveGen) {
         const current = this.view
         if (!current || isSolved(current.getState())) break
@@ -348,8 +335,9 @@ export class Game {
 
         const move = this.hintQueue[0]
         if (!move) break
-        // Slow turns so the auto-solve path is easy to follow.
-        await current.play([move], 'user', 0.4)
+        // Longer queues play faster, but never so short that turns look like teleporting.
+        const dur = clamp(10 / this.hintQueue.length, 0.12, 0.4)
+        await current.play([move], 'user', dur)
         if (gen !== this.autoSolveGen) return
       }
     } finally {
@@ -384,24 +372,25 @@ export class Game {
     }
 
     this.solved = isSolved(state)
-    if (this.solved && this.phase === 'solving') {
-      this.pauseTimer()
-      const time = this.timer.acc
-      let isRecord = false
-      if (time > 0) {
-        isRecord = recordSolve({
-          at: Date.now(),
-          time,
-          moves: this.moves,
-        }).isRecord
+    if (this.solved) {
+      if (this.phase === 'solving') {
+        this.pauseTimer()
+        const time = this.timer.acc
+        if (time > 0) {
+          recordSolve({
+            at: Date.now(),
+            time,
+            moves: this.moves,
+          })
+        }
+        this.phase = 'free'
+        this.hintQueue = null
+        this.stopAutoSolve()
+        this.audio.playVictory()
+        this.view?.celebrate()
+        this.result = { time, moves: this.moves }
+        this.best = getBest()
       }
-      this.phase = 'free'
-      this.hintQueue = null
-      this.stopAutoSolve()
-      this.audio.playVictory()
-      this.view?.celebrate()
-      this.result = { time, moves: this.moves, record: isRecord }
-      this.best = getBest()
     }
 
     this.persist(state)
@@ -429,7 +418,6 @@ export class Game {
 
     if (view.getState().size !== this.order || this.phase !== 'scrambling')
       return
-    this.hintQueue = invertScramble(moves)
     this.phase = 'ready'
     this.solved = isSolved(view.getState())
     this.persist()

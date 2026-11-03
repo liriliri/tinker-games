@@ -29,7 +29,7 @@ const PALETTE = [
 
 export type MoveTag = 'user' | 'scramble'
 
-export interface CubeViewCallbacks {
+interface CubeViewCallbacks {
   onMove: (move: Move, state: CubeState, tag: MoveTag) => void
   onTurnStart: () => void
   onDoubleTap: () => void

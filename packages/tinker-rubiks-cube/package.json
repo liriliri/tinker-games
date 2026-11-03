@@ -1,6 +1,6 @@
 {
   "name": "tinker-rubiks-cube",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Drag layers to twist a 3D Rubik's Cube — scramble, time your solve, and chase a new best.",
   "files": [
     "dist/",
