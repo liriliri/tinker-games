@@ -2,9 +2,10 @@ import * as THREE from 'three'
 import clamp from 'licia/clamp'
 import each from 'licia/each'
 import random from 'licia/random'
+import seedRandom from 'licia/seedRandom'
 import some from 'licia/some'
 import { fbm, smoothstep } from '../lib/noise'
-import { dataToTexture } from '../lib/texture'
+import { dataToTexture, heightToNormalData } from '../lib/texture'
 
 /**
  * Beach rubble inspired by tinker-aquarium `createRubble`, with procedural
@@ -46,7 +47,7 @@ export function createRockMaps(size = 256): RockMaps {
       const fine = fbm(u * 28, v * 28, 43, 2, 28)
       const form = fbm(u * 7, v * 7, 44, 3, 7)
 
-      // Sparse soft pits only — no crack ridges.
+      // Soft pits only — no crack ridges.
       const pore =
         smoothstep(0.82, 0.95, fbm(u * 28, v * 28, 45, 2, 28)) *
         smoothstep(0.35, 0.75, fine) *
@@ -57,7 +58,6 @@ export function createRockMaps(size = 256): RockMaps {
       h -= pore * 0.1
       height[index] = clamp(h, 0, 1)
 
-      // Pale cool grey.
       const shade = 0.72 + big * 0.08 + (mid - 0.5) * 0.05 + (form - 0.5) * 0.02
       let r = shade * (0.98 + (fine - 0.5) * 0.02)
       let g = shade * (0.99 + (fine - 0.5) * 0.015)
@@ -81,29 +81,14 @@ export function createRockMaps(size = 256): RockMaps {
     }
   }
 
-  const normals = new Uint8Array(size * size * 4)
-  const wrap = (i: number) => ((i % size) + size) % size
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const dx =
-        (height[y * size + wrap(x + 1)] - height[y * size + wrap(x - 1)]) * 1.4
-      const dy =
-        (height[wrap(y + 1) * size + x] - height[wrap(y - 1) * size + x]) * 1.4
-      const invLen = 1 / Math.hypot(dx, dy, 1)
-      const pixel = (y * size + x) * 4
-      normals[pixel] = Math.round(clamp(0.5 - dx * invLen * 0.5, 0, 1) * 255)
-      normals[pixel + 1] = Math.round(
-        clamp(0.5 - dy * invLen * 0.5, 0, 1) * 255,
-      )
-      normals[pixel + 2] = Math.round(clamp(0.5 + 0.5 * invLen, 0, 1) * 255)
-      normals[pixel + 3] = 255
-    }
-  }
-
   return {
     map: dataToTexture(albedo, size, true),
     roughnessMap: dataToTexture(rough, size, false),
-    normalMap: dataToTexture(normals, size, false),
+    normalMap: dataToTexture(
+      heightToNormalData(height, size, 1.4, true),
+      size,
+      false,
+    ),
   }
 }
 
@@ -111,17 +96,16 @@ export function createRockMaps(size = 256): RockMaps {
  * Aquarium-style rubble: subdivided icosahedron with wobble displacement,
  * spherical UVs, base at y=0.
  */
-function createRubbleGeometry(seed = random(0, 1, true)): THREE.BufferGeometry {
-  const random = () => {
-    seed = (seed * 16807) % 2147483647
-    return (seed - 1) / 2147483646
-  }
+function createRubbleGeometry(
+  seed = random(0, 1e9, true),
+): THREE.BufferGeometry {
+  const rnd = seedRandom(seed, 0, 1, true)
   const geometry = new THREE.IcosahedronGeometry(0.5, 2)
   const position = geometry.attributes.position
   for (let i = 0; i < position.count; i += 1) {
     tmp.fromBufferAttribute(position, i)
     tmp.multiplyScalar(1 + 0.22 * wobble(tmp.x, tmp.y, tmp.z, 4.5))
-    tmp.y *= 0.45 + random() * 0.12
+    tmp.y *= 0.45 + rnd() * 0.12
     position.setXYZ(i, tmp.x, tmp.y, tmp.z)
   }
   const uvs = new Float32Array(position.count * 2)

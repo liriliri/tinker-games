@@ -11,6 +11,8 @@ interface Messages {
   controls: string
   playerOne: string
   playerTwo: string
+  p1: string
+  p2: string
   stage: string
   enemies: string
   lives: string
@@ -44,6 +46,8 @@ const messages: Record<Locale, Messages> = {
     controls: 'CONTROLS',
     playerOne: 'PLAYER 1',
     playerTwo: 'PLAYER 2',
+    p1: 'P1',
+    p2: 'P2',
     stage: 'STAGE',
     enemies: 'ENEMY',
     lives: 'LIVES',
@@ -75,6 +79,8 @@ const messages: Record<Locale, Messages> = {
     controls: '操作说明',
     playerOne: '玩家 1',
     playerTwo: '玩家 2',
+    p1: 'P1',
+    p2: 'P2',
     stage: '关卡',
     enemies: '敌军',
     lives: '生命',

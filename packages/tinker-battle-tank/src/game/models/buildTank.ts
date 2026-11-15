@@ -3,9 +3,10 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { TANK_TRACK_HALF_WIDTH } from '../constants'
 import type { TankLevel } from '../types'
 import { applyCamoMap } from './camo'
+import { standardMaterial } from './camo'
 import { TANK_KITS } from './tanks'
 import type { TankKitSpec } from './types'
-import type { TankPalette } from './world'
+import type { TankPalette } from './palette'
 
 /** Fit the longer hull edge inside one Battle City cell (margin so guns clear walls). */
 const TARGET_SPAN = 0.76
@@ -15,18 +16,6 @@ const TRACK_SPAN_SCALE = 0.88
 const HEIGHT_BOOST = 1.55
 /** Segments along each rounded edge — 2 is enough at this scale. */
 const ROUND_SEGMENTS = 2
-
-function standard(
-  color: number,
-  options: Partial<THREE.MeshStandardMaterialParameters> = {},
-) {
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.78,
-    metalness: 0.05,
-    ...options,
-  })
-}
 
 /**
  * Rounded box by default so hull / turret read softer from above.
@@ -107,18 +96,21 @@ export function createTankModel(level: TankLevel, palette: TankPalette) {
   const spec = TANK_KITS[level]
   const group = new THREE.Group()
 
-  const bodyMat = standard(0xffffff)
+  const bodyMat = standardMaterial(0xffffff)
   bodyMat.userData.tintRole = 'body'
   applyCamoMap(bodyMat, palette)
-  const lightMat = standard(0xffffff, { roughness: 0.55 })
+  const lightMat = standardMaterial(0xffffff, { roughness: 0.55 })
   lightMat.userData.tintRole = 'light'
   applyCamoMap(lightMat, palette)
-  const darkMat = standard(0xffffff, { roughness: 0.85 })
+  const darkMat = standardMaterial(0xffffff, { roughness: 0.85 })
   darkMat.userData.tintRole = 'dark'
   applyCamoMap(darkMat, palette)
-  const treadMat = standard(0x2a2e34, { roughness: 0.96 })
-  const rubberMat = standard(0x0d0f12, { roughness: 0.98 })
-  const metalMat = standard(0x4a5560, { roughness: 0.42, metalness: 0.4 })
+  const treadMat = standardMaterial(0x2a2e34, { roughness: 0.96 })
+  const rubberMat = standardMaterial(0x0d0f12, { roughness: 0.98 })
+  const metalMat = standardMaterial(0x4a5560, {
+    roughness: 0.42,
+    metalness: 0.4,
+  })
 
   const scale = TARGET_SPAN / Math.max(spec.hull.w, spec.hull.l)
   const s = (metres: number) => metres * scale

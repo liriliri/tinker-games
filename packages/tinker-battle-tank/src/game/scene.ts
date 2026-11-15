@@ -37,12 +37,14 @@ import {
   createSteelMaterial,
   createTankModel,
   createTreeGeometry,
+  createTreeMaterial,
   createRiverFloorMaterial,
   createRiverCurbGeometry,
   createRiverCurbMaterial,
   createRiverMaterial,
   RIVER_DEPTH,
   RIVER_WATER_OFFSET,
+  powerUpFlashAmount,
   resolveBotPalette,
   TANK_PALETTES,
   type ConcreteMaps,
@@ -63,6 +65,10 @@ const FIELD_PADDING_Y = 3.6
 const SEA_SIZE = 96
 /** Half of the reference 3/16-cell bullet — centres the mesh on its hitbox. */
 const BULLET_HALF = 3 / 32
+/** How high a tank starts when materialising (then drops to the deck). */
+const SPAWN_DROP_HEIGHT = 1.4
+/** Fraction of spawnProgress spent flashing in mid-air before the fall. */
+const SPAWN_FLASH_END = 0.22
 
 interface MuzzleLocal {
   x: number
@@ -129,6 +135,7 @@ export class BattleScene {
     new THREE.Vector3(11, 13, 7),
     FIELD_SIZE,
   )
+  private readonly treeFoliage = createTreeMaterial()
   private sunPosition = new THREE.Vector3(11, 13, 7)
   private wetGround?: WetGroundSystem
   private sea?: SeaSystem
@@ -462,15 +469,12 @@ export class BattleScene {
     this.snowMesh.receiveShadow = true
     this.snowMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
 
-    const treeMaterial = new THREE.MeshStandardMaterial({
-      color: 0x3f7d43,
-      roughness: 0.95,
-      flatShading: true,
-    })
-    const maxTrees = FIELD_BLOCKS * FIELD_BLOCKS * 3
+    /** Dense pack — enough instances to carpet a full forest cell. */
+    const treesPerCell = 9
+    const maxTrees = FIELD_BLOCKS * FIELD_BLOCKS * treesPerCell
     this.treeMesh = new THREE.InstancedMesh(
       createTreeGeometry(),
-      treeMaterial,
+      this.treeFoliage.material,
       maxTrees,
     )
     this.treeMesh.castShadow = true
@@ -519,7 +523,7 @@ export class BattleScene {
       return out
     }
 
-    // Build continuous perimeter curb spans (no posts).
+    // Merge curb edges into continuous spans (no posts).
     const horiz = new Map<number, Array<[number, number]>>()
     const vert = new Map<number, Array<[number, number]>>()
     const addInterval = (
@@ -594,18 +598,20 @@ export class BattleScene {
       }
 
       if (field.forests[cell]) {
-        for (let i = 0; i < 3; i += 1) {
-          const angle = (i / 3) * Math.PI * 2 + cell * 0.7
-          const radius = 0.16 + (i % 2) * 0.12
-          const world = cellToWorld(
-            centreX + Math.cos(angle) * radius,
-            centreY + Math.sin(angle) * radius,
-          )
-          const scale = 0.85 + ((cell + i) % 3) * 0.12
+        // 3×3 grid with jitter so canopies overlap and fill the cell.
+        for (let i = 0; i < treesPerCell; i += 1) {
+          const gx = (i % 3) - 1
+          const gz = ((i / 3) | 0) - 1
+          const jitter = ((cell * 17 + i * 31) % 100) / 100
+          const ox = gx * 0.28 + (jitter - 0.5) * 0.1
+          const oz =
+            gz * 0.28 + (((cell * 13 + i * 19) % 100) / 100 - 0.5) * 0.1
+          const world = cellToWorld(centreX + ox, centreY + oz)
+          const scale = 0.95 + ((cell + i) % 4) * 0.08
           this.matrix.compose(
-            new THREE.Vector3(world.x, this.groundY + 0.42, world.z),
+            new THREE.Vector3(world.x, this.groundY, world.z),
             new THREE.Quaternion().setFromEuler(
-              new THREE.Euler(0, (cell * 1.7 + i) % (Math.PI * 2), 0),
+              new THREE.Euler(0, (cell * 1.7 + i * 0.9) % (Math.PI * 2), 0),
             ),
             new THREE.Vector3(scale, scale, scale),
           )
@@ -615,7 +621,6 @@ export class BattleScene {
       }
     }
 
-    // Continuous curb spans — full length so outer / inner corners meet.
     for (const [z, raw] of horiz) {
       for (const [a, b] of mergeIntervals(raw)) {
         placeCurbSpan((a + b) / 2, z, Math.max(b - a, 0.08), 0)
@@ -831,22 +836,43 @@ export class BattleScene {
       this.tankVisuals.set(tank.id, visual)
     } else if (tank.side === 'bot') {
       const palette = this.paletteFor(tank, clockMs)
-      const key = paletteKey(palette)
+      const glow = tank.withPowerUp ? powerUpFlashAmount(clockMs) : 0
+      // Power-up carriers lerp every frame; HP blink still keys off palette.
+      const key = `${paletteKey(palette)}:${glow.toFixed(2)}`
       if (key !== visual.lastPaletteKey) {
-        applyPalette(visual.tintMeshes, palette)
+        applyPalette(visual.tintMeshes, palette, glow)
         visual.lastPaletteKey = key
       }
     }
 
     const world = cellToWorld(tank.x + 0.5, tank.y + 0.5)
-    visual.group.position.set(world.x, this.groundY, world.z)
     visual.group.rotation.y = directionRotation(tank.direction)
-
-    const spawnScale =
-      tank.spawnProgress >= 1 ? 1 : 0.4 + 0.6 * tank.spawnProgress
-    visual.group.scale.setScalar(spawnScale)
-    visual.group.visible = tank.visible
+    visual.group.scale.setScalar(1)
     visual.shield.visible = tank.helmetDuration > 0
+
+    // Flash into existence high above the cell, then drop onto the deck.
+    if (tank.spawnProgress >= 1) {
+      visual.group.position.set(world.x, this.groundY, world.z)
+      visual.group.visible = tank.visible
+    } else if (tank.spawnProgress < SPAWN_FLASH_END) {
+      // Rapid blink at altitude — reads as a teleport / materialise.
+      const blink =
+        Math.sin((tank.spawnProgress / SPAWN_FLASH_END) * Math.PI * 6) > 0
+      visual.group.position.set(
+        world.x,
+        this.groundY + SPAWN_DROP_HEIGHT,
+        world.z,
+      )
+      visual.group.visible = tank.visible && blink
+    } else {
+      const t = (tank.spawnProgress - SPAWN_FLASH_END) / (1 - SPAWN_FLASH_END)
+      // Ease-in fall (accelerates), soft settle near the ground.
+      const fall = t * t
+      const settle = t * t * (3 - 2 * t)
+      const height = SPAWN_DROP_HEIGHT * (1 - fall * 0.85 - settle * 0.15)
+      visual.group.position.set(world.x, this.groundY + height, world.z)
+      visual.group.visible = tank.visible
+    }
 
     if (tank.visible && tank.spawnProgress >= 1) {
       this.wetGround?.notifyTankMotion(
@@ -1201,21 +1227,21 @@ export class BattleScene {
   }
 
   private disposeTerrain() {
-    for (const mesh of [
-      this.brickMesh,
-      this.steelMesh,
-      this.snowMesh,
-      this.treeMesh,
-    ]) {
+    for (const mesh of [this.brickMesh, this.steelMesh, this.snowMesh]) {
       if (!mesh) continue
       this.scene.remove(mesh)
       mesh.geometry.dispose()
       ;(mesh.material as THREE.Material).dispose()
     }
+    if (this.treeMesh) {
+      this.scene.remove(this.treeMesh)
+      this.treeMesh.geometry.dispose()
+      // Shared foliage material lives on `treeFoliage` for the scene lifetime.
+      this.treeMesh = undefined
+    }
     this.brickMesh = undefined
     this.steelMesh = undefined
     this.snowMesh = undefined
-    this.treeMesh = undefined
 
     if (this.riverUnderlay) {
       this.scene.remove(this.riverUnderlay)
@@ -1246,7 +1272,6 @@ export class BattleScene {
     }
   }
 
-  /** Removes every entity visual; used when a stage is torn down. */
   clearEntities() {
     for (const id of [...this.tankVisuals.keys()]) this.removeTank(id)
     for (const id of [...this.bulletVisuals.keys()]) this.removeBullet(id)
@@ -1261,7 +1286,7 @@ export class BattleScene {
     this.muzzleFlashes.length = 0
   }
 
-  /** Resets orthographic framing (1 = fit the full battlefield). */
+  /** 1 = fit the full battlefield; higher zooms in. */
   setViewZoom(zoom: number) {
     this.viewZoom = Math.min(4.5, Math.max(1, zoom))
     this.resize()
@@ -1310,6 +1335,10 @@ export class BattleScene {
     this.updateExplosions(dt)
     this.riverWater.uniforms.uTime.value = time / 1000
     this.riverWater.uniforms.uEye.value.copy(this.camera.position)
+    this.treeFoliage.uniforms.uTime.value = time / 1000
+    this.treeFoliage.uniforms.uLightDirection.value
+      .copy(this.sunPosition)
+      .normalize()
     this.wetGround?.update(this.renderer, this.scene, this.camera, time / 1000)
     this.sea?.update(this.camera)
     this.composer.render()
@@ -1336,11 +1365,11 @@ function collectTintMeshes(group: THREE.Group) {
   return meshes
 }
 
-function applyPalette(meshes: THREE.Mesh[], palette: TankPalette) {
+function applyPalette(meshes: THREE.Mesh[], palette: TankPalette, glow = 0) {
   for (const mesh of meshes) {
     const material = mesh.material
     if (!(material instanceof THREE.MeshStandardMaterial)) continue
-    applyCamoMap(material, palette)
+    applyCamoMap(material, palette, glow)
   }
 }
 

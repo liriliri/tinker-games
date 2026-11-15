@@ -2,7 +2,20 @@ import * as THREE from 'three'
 import clamp from 'licia/clamp'
 import { fbm, smoothstep } from '../../lib/noise'
 import { dataToTexture } from '../../lib/texture'
-import type { TankPalette } from './world'
+import type { TankPalette } from './palette'
+
+/** Dull armour / prop paint — metalness stays low so camo reads. */
+export function standardMaterial(
+  color: number,
+  options: Partial<THREE.MeshStandardMaterialParameters> = {},
+) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.78,
+    metalness: 0.05,
+    ...options,
+  })
+}
 
 /** Shared grayscale blotch map — multiplies with each panel's solid colour. */
 let maskTexture: THREE.DataTexture | null = null
@@ -50,10 +63,11 @@ function getCamoMask(size = 128) {
 
 type TintRole = 'body' | 'light' | 'dark'
 
-/** Paint panels keep their role colour; mask adds camo mottling. */
 export function applyCamoMap(
   material: THREE.MeshStandardMaterial,
   palette: TankPalette,
+  /** 0–1 red power-up glow; 0 clears emissive. */
+  glow = 0,
 ) {
   const role = material.userData.tintRole as TintRole | undefined
   const hex =
@@ -64,5 +78,14 @@ export function applyCamoMap(
         : palette.body
   material.map = getCamoMask()
   material.color.setHex(hex)
+  if (glow > 0.01) {
+    // Light panels take more glow so the pulse reads on the silhouette.
+    const weight = role === 'light' ? 1 : role === 'dark' ? 0.45 : 0.75
+    material.emissive.setHex(0xff2a12)
+    material.emissiveIntensity = glow * glow * 1.15 * weight
+  } else {
+    material.emissive.setHex(0x000000)
+    material.emissiveIntensity = 0
+  }
   material.needsUpdate = true
 }
