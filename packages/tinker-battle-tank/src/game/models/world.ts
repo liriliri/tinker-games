@@ -1,11 +1,11 @@
 import * as THREE from 'three'
 import clamp from 'licia/clamp'
 import sum from 'licia/sum'
-import { fbm, smoothstep } from '../lib/noise'
-import { dataToTexture } from '../lib/texture'
-import { BRICK_SIZE, STEEL_SIZE } from './constants'
-import { createRockMaps } from './rocks'
-import type { PowerUpName, TankLevel } from './types'
+import { fbm, smoothstep } from '../../lib/noise'
+import { dataToTexture } from '../../lib/texture'
+import { BRICK_SIZE, STEEL_SIZE } from '../constants'
+import { createRockMaps } from '../rocks'
+import type { PowerUpName, TankLevel } from '../types'
 
 export interface TankPalette {
   body: number
@@ -14,30 +14,36 @@ export interface TankPalette {
 }
 
 /**
- * Colours follow the reference's tank colour schemes: players get yellow and
- * green, enemies get silver, blue, orange and red for the four levels.
+ * Muted field paints — still map to Battle City roles (P1 sand, P2 olive,
+ * bots grey / slate / rust / maroon) but read as real armour, not arcade neon.
  */
 export const TANK_PALETTES: Record<
   'player' | 'player2' | TankLevel,
   TankPalette
 > = {
-  player: { body: 0xe79c21, light: 0xe7e794, dark: 0x6b6b00 },
-  player2: { body: 0x008c31, light: 0xb5f7ce, dark: 0x005200 },
-  basic: { body: 0xadadad, light: 0xffffff, dark: 0x00424a },
-  fast: { body: 0x4aa3d8, light: 0xbfe3ff, dark: 0x0b3d5c },
-  power: { body: 0xe7792b, light: 0xffd08a, dark: 0x7a3a06 },
-  armor: { body: 0xb53121, light: 0xff8f7a, dark: 0x5a007b },
+  // Desert sand / warm drab (was bright yellow).
+  player: { body: 0xb89a56, light: 0xd2c08a, dark: 0x5a4828 },
+  // NATO olive drab (was bright green).
+  player2: { body: 0x4e5c3a, light: 0x7a8a5c, dark: 0x2a3420 },
+  // Weathered armour grey-green (was chrome silver).
+  basic: { body: 0x7a7e72, light: 0xa4a89c, dark: 0x3a3e38 },
+  // Cold blue-grey (was toy cyan).
+  fast: { body: 0x5a6e78, light: 0x8a9ea8, dark: 0x2a3840 },
+  // Burnt sienna / rust drab (was neon orange).
+  power: { body: 0x8a5a34, light: 0xb88858, dark: 0x3e2814 },
+  // Dark maroon drab (was arcade red/purple).
+  armor: { body: 0x6e3c34, light: 0x9a6a58, dark: 0x2e1a18 },
 }
 
-/** Reference colour schemes used for bot flashing (silver / red / green / yellow). */
+/** Flash schemes reuse the same muted paints so HP / power-up blink stays readable. */
 const SCHEME_PALETTES: Record<
   'silver' | 'red' | 'green' | 'yellow',
   TankPalette
 > = {
-  silver: { body: 0xadadad, light: 0xffffff, dark: 0x00424a },
-  red: { body: 0xb53121, light: 0xffffff, dark: 0x5a007b },
-  green: { body: 0x008c31, light: 0xb5f7ce, dark: 0x005200 },
-  yellow: { body: 0xe79c21, light: 0xe7e794, dark: 0x6b6b00 },
+  silver: TANK_PALETTES.basic,
+  red: TANK_PALETTES.armor,
+  green: TANK_PALETTES.player2,
+  yellow: TANK_PALETTES.player,
 }
 
 /**
@@ -140,87 +146,6 @@ function box(
   return new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material)
 }
 
-/**
- * Builds a low-poly tank facing +Z (downwards on screen).
- *
- * Every level gets a slightly different silhouette so enemies can be told
- * apart at a glance.
- */
-export function createTankModel(level: TankLevel, palette: TankPalette) {
-  const group = new THREE.Group()
-
-  const treadMaterial = standard(0x2b2f36, { roughness: 0.95 })
-  const bodyMaterial = standard(palette.body)
-  bodyMaterial.userData.tintRole = 'body'
-  const lightMaterial = standard(palette.light, { roughness: 0.6 })
-  lightMaterial.userData.tintRole = 'light'
-  const darkMaterial = standard(palette.dark, { roughness: 0.85 })
-  darkMaterial.userData.tintRole = 'dark'
-
-  const wide = level === 'armor' || level === 'power'
-  const bodyWidth = wide ? 0.66 : 0.56
-  const bodyLength = level === 'fast' ? 0.7 : 0.8
-
-  for (const side of [-1, 1]) {
-    const tread = box(0.16, 0.2, bodyLength + 0.08, treadMaterial)
-    tread.position.set(side * (bodyWidth / 2 + 0.08), 0.1, 0)
-    group.add(tread)
-  }
-
-  const hull = box(bodyWidth, 0.18, bodyLength, bodyMaterial)
-  hull.position.y = 0.2
-  group.add(hull)
-
-  // Upper deck, slightly shorter so the turret reads clearly from above.
-  const deck = box(bodyWidth * 0.82, 0.1, bodyLength * 0.74, lightMaterial)
-  deck.position.y = 0.33
-  group.add(deck)
-
-  const turret = box(0.34, 0.14, 0.34, bodyMaterial)
-  turret.position.set(0, 0.43, -0.04)
-  group.add(turret)
-
-  const hatch = box(0.16, 0.06, 0.16, darkMaterial)
-  hatch.position.set(0, 0.52, -0.04)
-  group.add(hatch)
-
-  const barrel = box(0.09, 0.09, 0.44, darkMaterial)
-  barrel.position.set(0, 0.41, 0.3)
-  group.add(barrel)
-
-  if (level === 'power') {
-    const secondBarrel = box(0.09, 0.09, 0.44, darkMaterial)
-    secondBarrel.position.set(0.14, 0.41, 0.3)
-    group.add(secondBarrel)
-  }
-
-  if (level === 'fast') {
-    const spoiler = box(bodyWidth * 0.9, 0.07, 0.12, darkMaterial)
-    spoiler.position.set(0, 0.44, -bodyLength / 2 + 0.02)
-    group.add(spoiler)
-  }
-
-  if (level === 'armor') {
-    for (const side of [-1, 1]) {
-      const plate = box(0.07, 0.16, bodyLength * 0.8, lightMaterial)
-      plate.position.set(side * (bodyWidth / 2 + 0.03), 0.28, 0)
-      group.add(plate)
-    }
-    const crest = box(0.22, 0.08, 0.22, lightMaterial)
-    crest.position.set(0, 0.55, -0.04)
-    group.add(crest)
-  }
-
-  group.traverse((child) => {
-    if ((child as THREE.Mesh).isMesh) {
-      child.castShadow = true
-      child.receiveShadow = true
-    }
-  })
-
-  return group
-}
-
 export function createShieldModel() {
   const material = new THREE.MeshStandardMaterial({
     color: 0xbfe9ff,
@@ -240,15 +165,91 @@ export function createShieldModel() {
 }
 
 export function createBulletModel() {
-  const material = new THREE.MeshStandardMaterial({
-    color: 0xfff2b0,
-    emissive: 0xffb347,
-    emissiveIntensity: 1.6,
-    roughness: 0.4,
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x6a7278,
+    roughness: 0.48,
+    metalness: 0.55,
   })
+  const bandMat = new THREE.MeshStandardMaterial({
+    color: 0x3e464c,
+    roughness: 0.55,
+    metalness: 0.4,
+  })
+  const noseMat = new THREE.MeshStandardMaterial({
+    color: 0x9a8a68,
+    roughness: 0.4,
+    metalness: 0.45,
+  })
+  const flameCore = new THREE.MeshStandardMaterial({
+    color: 0xfff0a0,
+    emissive: 0xffcc44,
+    emissiveIntensity: 1.8,
+    roughness: 1,
+    transparent: true,
+    opacity: 0.95,
+    depthWrite: false,
+  })
+  const flameOuter = new THREE.MeshStandardMaterial({
+    color: 0xff6a20,
+    emissive: 0xff3a00,
+    emissiveIntensity: 1.4,
+    roughness: 1,
+    transparent: true,
+    opacity: 0.75,
+    depthWrite: false,
+  })
+
   const group = new THREE.Group()
-  const core = box(0.11, 0.11, 0.26, material)
-  group.add(core)
+  // Solid missile facing +Z (matches bullet flight / rotation).
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.045, 0.05, 0.2, 8),
+    bodyMat,
+  )
+  body.rotation.x = Math.PI / 2
+  group.add(body)
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.1, 8), noseMat)
+  nose.rotation.x = Math.PI / 2
+  nose.position.z = 0.14
+  group.add(nose)
+  const band = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.052, 0.052, 0.03, 8),
+    bandMat,
+  )
+  band.rotation.x = Math.PI / 2
+  band.position.z = -0.02
+  group.add(band)
+  for (const angle of [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2]) {
+    const fin = box(0.01, 0.07, 0.06, bandMat)
+    fin.position.set(Math.cos(angle) * 0.055, Math.sin(angle) * 0.055, -0.08)
+    group.add(fin)
+  }
+
+  // Exhaust plume — animated by the scene each frame.
+  const flame = new THREE.Group()
+  flame.name = 'flame'
+  const outer = new THREE.Mesh(
+    new THREE.ConeGeometry(0.055, 0.16, 6),
+    flameOuter,
+  )
+  outer.rotation.x = -Math.PI / 2
+  outer.position.z = -0.18
+  flame.add(outer)
+  const core = new THREE.Mesh(new THREE.ConeGeometry(0.028, 0.12, 6), flameCore)
+  core.rotation.x = -Math.PI / 2
+  core.position.z = -0.16
+  flame.add(core)
+  group.add(flame)
+  group.userData.flame = flame
+
+  group.traverse((child) => {
+    if ((child as THREE.Mesh).isMesh) {
+      child.castShadow = true
+    }
+  })
+  // Flame shouldn't cast heavy shadows.
+  outer.castShadow = false
+  core.castShadow = false
+
   return group
 }
 

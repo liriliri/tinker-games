@@ -1,3 +1,4 @@
+import clamp from 'licia/clamp'
 import contain from 'licia/contain'
 import filter from 'licia/filter'
 import find from 'licia/find'
@@ -26,6 +27,7 @@ import {
   BOT_SPAWN_Y,
   BULLET_EXPLOSION_SPREAD,
   BULLET_EXPLOSION_THRESHOLD,
+  BULLET_SIZE,
   COLLIDE_THRESHOLD,
   FIELD_SIZE,
   GAME_OVER_DELAY,
@@ -83,7 +85,7 @@ type Phase =
   | 'preview'
 
 /** Why the run ended. */
-export type GameOverReason = 'eagle' | 'dead' | 'victory'
+type GameOverReason = 'eagle' | 'dead' | 'victory'
 
 const STAGE_INTRO_DURATION = 1400
 const BULLET_SUBSTEP = 0.05
@@ -186,7 +188,7 @@ export class Game {
 
   private startGame(playerCount: 1 | 2, stageIndex = 0) {
     this.playerCount = playerCount
-    const clamped = Math.max(0, Math.min(stageIndex, STAGES.length - 1))
+    const clamped = clamp(stageIndex, 0, STAGES.length - 1)
     this.startStageIndex = clamped
     this.stageIndex = clamped
     this.players = []
@@ -208,12 +210,13 @@ export class Game {
     this.input.setEnabled(true)
     this.hud.hideOverlay()
     this.hud.showHud()
+    this.scene.setViewZoom(1)
     this.loadStage(clamped)
   }
 
   /** Dev-only: show stage terrain / materials with no tanks or AI. */
   private startPreview(stageIndex = 0) {
-    const clamped = Math.max(0, Math.min(stageIndex, STAGES.length - 1))
+    const clamped = clamp(stageIndex, 0, STAGES.length - 1)
     this.stageIndex = clamped
     this.players = []
     this.remainingBots = []
@@ -230,6 +233,7 @@ export class Game {
     this.hud.setEnemyCount(0)
 
     this.teardownStage()
+    this.scene.setViewZoom(1)
     const stage = STAGES[clamped]
     this.field = Battlefield.fromStage(stage)
     this.scene.buildTerrain(this.field)
@@ -243,6 +247,7 @@ export class Game {
     this.input.setEnabled(false)
     this.input.removeTouchControls()
     this.teardownStage()
+    this.scene.setViewZoom(1)
     this.hud.hideHud()
     this.hud.hideCurtain()
     this.hud.showMenu()
@@ -819,7 +824,10 @@ export class Game {
     }
 
     this.bullets.push(bullet)
+    // Sync the mesh before sampling the gun tip so flash / shot height match.
+    this.scene.updateTank(tank, this.clock)
     this.scene.addBullet(bullet)
+    this.scene.spawnMuzzleFlash(tank.id, tank.direction)
     tank.cooldown = bulletInterval(tank)
 
     if (tank.side === 'player') {
@@ -870,7 +878,7 @@ export class Game {
         continue
       }
 
-      this.scene.updateBullet(bullet)
+      this.scene.updateBullet(bullet, this.clock)
       survivors.push(bullet)
     }
 
@@ -981,7 +989,14 @@ export class Game {
     }
     this.destroyEagleIfSpreadHits(bullet)
 
-    this.scene.spawnExplosion(x, y, color, scale)
+    // Bullet x/y is the hitbox corner; centre it to match the missile mesh.
+    this.scene.spawnExplosion(
+      x + BULLET_SIZE / 2,
+      y + BULLET_SIZE / 2,
+      color,
+      scale,
+      0.4,
+    )
     if (bullet.side !== 'player') return
     if (surface === 'brick') {
       this.audio.play('bullet_hit_2', 0.7)
@@ -1041,7 +1056,7 @@ export class Game {
     this.botBrains.delete(tank.id)
 
     const palette = tank.side === 'player' ? 0xf5b642 : 0xff9a3c
-    this.scene.spawnExplosion(tank.x + 0.5, tank.y + 0.5, palette, 1.2)
+    this.scene.spawnExplosion(tank.x + 0.5, tank.y + 0.5, palette, 1.2, 0.35)
     this.audio.play('explosion_1')
 
     if (tank.side === 'bot') {
@@ -1546,15 +1561,17 @@ function isInFront(other: Tank, tank: Tank) {
 
 /** The position a bullet leaves its tank from, in cells. */
 function bulletStartPosition(tank: Tank) {
+  // Centre on the tank cell — 6/16 was a half-pixel short and read as left-biased.
+  const mid = (1 - BULLET_SIZE) / 2
   switch (tank.direction) {
     case 'up':
-      return { x: tank.x + 6 / 16, y: tank.y }
+      return { x: tank.x + mid, y: tank.y }
     case 'down':
-      return { x: tank.x + 6 / 16, y: tank.y + 13 / 16 }
+      return { x: tank.x + mid, y: tank.y + 1 - BULLET_SIZE }
     case 'left':
-      return { x: tank.x, y: tank.y + 6 / 16 }
+      return { x: tank.x, y: tank.y + mid }
     default:
-      return { x: tank.x + 13 / 16, y: tank.y + 6 / 16 }
+      return { x: tank.x + 1 - BULLET_SIZE, y: tank.y + mid }
   }
 }
 

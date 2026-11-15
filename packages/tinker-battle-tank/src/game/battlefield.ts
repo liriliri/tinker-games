@@ -2,7 +2,6 @@ import trim from 'licia/trim'
 import {
   BRICK_GRID,
   BRICK_SIZE,
-  COLLIDE_THRESHOLD,
   FIELD_BLOCKS,
   FIELD_SIZE,
   STEEL_GRID,
@@ -238,5 +237,3 @@ export function tankRect(x: number, y: number): Rect {
 export function bulletRect(x: number, y: number): Rect {
   return { x, y, width: 3 / 16, height: 3 / 16 }
 }
-
-export { COLLIDE_THRESHOLD }

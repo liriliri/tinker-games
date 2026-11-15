@@ -1,0 +1,26 @@
+export {
+  TANK_PALETTES,
+  resolveBotPalette,
+  createShieldModel,
+  createBulletModel,
+  createEagleModel,
+  createPowerUpModel,
+  createBrickGeometry,
+  createSteelGeometry,
+  createGroundPlane,
+  createTreeGeometry,
+  RIVER_DEPTH,
+  RIVER_WATER_OFFSET,
+  createRiverCurbGeometry,
+  createRiverCurbMaterial,
+  createRiverFloorMaterial,
+  createRiverMaterial,
+  createConcreteMaps,
+  createConcreteMaterial,
+  createBrickMaps,
+  createBrickMaterial,
+  createSteelMaps,
+  createSteelMaterial,
+} from './world'
+export type { TankPalette, ConcreteMaps } from './world'
+export { createTankModel } from './buildTank'

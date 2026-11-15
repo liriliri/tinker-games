@@ -20,6 +20,8 @@ export const STEEL_SIZE = 1 / 2
 /** Tanks and the eagle are a single cell. */
 export const TANK_SIZE = 1
 export const EAGLE_SIZE = 1
+/** Local X of each tread centreline (matches createTankModel running gear). */
+export const TANK_TRACK_HALF_WIDTH = 0.3
 /** Bullets are 3 px wide in the reference, i.e. 3/16 of a cell. */
 export const BULLET_SIZE = 3 / 16
 

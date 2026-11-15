@@ -14,7 +14,7 @@ export interface AiContext {
   bullets: Bullet[]
 }
 
-export interface AiCommand {
+interface AiCommand {
   /** Direction the tank should face, or null to keep the current one. */
   direction: Direction | null
   fire: boolean
@@ -345,7 +345,7 @@ function isTerrainFree(field: Battlefield, x: number, y: number) {
 }
 
 /** True when a tank can stand with its top-left corner at (col, row). */
-export function isCellPassable(
+function isCellPassable(
   ctx: AiContext,
   col: number,
   row: number,
@@ -405,7 +405,7 @@ function fieldHasBrick(field: Battlefield, index: number) {
  * Returns the path from `start` to `goal` (both included) or null when no
  * route exists.
  */
-export function findPath(
+function findPath(
   ctx: AiContext,
   start: Cell,
   goal: Cell,

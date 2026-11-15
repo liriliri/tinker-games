@@ -140,7 +140,7 @@ function createRubbleGeometry(seed = random(0, 1, true)): THREE.BufferGeometry {
   return geometry
 }
 
-export interface BeachRocks {
+interface BeachRocks {
   group: THREE.Group
   dispose: () => void
 }

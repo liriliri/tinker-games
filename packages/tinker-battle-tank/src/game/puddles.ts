@@ -3,6 +3,7 @@ import clamp from 'licia/clamp'
 import extend from 'licia/extend'
 import random from 'licia/random'
 import { fbm, hash2 } from '../lib/noise'
+import { TANK_TRACK_HALF_WIDTH } from './constants'
 
 /**
  * Saltline-style wetness height field (R). Higher = dry plateaus;
@@ -75,14 +76,14 @@ const MAX_TANK_RIPPLES = 20
 const MAX_TRACK_MARKS = 32
 
 /** Local X offset of each tread from tank center (matches createTankModel). */
-const TRACK_HALF_WIDTH = 0.34
+const TRACK_HALF_WIDTH = TANK_TRACK_HALF_WIDTH
 
 /** How long a tread-watermark batch lingers (whole trail fades together). */
 const TRACK_MARK_LIFE = 1.85
 /** After leaving water, keep stamping for this long (shared birth time). */
 const TRACK_MARK_SPAWN_WINDOW = 0.75
 
-export interface WetUniforms {
+interface WetUniforms {
   uTime: { value: number }
   uWetG: { value: number }
   uMask: { value: THREE.Texture }

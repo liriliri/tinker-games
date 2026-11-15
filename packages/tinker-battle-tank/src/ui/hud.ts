@@ -77,8 +77,14 @@ export class Hud {
   private readonly previewChip = document.getElementById(
     'preview-chip',
   ) as HTMLElement | null
+  private readonly previewChipLabel = this.previewChip?.querySelector(
+    '.chip-label',
+  ) as HTMLElement | null
   private readonly enemiesChip = document.querySelector(
     '.chip--enemies',
+  ) as HTMLElement | null
+  private readonly stageChip = document.getElementById(
+    'stage-chip',
   ) as HTMLElement | null
 
   constructor(callbacks: HudCallbacks) {
@@ -168,16 +174,21 @@ export class Hud {
 
   showHud(options?: { preview?: boolean }) {
     this.hud.hidden = false
-    const preview = !!options?.preview
-    if (this.previewChip) this.previewChip.hidden = !preview
-    if (this.enemiesChip) this.enemiesChip.hidden = preview
-    this.playerCards[0].hidden = preview
-    this.playerCards[1].hidden = preview || this.playerCount < 2
+    const previewing = !!options?.preview
+    if (this.previewChip) this.previewChip.hidden = !previewing
+    if (this.previewChipLabel && previewing) {
+      this.previewChipLabel.textContent = t('previewHint')
+    }
+    if (this.stageChip) this.stageChip.hidden = false
+    if (this.enemiesChip) this.enemiesChip.hidden = previewing
+    this.playerCards[0].hidden = previewing
+    this.playerCards[1].hidden = previewing || this.playerCount < 2
   }
 
   hideHud() {
     this.hud.hidden = true
     if (this.previewChip) this.previewChip.hidden = true
+    if (this.stageChip) this.stageChip.hidden = false
   }
 
   setStage(stage: number) {

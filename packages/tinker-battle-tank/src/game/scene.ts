@@ -48,6 +48,7 @@ import {
   type ConcreteMaps,
   type TankPalette,
 } from './models'
+import { applyCamoMap } from './models/camo'
 
 /** Camera tilt away from a perfect top-down view, in radians. */
 const CAMERA_TILT = (20 * Math.PI) / 180
@@ -60,6 +61,14 @@ const FIELD_PADDING_Y = 3.6
 
 /** Open-sea extent beyond the steel quay — fills wide / tall viewports. */
 const SEA_SIZE = 96
+/** Half of the reference 3/16-cell bullet — centres the mesh on its hitbox. */
+const BULLET_HALF = 3 / 32
+
+interface MuzzleLocal {
+  x: number
+  y: number
+  z: number
+}
 
 interface TankVisual {
   group: THREE.Group
@@ -68,11 +77,23 @@ interface TankVisual {
   /** Body/light/dark meshes that flash for armor HP and power-up carriers. */
   tintMeshes: THREE.Mesh[]
   lastPaletteKey: string
+  /** Gun tip in tank-local space (model faces +Z). */
+  muzzleLocal: MuzzleLocal
 }
 
 interface Explosion {
   group: THREE.Group
-  pieces: THREE.Mesh[]
+  flash: THREE.Mesh
+  fire: THREE.Mesh[]
+  smoke: THREE.Mesh[]
+  age: number
+  duration: number
+}
+
+interface MuzzleFlash {
+  group: THREE.Group
+  sparks: THREE.Mesh[]
+  flash: THREE.Mesh
   age: number
   duration: number
 }
@@ -131,15 +152,15 @@ export class BattleScene {
   private readonly bulletVisuals = new Map<number, THREE.Group>()
   private readonly powerUpVisuals = new Map<number, PowerUpVisual>()
   private readonly explosions: Explosion[] = []
+  private readonly muzzleFlashes: MuzzleFlash[] = []
   private readonly resizeObserver?: ResizeObserver
-  private readonly debrisMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    roughness: 0.6,
-  })
 
   private readonly hiddenMatrix = new THREE.Matrix4().makeScale(0, 0, 0)
   private readonly matrix = new THREE.Matrix4()
   private readonly color = new THREE.Color()
+  private readonly muzzleWorld = new THREE.Vector3()
+  /** Orthographic zoom — 1 fits the whole field; higher = closer. */
+  private viewZoom = 1
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
@@ -351,7 +372,9 @@ export class BattleScene {
       this.tintBrick(index)
     }
     this.brickMesh.instanceMatrix.needsUpdate = true
-    this.brickMesh.instanceColor!.needsUpdate = true
+    // instanceColor only exists after setColorAt — empty maps never tint.
+    if (this.brickMesh.instanceColor)
+      this.brickMesh.instanceColor.needsUpdate = true
     this.scene.add(this.brickMesh)
 
     const steelMaterial = createSteelMaterial(createSteelMaps(128))
@@ -380,7 +403,8 @@ export class BattleScene {
       this.tintSteel(index)
     }
     this.steelMesh.instanceMatrix.needsUpdate = true
-    this.steelMesh.instanceColor!.needsUpdate = true
+    if (this.steelMesh.instanceColor)
+      this.steelMesh.instanceColor.needsUpdate = true
     this.scene.add(this.steelMesh)
 
     // River trough: concrete underlay (seals holes) + curb on the rim.
@@ -779,6 +803,7 @@ export class BattleScene {
       level: tank.level,
       tintMeshes: collectTintMeshes(group),
       lastPaletteKey: paletteKey(palette),
+      muzzleLocal: readMuzzleLocal(group),
     })
     this.updateTank(tank, 0)
   }
@@ -801,6 +826,7 @@ export class BattleScene {
         level: tank.level,
         tintMeshes: collectTintMeshes(group),
         lastPaletteKey: paletteKey(palette),
+        muzzleLocal: readMuzzleLocal(group),
       }
       this.tankVisuals.set(tank.id, visual)
     } else if (tank.side === 'bot') {
@@ -857,12 +883,24 @@ export class BattleScene {
     this.updateBullet(bullet)
   }
 
-  updateBullet(bullet: Bullet) {
+  updateBullet(bullet: Bullet, clockMs = 0) {
     const group = this.bulletVisuals.get(bullet.id)
     if (!group) return
-    const world = cellToWorld(bullet.x + 0.09, bullet.y + 0.09)
-    group.position.set(world.x, this.groundY + 0.16, world.z)
+    const world = cellToWorld(bullet.x + BULLET_HALF, bullet.y + BULLET_HALF)
+    const height =
+      (group.userData.flightHeight as number | undefined) ??
+      this.muzzleHeightFor(bullet.ownerId)
+    group.userData.flightHeight = height
+    group.position.set(world.x, this.groundY + height, world.z)
     group.rotation.y = directionRotation(bullet.direction)
+
+    const flame = group.userData.flame as THREE.Group | undefined
+    if (flame) {
+      // Flicker the exhaust so it reads as fire, not a solid glow stick.
+      const pulse = 0.85 + 0.2 * Math.sin(clockMs * 0.045 + bullet.id * 1.7)
+      const stretch = 0.9 + 0.25 * Math.sin(clockMs * 0.07 + bullet.id)
+      flame.scale.set(pulse, pulse, stretch)
+    }
   }
 
   removeBullet(id: number) {
@@ -902,50 +940,180 @@ export class BattleScene {
     this.powerUpVisuals.delete(id)
   }
 
-  /** Spawns a short-lived debris burst. */
-  spawnExplosion(x: number, y: number, color = 0xffb347, scale = 1) {
+  /** Brief muzzle flare + sparks at the tank's gun tip. */
+  spawnMuzzleFlash(tankId: number, direction: Direction) {
+    const tip = this.getMuzzleWorld(tankId)
+    if (!tip) return
+
     const group = new THREE.Group()
-    const world = cellToWorld(x, y)
-    group.position.set(world.x, this.groundY + 0.22, world.z)
+    group.position.copy(tip)
+    group.rotation.y = directionRotation(direction)
 
-    const pieces: THREE.Mesh[] = []
-    const count = 8
-    for (let i = 0; i < count; i += 1) {
-      const material = this.debrisMaterial.clone()
-      material.color.setHex(color).multiplyScalar(random(0.75, 1.25, true))
-      const piece = new THREE.Mesh(
-        new THREE.BoxGeometry(0.13, 0.13, 0.13),
-        material,
-      )
-      const angle = (i / count) * Math.PI * 2 + random(0, 0.6, true)
-      const speed = random(1.6, 3.4, true) * scale
-      piece.userData.velocity = new THREE.Vector3(
-        Math.cos(angle) * speed,
-        random(1.6, 3.8, true),
-        Math.sin(angle) * speed,
-      )
-      piece.position.set(0, 0, 0)
-      group.add(piece)
-      pieces.push(piece)
-    }
-
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.1, 0.18, 20),
-      new THREE.MeshBasicMaterial({
-        color: 0xfff0b0,
+    const flash = new THREE.Mesh(
+      new THREE.ConeGeometry(0.08, 0.18, 6),
+      new THREE.MeshStandardMaterial({
+        color: 0xfff2b0,
+        emissive: 0xffaa33,
+        emissiveIntensity: 2.4,
         transparent: true,
-        opacity: 0.9,
-        side: THREE.DoubleSide,
+        opacity: 0.95,
+        depthWrite: false,
+        roughness: 1,
       }),
     )
-    ring.rotation.x = -Math.PI / 2
-    group.add(ring)
+    // Local +Z is forward after directionRotation.
+    flash.rotation.x = Math.PI / 2
+    flash.position.z = 0.04
+    group.add(flash)
+
+    const sparks: THREE.Mesh[] = []
+    const sparkCount = 7
+    for (let i = 0; i < sparkCount; i += 1) {
+      const material = new THREE.MeshStandardMaterial({
+        color: i % 2 === 0 ? 0xffcc55 : 0xff6a22,
+        emissive: i % 2 === 0 ? 0xffaa22 : 0xff4400,
+        emissiveIntensity: 2,
+        transparent: true,
+        opacity: 1,
+        roughness: 1,
+        depthWrite: false,
+      })
+      const spark = new THREE.Mesh(
+        new THREE.BoxGeometry(0.035, 0.035, 0.05),
+        material,
+      )
+      const spread = (random(0, 1, true) - 0.5) * 1.4
+      const up = (random(0, 1, true) - 0.2) * 0.9
+      const forward = random(2.2, 4.2, true)
+      // Local space: +Z forward, +Y up, +X side.
+      spark.userData.velocity = new THREE.Vector3(spread, up, forward)
+      spark.position.set(0, 0, 0.02)
+      group.add(spark)
+      sparks.push(spark)
+    }
 
     this.scene.add(group)
-    this.explosions.push({ group, pieces, age: 0, duration: 480 })
+    this.muzzleFlashes.push({ group, sparks, flash, age: 0, duration: 140 })
+  }
+
+  private muzzleHeightFor(tankId: number) {
+    const visual = this.tankVisuals.get(tankId)
+    return visual?.muzzleLocal.y ?? 0.42
+  }
+
+  private getMuzzleWorld(tankId: number) {
+    const visual = this.tankVisuals.get(tankId)
+    if (!visual) return null
+    visual.group.updateMatrixWorld(true)
+    const { x, y, z } = visual.muzzleLocal
+    this.muzzleWorld.set(x, y, z)
+    visual.group.localToWorld(this.muzzleWorld)
+    return this.muzzleWorld
+  }
+
+  /**
+   * Fire flash + rising smoke puff (no expanding ground rings).
+   * `x`/`y` are cell centres (not hitbox corners).
+   */
+  spawnExplosion(
+    x: number,
+    y: number,
+    color = 0xffb347,
+    scale = 1,
+    height = 0.35,
+  ) {
+    const group = new THREE.Group()
+    const world = cellToWorld(x, y)
+    group.position.set(world.x, this.groundY + height, world.z)
+
+    const flash = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12 * scale, 8, 6),
+      new THREE.MeshStandardMaterial({
+        color: 0xfff2c0,
+        emissive: color,
+        emissiveIntensity: 3.2,
+        transparent: true,
+        opacity: 1,
+        roughness: 1,
+        depthWrite: false,
+      }),
+    )
+    flash.position.y = 0.08
+    group.add(flash)
+
+    const fire: THREE.Mesh[] = []
+    const fireCount = 10
+    for (let i = 0; i < fireCount; i += 1) {
+      const hot = i % 2 === 0
+      const material = new THREE.MeshStandardMaterial({
+        color: hot ? 0xffe08a : color,
+        emissive: hot ? 0xffaa22 : 0xff5500,
+        emissiveIntensity: hot ? 2.4 : 1.8,
+        transparent: true,
+        opacity: 0.95,
+        roughness: 1,
+        depthWrite: false,
+      })
+      const size = random(0.06, 0.12, true) * scale
+      const ember = new THREE.Mesh(
+        new THREE.SphereGeometry(size, 5, 4),
+        material,
+      )
+      material.userData.baseEmit = material.emissiveIntensity
+      const angle = (i / fireCount) * Math.PI * 2 + random(0, 0.5, true)
+      const speed = random(1.2, 2.8, true) * scale
+      ember.userData.velocity = new THREE.Vector3(
+        Math.cos(angle) * speed,
+        random(2.2, 4.5, true) * scale,
+        Math.sin(angle) * speed,
+      )
+      ember.position.set(0, 0.05, 0)
+      group.add(ember)
+      fire.push(ember)
+    }
+
+    const smoke: THREE.Mesh[] = []
+    const smokeCount = 8
+    for (let i = 0; i < smokeCount; i += 1) {
+      const shade = random(0.35, 0.55, true)
+      const material = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(shade, shade, shade * 0.95),
+        transparent: true,
+        opacity: 0.55,
+        roughness: 1,
+        depthWrite: false,
+      })
+      const size = random(0.1, 0.18, true) * scale
+      const puff = new THREE.Mesh(
+        new THREE.SphereGeometry(size, 6, 5),
+        material,
+      )
+      const angle = (i / smokeCount) * Math.PI * 2 + random(0, 0.4, true)
+      const speed = random(0.4, 1.1, true) * scale
+      puff.userData.velocity = new THREE.Vector3(
+        Math.cos(angle) * speed,
+        random(0.8, 1.8, true) * scale,
+        Math.sin(angle) * speed,
+      )
+      puff.userData.grow = random(1.6, 2.6, true)
+      puff.position.set(Math.cos(angle) * 0.04, 0.06, Math.sin(angle) * 0.04)
+      group.add(puff)
+      smoke.push(puff)
+    }
+
+    this.scene.add(group)
+    this.explosions.push({
+      group,
+      flash,
+      fire,
+      smoke,
+      age: 0,
+      duration: 520,
+    })
   }
 
   private updateExplosions(dt: number) {
+    const dtSec = dt / 1000
     for (let i = this.explosions.length - 1; i >= 0; i -= 1) {
       const explosion = this.explosions[i]
       explosion.age += dt
@@ -953,29 +1121,82 @@ export class BattleScene {
 
       if (t >= 1) {
         this.scene.remove(explosion.group)
-        each(explosion.pieces, (piece) => {
+        ;(explosion.flash.material as THREE.Material).dispose()
+        each(explosion.fire, (piece) => {
+          ;(piece.material as THREE.Material).dispose()
+        })
+        each(explosion.smoke, (piece) => {
           ;(piece.material as THREE.Material).dispose()
         })
         this.explosions.splice(i, 1)
         continue
       }
 
-      for (const piece of explosion.pieces) {
-        const velocity = piece.userData.velocity as THREE.Vector3
-        velocity.y -= 9 * (dt / 1000)
-        piece.position.addScaledVector(velocity, dt / 1000)
-        piece.rotation.x += dt * 0.006
-        piece.rotation.y += dt * 0.008
-        ;(piece.material as THREE.MeshStandardMaterial).opacity = 1 - t
-        ;(piece.material as THREE.MeshStandardMaterial).transparent = true
+      // White-hot flash — pops then dies quickly.
+      const flashT = Math.min(1, t / 0.28)
+      const flashScale = 1 + flashT * 2.2
+      explosion.flash.scale.setScalar(flashScale)
+      ;(explosion.flash.material as THREE.MeshStandardMaterial).opacity =
+        1 - flashT
+      ;(
+        explosion.flash.material as THREE.MeshStandardMaterial
+      ).emissiveIntensity = 3.2 * (1 - flashT)
+
+      for (const ember of explosion.fire) {
+        const velocity = ember.userData.velocity as THREE.Vector3
+        velocity.y -= 11 * dtSec
+        ember.position.addScaledVector(velocity, dtSec)
+        const fade = Math.min(1, t / 0.65)
+        const mat = ember.material as THREE.MeshStandardMaterial
+        ember.scale.setScalar(1 - fade * 0.7)
+        mat.opacity = 0.95 * (1 - fade)
+        mat.emissiveIntensity = (mat.userData.baseEmit as number) * (1 - fade)
       }
 
-      const ring = explosion.group.children[
-        explosion.group.children.length - 1
-      ] as THREE.Mesh
-      const scale = 1 + t * 5
-      ring.scale.setScalar(scale)
-      ;(ring.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - t)
+      for (const puff of explosion.smoke) {
+        const velocity = puff.userData.velocity as THREE.Vector3
+        velocity.y -= 1.2 * dtSec
+        puff.position.addScaledVector(velocity, dtSec)
+        const grow = puff.userData.grow as number
+        puff.scale.setScalar(1 + t * grow)
+        ;(puff.material as THREE.MeshStandardMaterial).opacity =
+          0.55 * (1 - t) * (1 - t)
+      }
+    }
+
+    this.updateMuzzleFlashes(dt)
+  }
+
+  private updateMuzzleFlashes(dt: number) {
+    for (let i = this.muzzleFlashes.length - 1; i >= 0; i -= 1) {
+      const fx = this.muzzleFlashes[i]
+      fx.age += dt
+      const t = fx.age / fx.duration
+
+      if (t >= 1) {
+        this.scene.remove(fx.group)
+        ;(fx.flash.material as THREE.Material).dispose()
+        each(fx.sparks, (spark) => {
+          ;(spark.material as THREE.Material).dispose()
+        })
+        this.muzzleFlashes.splice(i, 1)
+        continue
+      }
+
+      const bloom = 1 + t * 1.6
+      fx.flash.scale.set(bloom * (1 - t * 0.4), 1 - t * 0.5, bloom)
+      ;(fx.flash.material as THREE.MeshStandardMaterial).opacity =
+        0.95 * (1 - t)
+      ;(fx.flash.material as THREE.MeshStandardMaterial).emissiveIntensity =
+        2.4 * (1 - t)
+
+      for (const spark of fx.sparks) {
+        const velocity = spark.userData.velocity as THREE.Vector3
+        velocity.y -= 6 * (dt / 1000)
+        spark.position.addScaledVector(velocity, dt / 1000)
+        spark.scale.setScalar(1 - t * 0.7)
+        ;(spark.material as THREE.MeshStandardMaterial).opacity = 1 - t
+      }
     }
   }
 
@@ -1034,6 +1255,16 @@ export class BattleScene {
       this.scene.remove(explosion.group)
     }
     this.explosions.length = 0
+    for (const flash of this.muzzleFlashes) {
+      this.scene.remove(flash.group)
+    }
+    this.muzzleFlashes.length = 0
+  }
+
+  /** Resets orthographic framing (1 = fit the full battlefield). */
+  setViewZoom(zoom: number) {
+    this.viewZoom = Math.min(4.5, Math.max(1, zoom))
+    this.resize()
   }
 
   resize() {
@@ -1063,6 +1294,9 @@ export class BattleScene {
       halfHeight = halfWidth / aspect
     }
 
+    halfWidth /= this.viewZoom
+    halfHeight /= this.viewZoom
+
     this.camera.left = -halfWidth
     this.camera.right = halfWidth
     this.camera.top = halfHeight
@@ -1080,6 +1314,11 @@ export class BattleScene {
     this.sea?.update(this.camera)
     this.composer.render()
   }
+}
+
+function readMuzzleLocal(group: THREE.Group): MuzzleLocal {
+  const muzzle = group.userData.muzzleLocal as MuzzleLocal | undefined
+  return muzzle ?? { x: 0, y: 0.42, z: 0.55 }
 }
 
 function collectTintMeshes(group: THREE.Group) {
@@ -1101,8 +1340,7 @@ function applyPalette(meshes: THREE.Mesh[], palette: TankPalette) {
   for (const mesh of meshes) {
     const material = mesh.material
     if (!(material instanceof THREE.MeshStandardMaterial)) continue
-    const role = material.userData.tintRole as 'body' | 'light' | 'dark'
-    material.color.setHex(palette[role])
+    applyCamoMap(material, palette)
   }
 }
 
