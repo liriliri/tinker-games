@@ -1,0 +1,34 @@
+{
+  "name": "tinker-battle-tank",
+  "version": "0.1.0",
+  "description": "Classic Battle City rebuilt in 3D — defend the eagle, upgrade your tank, outplay the AI.",
+  "files": [
+    "dist/",
+    "icon.png"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liriliri/tinker-games.git"
+  },
+  "keywords": [
+    "tinker",
+    "game"
+  ],
+  "tinker": {
+    "name": "Battle Tank",
+    "main": "dist/index.html",
+    "icon": "icon.png",
+    "category": "entertainment",
+    "locales": {
+      "zh-CN": {
+        "name": "坦克大战",
+        "description": "经典坦克大战 3D 复刻——守护老鹰基地，升级坦克，与电脑敌军对战！"
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "format": "prettier \"src/**/*.ts\" \"*.{html,json,ts}\" --write"
+  }
+}

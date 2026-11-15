@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Battle Tank</title>
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+
+    <div id="hud" class="hud" hidden>
+      <div class="hud-top">
+        <div class="chip">
+          <span class="chip-label" data-i18n="stage">STAGE</span>
+          <span class="chip-value" id="stage-number">1</span>
+        </div>
+        <div class="chip chip--enemies">
+          <span class="chip-label" data-i18n="enemies">ENEMY</span>
+          <span class="chip-value" id="enemy-count">20</span>
+        </div>
+        <div class="chip chip--preview" id="preview-chip" hidden>
+          <span class="chip-label" data-i18n="previewHint">PREVIEW · ESC</span>
+        </div>
+      </div>
+
+      <div class="hud-bottom">
+        <div class="player-card" id="player-card-1">
+          <div class="player-name">P1</div>
+          <div class="player-stats">
+            <span class="stat">
+              <i data-i18n="lives">LIVES</i>
+              <b id="p1-lives">3</b>
+            </span>
+            <span class="stat">
+              <i data-i18n="score">SCORE</i>
+              <b id="p1-score">0</b>
+            </span>
+            <span class="stat">
+              <i data-i18n="level">LEVEL</i>
+              <b id="p1-level">BASIC</b>
+            </span>
+          </div>
+        </div>
+        <div class="player-card" id="player-card-2" hidden>
+          <div class="player-name">P2</div>
+          <div class="player-stats">
+            <span class="stat">
+              <i data-i18n="lives">LIVES</i>
+              <b id="p2-lives">3</b>
+            </span>
+            <span class="stat">
+              <i data-i18n="score">SCORE</i>
+              <b id="p2-score">0</b>
+            </span>
+            <span class="stat">
+              <i data-i18n="level">LEVEL</i>
+              <b id="p2-level">BASIC</b>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="curtain" class="curtain"><span id="curtain-text"></span></div>
+
+    <div id="overlay" class="overlay">
+      <section class="panel panel--menu" id="panel-menu">
+        <h1 class="title" data-i18n="title">BATTLE TANK</h1>
+        <p class="subtitle" data-i18n="subtitle"></p>
+        <div class="stage-select">
+          <p class="stage-select-label" data-i18n="selectStage">SELECT STAGE</p>
+          <div class="stage-grid" id="stage-grid" role="listbox"></div>
+        </div>
+        <div class="button-row">
+          <button
+            class="button"
+            id="button-one-player"
+            type="button"
+            data-i18n="onePlayer"
+          >
+            1 PLAYER
+          </button>
+          <button
+            class="button"
+            id="button-two-players"
+            type="button"
+            data-i18n="twoPlayers"
+          >
+            2 PLAYERS
+          </button>
+          <button
+            class="button button--ghost"
+            id="button-preview"
+            type="button"
+            data-i18n="previewMap"
+            hidden
+          >
+            PREVIEW MAP
+          </button>
+        </div>
+        <div class="controls">
+          <p class="controls-title" data-i18n="controls">CONTROLS</p>
+          <div class="controls-grid">
+            <div>
+              <strong data-i18n="playerOne">PLAYER 1</strong>
+              <span>WASD</span>
+              <span>J / SPACE</span>
+            </div>
+            <div>
+              <strong data-i18n="playerTwo">PLAYER 2</strong>
+              <span>ARROWS</span>
+              <span>SLASH</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel panel--pause" id="panel-pause" hidden>
+        <h2 class="title title--small" data-i18n="paused">PAUSED</h2>
+        <div class="button-row">
+          <button
+            class="button"
+            id="button-resume"
+            type="button"
+            data-i18n="resume"
+          >
+            RESUME
+          </button>
+          <button
+            class="button button--ghost"
+            id="button-pause-menu"
+            type="button"
+            data-i18n="menu"
+          >
+            MENU
+          </button>
+        </div>
+      </section>
+
+      <section class="panel panel--clear" id="panel-clear" hidden>
+        <h2 class="title title--small" data-i18n="stageClear">STAGE CLEAR</h2>
+        <p class="subtitle" id="clear-detail"></p>
+      </section>
+
+      <section class="panel panel--over" id="panel-over" hidden>
+        <h2 class="title title--small title--danger" data-i18n="gameOver">
+          GAME OVER
+        </h2>
+        <p class="subtitle" id="over-detail"></p>
+        <div class="button-row">
+          <button
+            class="button"
+            id="button-restart"
+            type="button"
+            data-i18n="restart"
+          >
+            RESTART
+          </button>
+          <button
+            class="button button--ghost"
+            id="button-over-menu"
+            type="button"
+            data-i18n="menu"
+          >
+            MENU
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
