@@ -5,7 +5,7 @@ import { t, tankLevelName } from '../lib/i18n'
 import { STAGES } from '../game/stages'
 import type { TankLevel } from '../game/types'
 
-export interface HudCallbacks {
+interface HudCallbacks {
   onStart(playerCount: 1 | 2, stageIndex: number): void
   /** Dev-only: load stage terrain with no gameplay. */
   onPreview?(stageIndex: number): void

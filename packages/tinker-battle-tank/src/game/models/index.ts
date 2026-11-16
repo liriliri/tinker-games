@@ -32,3 +32,4 @@ export {
   createRiverMaterial,
 } from './river'
 export { createTankModel } from './buildTank'
+export { applyCamoMap, standardMaterial } from './camo'

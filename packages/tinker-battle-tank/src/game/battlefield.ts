@@ -1,3 +1,4 @@
+import clamp from 'licia/clamp'
 import trim from 'licia/trim'
 import {
   BRICK_GRID,
@@ -37,6 +38,63 @@ export function isInField(rect: Rect) {
     between(0, rect.x, FIELD_SIZE - rect.width) &&
     between(0, rect.y, FIELD_SIZE - rect.height)
   )
+}
+
+/** True when `rect` overlaps any brick, steel, or river tile. */
+export function isTerrainBlocking(
+  field: Battlefield,
+  rect: Rect,
+  threshold = 0,
+) {
+  let blocked = false
+  field.forEachBrick(rect, (index) => {
+    if (
+      !blocked &&
+      field.bricks[index] &&
+      testCollide(field.brickRect(index), rect, threshold)
+    ) {
+      blocked = true
+    }
+  })
+  if (blocked) return true
+  field.forEachSteel(rect, (index) => {
+    if (
+      !blocked &&
+      field.steels[index] &&
+      testCollide(field.steelRect(index), rect, threshold)
+    ) {
+      blocked = true
+    }
+  })
+  if (blocked) return true
+  field.forEachCell(rect, (index) => {
+    if (
+      !blocked &&
+      field.rivers[index] &&
+      testCollide(field.cellRect(index), rect, threshold)
+    ) {
+      blocked = true
+    }
+  })
+  return blocked
+}
+
+/** Visit every cell of a uniform grid that intersects `rect`. */
+function forEachGridCell(
+  rect: Rect,
+  cellSize: number,
+  grid: number,
+  visit: (index: number) => void,
+) {
+  const col1 = clamp(Math.floor(rect.x / cellSize), 0, grid - 1)
+  const col2 = clamp(Math.floor((rect.x + rect.width) / cellSize), 0, grid - 1)
+  const row1 = clamp(Math.floor(rect.y / cellSize), 0, grid - 1)
+  const row2 = clamp(Math.floor((rect.y + rect.height) / cellSize), 0, grid - 1)
+  for (let row = row1; row <= row2; row += 1) {
+    for (let col = col1; col <= col2; col += 1) {
+      visit(row * grid + col)
+    }
+  }
 }
 
 /**
@@ -164,51 +222,15 @@ export class Battlefield {
   }
 
   forEachBrick(rect: Rect, visit: (index: number) => void) {
-    const col1 = Math.max(0, Math.floor(rect.x / BRICK_SIZE))
-    const col2 = Math.min(
-      BRICK_GRID - 1,
-      Math.floor((rect.x + rect.width) / BRICK_SIZE),
-    )
-    const row1 = Math.max(0, Math.floor(rect.y / BRICK_SIZE))
-    const row2 = Math.min(
-      BRICK_GRID - 1,
-      Math.floor((rect.y + rect.height) / BRICK_SIZE),
-    )
-    for (let row = row1; row <= row2; row += 1) {
-      for (let col = col1; col <= col2; col += 1) {
-        visit(row * BRICK_GRID + col)
-      }
-    }
+    forEachGridCell(rect, BRICK_SIZE, BRICK_GRID, visit)
   }
 
   forEachSteel(rect: Rect, visit: (index: number) => void) {
-    const col1 = Math.max(0, Math.floor(rect.x / STEEL_SIZE))
-    const col2 = Math.min(
-      STEEL_GRID - 1,
-      Math.floor((rect.x + rect.width) / STEEL_SIZE),
-    )
-    const row1 = Math.max(0, Math.floor(rect.y / STEEL_SIZE))
-    const row2 = Math.min(
-      STEEL_GRID - 1,
-      Math.floor((rect.y + rect.height) / STEEL_SIZE),
-    )
-    for (let row = row1; row <= row2; row += 1) {
-      for (let col = col1; col <= col2; col += 1) {
-        visit(row * STEEL_GRID + col)
-      }
-    }
+    forEachGridCell(rect, STEEL_SIZE, STEEL_GRID, visit)
   }
 
   forEachCell(rect: Rect, visit: (index: number) => void) {
-    const col1 = Math.max(0, Math.floor(rect.x))
-    const col2 = Math.min(FIELD_BLOCKS - 1, Math.floor(rect.x + rect.width))
-    const row1 = Math.max(0, Math.floor(rect.y))
-    const row2 = Math.min(FIELD_BLOCKS - 1, Math.floor(rect.y + rect.height))
-    for (let row = row1; row <= row2; row += 1) {
-      for (let col = col1; col <= col2; col += 1) {
-        visit(row * FIELD_BLOCKS + col)
-      }
-    }
+    forEachGridCell(rect, 1, FIELD_BLOCKS, visit)
   }
 
   destroyBrick(index: number) {

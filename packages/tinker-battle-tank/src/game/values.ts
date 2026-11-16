@@ -1,3 +1,4 @@
+import clamp from 'licia/clamp'
 import {
   BULLET_INTERVAL,
   BULLET_SPEED,
@@ -15,6 +16,8 @@ export function moveSpeed(tank: Tank) {
       return MOVE_SPEED.botPower
     case 'fast':
       return MOVE_SPEED.botFast
+    case 'armor':
+      return MOVE_SPEED.botArmor
     default:
       return MOVE_SPEED.botBasic
   }
@@ -62,7 +65,7 @@ export function tankHp(level: TankLevel) {
 /** Armour is the end of the upgrade chain. */
 export function nextTankLevel(level: TankLevel): TankLevel {
   const index = TANK_LEVELS.indexOf(level)
-  return TANK_LEVELS[Math.min(index + 1, TANK_LEVELS.length - 1)]
+  return TANK_LEVELS[clamp(index + 1, 0, TANK_LEVELS.length - 1)]
 }
 
 export function isMaxLevel(level: TankLevel) {

@@ -16,7 +16,6 @@ export const STEEL_GRID = 26
 export const BRICK_SIZE = 1 / 4
 export const STEEL_SIZE = 1 / 2
 
-export const TANK_SIZE = 1
 /** Local X of each tread centreline (matches createTankModel running gear). */
 export const TANK_TRACK_HALF_WIDTH = 0.3
 /** Reference bullet is 3 px wide → 3/16 of a cell. */

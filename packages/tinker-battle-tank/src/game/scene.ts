@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import clamp from 'licia/clamp'
 import each from 'licia/each'
 import random from 'licia/random'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -47,10 +48,10 @@ import {
   powerUpFlashAmount,
   resolveBotPalette,
   TANK_PALETTES,
+  applyCamoMap,
   type ConcreteMaps,
   type TankPalette,
 } from './models'
-import { applyCamoMap } from './models/camo'
 
 /** Camera tilt away from a perfect top-down view, in radians. */
 const CAMERA_TILT = (20 * Math.PI) / 180
@@ -1159,7 +1160,7 @@ export class BattleScene {
       }
 
       // White-hot flash — pops then dies quickly.
-      const flashT = Math.min(1, t / 0.28)
+      const flashT = clamp(t / 0.28, 0, 1)
       const flashScale = 1 + flashT * 2.2
       explosion.flash.scale.setScalar(flashScale)
       ;(explosion.flash.material as THREE.MeshStandardMaterial).opacity =
@@ -1172,7 +1173,7 @@ export class BattleScene {
         const velocity = ember.userData.velocity as THREE.Vector3
         velocity.y -= 11 * dtSec
         ember.position.addScaledVector(velocity, dtSec)
-        const fade = Math.min(1, t / 0.65)
+        const fade = clamp(t / 0.65, 0, 1)
         const mat = ember.material as THREE.MeshStandardMaterial
         ember.scale.setScalar(1 - fade * 0.7)
         mat.opacity = 0.95 * (1 - fade)
@@ -1288,7 +1289,7 @@ export class BattleScene {
 
   /** 1 = fit the full battlefield; higher zooms in. */
   setViewZoom(zoom: number) {
-    this.viewZoom = Math.min(4.5, Math.max(1, zoom))
+    this.viewZoom = clamp(zoom, 1, 4.5)
     this.resize()
   }
 
@@ -1299,7 +1300,7 @@ export class BattleScene {
     const width = Math.max(1, Math.round(rect.width || window.innerWidth))
     const height = Math.max(1, Math.round(rect.height || window.innerHeight))
 
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.renderer.setPixelRatio(clamp(window.devicePixelRatio, 0, 2))
     // `false` keeps the CSS size in charge of the layout; the drawing buffer
     // is still scaled by the pixel ratio so the render stays sharp.
     this.renderer.setSize(width, height, false)

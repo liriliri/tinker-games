@@ -1,7 +1,9 @@
 import clamp from 'licia/clamp'
 import contain from 'licia/contain'
+import each from 'licia/each'
 import filter from 'licia/filter'
 import find from 'licia/find'
+import map from 'licia/map'
 import pluck from 'licia/pluck'
 import random from 'licia/random'
 import remove from 'licia/remove'
@@ -17,6 +19,7 @@ import {
   Battlefield,
   bulletRect,
   isInField,
+  isTerrainBlocking,
   tankRect,
   testCollide,
 } from './battlefield'
@@ -61,6 +64,7 @@ import type {
   PlayerState,
   PowerUp,
   PowerUpName,
+  Rect,
   Tank,
   TankLevel,
 } from './types'
@@ -284,7 +288,7 @@ export class Game {
     }
 
     // Reference fills the field up to the concurrent bot cap at stage start.
-    this.pendingSpawns = Math.min(this.maxBotCount(), this.remainingBots.length)
+    this.pendingSpawns = clamp(this.remainingBots.length, 0, this.maxBotCount())
     this.hud.setStage(index + 1)
     this.hud.setEnemyCount(this.remainingBots.length)
 
@@ -318,7 +322,7 @@ export class Game {
 
   private loop = (now: number) => {
     requestAnimationFrame(this.loop)
-    const dt = Math.min(now - this.lastFrame, 60)
+    const dt = clamp(now - this.lastFrame, 0, 60)
     this.lastFrame = now
     this.clock += dt
 
@@ -527,7 +531,7 @@ export class Game {
       if (tank.spawnProgress < 1) {
         const duration =
           tank.side === 'bot' ? this.botSpawnDuration() : SPAWN_FLICKER_DURATION
-        tank.spawnProgress = Math.min(1, tank.spawnProgress + dt / duration)
+        tank.spawnProgress = clamp(tank.spawnProgress + dt / duration, 0, 1)
         if (tank.spawnProgress >= 1 && tank.side === 'player') {
           const player = this.players[tank.playerIndex]
           if (player) player.isSpawning = false
@@ -538,7 +542,8 @@ export class Game {
     if (this.pendingSpawns <= 0 || this.remainingBots.length === 0) return
 
     // Only one enemy materialises at a time.
-    const spawning = this.tanks.some(
+    const spawning = some(
+      this.tanks,
       (t) => t.side === 'bot' && t.spawnProgress < 1,
     )
     if (spawning) return
@@ -557,10 +562,11 @@ export class Game {
   }
 
   private findSpawnPosition() {
-    const options = BOT_SPAWN_X.map((x) => ({ x, y: BOT_SPAWN_Y }))
-    const free = options.filter((option) => {
+    const options = map(BOT_SPAWN_X, (x) => ({ x, y: BOT_SPAWN_Y }))
+    const free = filter(options, (option) => {
       const rect = tankRect(option.x, option.y)
-      return !this.tanks.some(
+      return !some(
+        this.tanks,
         (tank) => tank.alive && testCollide(tankRect(tank.x, tank.y), rect),
       )
     })
@@ -764,30 +770,7 @@ export class Game {
     const eagle = this.field.eagleRect()
     if (eagle && testCollide(eagle, rect, COLLIDE_THRESHOLD)) return false
 
-    let blocked = false
-    this.field.forEachBrick(rect, (index) => {
-      if (!blocked && this.field.bricks[index]) {
-        if (testCollide(this.field.brickRect(index), rect, COLLIDE_THRESHOLD))
-          blocked = true
-      }
-    })
-    if (blocked) return false
-
-    this.field.forEachSteel(rect, (index) => {
-      if (!blocked && this.field.steels[index]) {
-        if (testCollide(this.field.steelRect(index), rect, COLLIDE_THRESHOLD))
-          blocked = true
-      }
-    })
-    if (blocked) return false
-
-    this.field.forEachCell(rect, (index) => {
-      if (!blocked && this.field.rivers[index]) {
-        if (testCollide(this.field.cellRect(index), rect, COLLIDE_THRESHOLD))
-          blocked = true
-      }
-    })
-    if (blocked) return false
+    if (isTerrainBlocking(this.field, rect, COLLIDE_THRESHOLD)) return false
 
     for (const other of this.tanks) {
       if (!other.alive || other.id === ignoreId) continue
@@ -806,7 +789,7 @@ export class Game {
     if (tank.cooldown > 0) return
     if (tank.side === 'bot' && this.botFrozenTimer > 0) return
 
-    const owned = this.bullets.filter((bullet) => bullet.ownerId === tank.id)
+    const owned = filter(this.bullets, (bullet) => bullet.ownerId === tank.id)
     if (owned.length >= bulletLimit(tank)) return
 
     const { x, y } = bulletStartPosition(tank)
@@ -883,7 +866,7 @@ export class Game {
     }
 
     this.bullets = survivors
-    this.removedBullets.forEach((id) => this.scene.removeBullet(id))
+    each([...this.removedBullets], (id) => this.scene.removeBullet(id))
     this.removedBullets.clear()
   }
 
@@ -1248,7 +1231,7 @@ export class Game {
       }
     }
 
-    this.powerUps = this.powerUps.filter((powerUp) => {
+    this.powerUps = filter(this.powerUps, (powerUp) => {
       if (powerUp.lifetime > 0) return true
       this.scene.removePowerUp(powerUp.id)
       return false
@@ -1337,14 +1320,7 @@ export class Game {
       const rect = this.field.steelRect(index)
       // Do not place steel on top of the eagle itself or living tanks.
       if (testCollide(eagle, rect, -0.1)) return
-      if (
-        this.tanks.some(
-          (tank) =>
-            tank.alive && testCollide(tankRect(tank.x, tank.y), rect, -0.1),
-        )
-      ) {
-        return
-      }
+      if (this.anyTankBlocksRect(rect)) return
       this.field.steels[index] = 1
       this.scene.showSteel(index, this.field)
     })
@@ -1365,17 +1341,17 @@ export class Game {
     this.field.forEachBrick(box, (index) => {
       const rect = this.field.brickRect(index)
       if (testCollide(eagle, rect, -0.1)) return
-      if (
-        this.tanks.some(
-          (tank) =>
-            tank.alive && testCollide(tankRect(tank.x, tank.y), rect, -0.1),
-        )
-      ) {
-        return
-      }
+      if (this.anyTankBlocksRect(rect)) return
       this.field.bricks[index] = 1
       this.scene.showBrick(index)
     })
+  }
+
+  private anyTankBlocksRect(rect: Rect) {
+    return some(
+      this.tanks,
+      (tank) => tank.alive && testCollide(tankRect(tank.x, tank.y), rect, -0.1),
+    )
   }
 
   private updateShovel(dt: number) {
@@ -1530,7 +1506,7 @@ export class Game {
 function parseBotWave(descriptors: string[]): TankLevel[] {
   const wave: TankLevel[] = []
   for (const descriptor of descriptors) {
-    const [count, level] = descriptor.split('*').map((part) => trim(part))
+    const [count, level] = map(descriptor.split('*'), (part) => trim(part))
     const total = Number(count)
     for (let i = 0; i < total; i += 1) {
       wave.push(level as TankLevel)
@@ -1594,10 +1570,7 @@ function spreadBulletRect(bullet: Bullet) {
 }
 
 /** Smallest rectangle covering both inputs. */
-function mergeRects(
-  a: { x: number; y: number; width: number; height: number },
-  b: typeof a,
-) {
+function mergeRects(a: Rect, b: Rect): Rect {
   const left = Math.min(a.x, b.x)
   const top = Math.min(a.y, b.y)
   const right = Math.max(a.x + a.width, b.x + b.width)

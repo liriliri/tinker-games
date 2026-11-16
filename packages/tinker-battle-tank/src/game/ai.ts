@@ -4,7 +4,7 @@ import find from 'licia/find'
 import random from 'licia/random'
 import sample from 'licia/sample'
 import { FIELD_BLOCKS } from './constants'
-import { testCollide } from './battlefield'
+import { isTerrainBlocking, testCollide } from './battlefield'
 import type { Battlefield } from './battlefield'
 import type { Bullet, Direction, Tank } from './types'
 
@@ -278,24 +278,19 @@ export class BotBrain {
     const [vx, vy] = DIR_VECTORS[facing]
     const tank = this.tank
 
-    for (const other of ctx.tanks) {
-      if (!other.alive || other.side !== 'player' || other.id === tank.id)
-        continue
-
-      const dx = other.x - tank.x
-      const dy = other.y - tank.y
-
-      const aligned =
-        (vx === 0 && Math.abs(dx) < 0.6 && Math.sign(dy) === vy) ||
-        (vy === 0 && Math.abs(dy) < 0.6 && Math.sign(dx) === vx)
-      if (!aligned) continue
-
-      if (hasClearLine(ctx, tank.x, tank.y, other.x, other.y)) {
-        return other
-      }
-    }
-
-    return null
+    return (
+      find(ctx.tanks, (other) => {
+        if (!other.alive || other.side !== 'player' || other.id === tank.id) {
+          return false
+        }
+        const dx = other.x - tank.x
+        const dy = other.y - tank.y
+        const aligned =
+          (vx === 0 && Math.abs(dx) < 0.6 && Math.sign(dy) === vy) ||
+          (vy === 0 && Math.abs(dy) < 0.6 && Math.sign(dx) === vx)
+        return aligned && hasClearLine(ctx, tank.x, tank.y, other.x, other.y)
+      }) ?? null
+    )
   }
 }
 
@@ -322,26 +317,12 @@ function hasClearLine(
 
 /** True when the single point (x, y) is not inside any solid terrain. */
 function isTerrainFree(field: Battlefield, x: number, y: number) {
-  const rect = { x, y, width: 0.001, height: 0.001 }
-  let blocked = false
-  field.forEachBrick(rect, (index) => {
-    if (field.bricks[index]) {
-      if (testCollide(field.brickRect(index), rect)) blocked = true
-    }
+  return !isTerrainBlocking(field, {
+    x,
+    y,
+    width: 0.001,
+    height: 0.001,
   })
-  if (blocked) return false
-  field.forEachSteel(rect, (index) => {
-    if (field.steels[index]) {
-      if (testCollide(field.steelRect(index), rect)) blocked = true
-    }
-  })
-  if (blocked) return false
-  field.forEachCell(rect, (index) => {
-    if (field.rivers[index]) {
-      if (testCollide(field.cellRect(index), rect)) blocked = true
-    }
-  })
-  return !blocked
 }
 
 /** True when a tank can stand with its top-left corner at (col, row). */
@@ -356,35 +337,7 @@ function isCellPassable(
     return false
 
   const rect = { x: col, y: row, width: 1, height: 1 }
-
-  let blocked = false
-  ctx.field.forEachBrick(rect, (index) => {
-    if (
-      fieldHasBrick(ctx.field, index) &&
-      testCollide(ctx.field.brickRect(index), rect)
-    ) {
-      blocked = true
-    }
-  })
-  if (blocked) return false
-  ctx.field.forEachSteel(rect, (index) => {
-    if (
-      ctx.field.steels[index] &&
-      testCollide(ctx.field.steelRect(index), rect)
-    ) {
-      blocked = true
-    }
-  })
-  if (blocked) return false
-  ctx.field.forEachCell(rect, (index) => {
-    if (
-      ctx.field.rivers[index] &&
-      testCollide(ctx.field.cellRect(index), rect)
-    ) {
-      blocked = true
-    }
-  })
-  if (blocked) return false
+  if (isTerrainBlocking(ctx.field, rect)) return false
 
   for (const tank of ctx.tanks) {
     if (!tank.alive || tank.id === selfId || tank.id === ignoreId) continue
@@ -393,10 +346,6 @@ function isCellPassable(
   }
 
   return true
-}
-
-function fieldHasBrick(field: Battlefield, index: number) {
-  return field.bricks[index] === 1
 }
 
 /**

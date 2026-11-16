@@ -3,7 +3,7 @@ import each from 'licia/each'
 import startWith from 'licia/startWith'
 import type { Direction } from '../game/types'
 
-export interface PlayerInput {
+interface PlayerInput {
   /** Direction the player wants to face, or null when no key is held. */
   direction: Direction | null
   fire: boolean
@@ -120,13 +120,11 @@ export class GameInput {
       const dy = stick.y - stick.originY
       const length = Math.hypot(dx, dy)
       if (length < 8) continue
-      const normalised = Math.min(length, 56)
       if (Math.abs(dx) > Math.abs(dy)) {
         directions.push(dx > 0 ? 'right' : 'left')
       } else {
         directions.push(dy > 0 ? 'down' : 'up')
       }
-      void normalised
     }
 
     for (const id of this.touchFire) {

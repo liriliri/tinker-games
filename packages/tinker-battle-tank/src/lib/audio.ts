@@ -1,6 +1,6 @@
 import { Howl, Howler } from 'howler'
 
-export type SoundName =
+type SoundName =
   | 'bullet_shot'
   | 'bullet_hit_1'
   | 'bullet_hit_2'
